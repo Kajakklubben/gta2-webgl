@@ -35,7 +35,8 @@ function init() {
 	createScene();
 
 	// setup renderer
-	renderer = new THREE.CanvasRenderer();
+//	renderer = new THREE.CanvasRenderer();
+	renderer = new THREE.WebGLRenderer();
 	renderer.setSize( window.innerWidth, window.innerHeight );
 
 	container.appendChild( renderer.domElement );
@@ -70,44 +71,23 @@ function createScene()
 				if(block != undefined)
 				{ 
 					//console.log("drew cube");
-					if(k==0)
-					{
-						CreateCube(i, j, k, 0x003399);			
-					}
-					else if(k==1)
-					{
-						CreateCube(i, j, k, 0x333333);			
-					}
-					else if(k==2)
-					{
-						CreateCube(i, j, k, 0x663300);			
-					}
-					else if(k==3)
-					{
-						CreateCube(i, j, k, 0x993300);			
-					}
-					else if(k==4)
-					{
-						CreateCube(i, j, k, 0xFF3300);			
-					}
-					else
-					{
-						CreateCube(i, j, k, 0xCCCCCC);			
-					}
+					CreateCube(i, j, k, block);			
 				}
 			}
 		}
 	}
-
 }
 
-function CreateCube(x, y, z, color)
-{
-	var tileSize = 14;
-	var geometry = new THREE.CubeGeometry( tileSize, tileSize, tileSize );
-	var material = new THREE.MeshBasicMaterial( { color: color} );
-
-	cube = new THREE.Mesh( geometry, material );
+var tileSize = 25;
+var material = new THREE.MeshBasicMaterial( { color: 0xCCCCCC} ); 
+var wireMaterial = new THREE.MeshLambertMaterial({color: 0xCCCCC, wireframe:true});
+		
+function CreateCube(x, y, z, block)
+{	
+	var geometry = new THREE.PlaneGeometry( tileSize, tileSize);
+	cube = new THREE.Mesh(geometry, wireMaterial);
+	//cube = new THREE.Mesh( geometry, material );
+	
 	cube.position.x = (x - 85) * tileSize;
 	cube.position.y = -(y - 190) * tileSize;
 	cube.position.z = z * tileSize;
@@ -198,7 +178,7 @@ function render() {
 
 	renderer.render( scene, camera );
 
-//	camera.position.y = Math.sin(Date.now()/1000)*50;
-	//camera.position.x = Math.cos(Date.now()/1000)*50;
+	camera.position.y = Math.sin(Date.now()/1000)*50;
+	camera.position.x = Math.cos(Date.now()/1000)*50;
 
 }
