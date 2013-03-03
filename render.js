@@ -8,8 +8,8 @@ var cube, plane;
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
-init();
-animate();
+//init();
+//animate();
 
 function init() {
 
@@ -24,17 +24,15 @@ function init() {
 	info.innerHTML = 'Camere moves in a circle to get perspective';
 	container.appendChild( info );
 
-	camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
+	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000 );
 	camera.position.y = 150;
-	//zoom out here
 	camera.position.z = 500;
+
 
 	scene = new THREE.Scene();
 
 	
 	createScene();
-
-
 
 	// setup renderer
 	renderer = new THREE.CanvasRenderer();
@@ -60,16 +58,61 @@ function init() {
 }
 
 function createScene()
+{	
+	for (var i = 20; i < 250; i++)
+	{	
+		for (var j = 20; j < 250; j++)
+		{		
+			for (var k = 0; k < 8; k++)
+			{
+				var block = level.map[i][j][k];
+				
+				if(block != undefined)
+				{ 
+					//console.log("drew cube");
+					if(k==0)
+					{
+						CreateCube(i, j, k, 0x003399);			
+					}
+					else if(k==1)
+					{
+						CreateCube(i, j, k, 0x333333);			
+					}
+					else if(k==2)
+					{
+						CreateCube(i, j, k, 0x663300);			
+					}
+					else if(k==3)
+					{
+						CreateCube(i, j, k, 0x993300);			
+					}
+					else if(k==4)
+					{
+						CreateCube(i, j, k, 0xFF3300);			
+					}
+					else
+					{
+						CreateCube(i, j, k, 0xCCCCCC);			
+					}
+				}
+			}
+		}
+	}
+
+}
+
+function CreateCube(x, y, z, color)
 {
-// Cube
-
-	var geometry = new THREE.CubeGeometry( 200, 200, 200 );
-
-	var material = new THREE.MeshBasicMaterial( { color: 0xfff444 } );
+	var tileSize = 14;
+	var geometry = new THREE.CubeGeometry( tileSize, tileSize, tileSize );
+	var material = new THREE.MeshBasicMaterial( { color: color} );
 
 	cube = new THREE.Mesh( geometry, material );
-	cube.position.y = 150;
-	scene.add( cube );
+	cube.position.x = (x - 85) * tileSize;
+	cube.position.y = -(y - 190) * tileSize;
+	cube.position.z = z * tileSize;
+	
+	scene.add(cube);
 }
 
 function onWindowResize() {
@@ -142,7 +185,6 @@ function onDocumentTouchMove( event ) {
 }
 
 //
-
 function animate() {
 
 	requestAnimationFrame( animate );
@@ -156,7 +198,7 @@ function render() {
 
 	renderer.render( scene, camera );
 
-	camera.position.y = Math.sin(Date.now()/1000)*50;
-	camera.position.x = Math.cos(Date.now()/1000)*50;
+//	camera.position.y = Math.sin(Date.now()/1000)*50;
+	//camera.position.x = Math.cos(Date.now()/1000)*50;
 
 }
