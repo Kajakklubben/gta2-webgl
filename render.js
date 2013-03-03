@@ -24,9 +24,9 @@ function init() {
 	info.innerHTML = 'Camere moves in a circle to get perspective';
 	container.appendChild( info );
 
-	camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000 );
-	camera.position.y = 150;
-	camera.position.z = 500;
+	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000 );
+//	camera.rotation.x += 1;
+	camera.position.z = 700;
 
 
 	scene = new THREE.Scene();
@@ -70,8 +70,7 @@ function createScene()
 				
 				if(block != undefined)
 				{ 
-					//console.log("drew cube");
-					CreateCube(i, j, k, block);			
+					CreateBlock(i, j, k, block);			
 				}
 			}
 		}
@@ -79,20 +78,149 @@ function createScene()
 }
 
 var tileSize = 25;
-var material = new THREE.MeshBasicMaterial( { color: 0xCCCCCC} ); 
-var wireMaterial = new THREE.MeshLambertMaterial({color: 0xCCCCC, wireframe:true});
-		
-function CreateCube(x, y, z, block)
+//var material = new THREE.MeshLambertMaterial( { color: 0x333333} ); 
+//var wireMaterial = new THREE.MeshLambertMaterial({color: 0xFFFFFF, wireframe:true});
+
+var lidGeometry = new THREE.PlaneGeometry( tileSize, tileSize);
+//var cubeGeometry = new THREE.CubeGeometry( tileSize, tileSize, tileSize);
+	
+//Edge
+var edgeGeometry = new THREE.Geometry(); 
+var v1 = new THREE.Vector3(-tileSize/2, 0, -tileSize/2);
+var v2 = new THREE.Vector3(tileSize/2, 0, -tileSize/2);
+var v3 = new THREE.Vector3(tileSize/2, 0, tileSize/2);
+var v4 = new THREE.Vector3(-tileSize/2, 0, tileSize/2);
+
+edgeGeometry.vertices.push(v1);
+edgeGeometry.vertices.push(v2);
+edgeGeometry.vertices.push(v3);
+edgeGeometry.vertices.push(v4);
+
+edgeGeometry.faces.push( new THREE.Face4( 3, 2, 1, 0));
+edgeGeometry.computeFaceNormals();
+	
+var material = new THREE.MeshBasicMaterial( { color: 0xFFAA00} );
+var materialAlt = new THREE.MeshBasicMaterial( { color: 0x00AAFF} );
+var wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
+	
+function CreateBlock(x, y, z, block)
 {	
-	var geometry = new THREE.PlaneGeometry( tileSize, tileSize);
-	cube = new THREE.Mesh(geometry, wireMaterial);
-	//cube = new THREE.Mesh( geometry, material );
+	if(block.Left != undefined && block.Left.wall != 0)
+	{
+		CreateEdge(x, y, z, block.Left, FaceType.Left);
+	}
 	
-	cube.position.x = (x - 85) * tileSize;
-	cube.position.y = -(y - 190) * tileSize;
-	cube.position.z = z * tileSize;
+	if(block.Right != undefined && block.Right.wall != 0)
+	{
+		CreateEdge(x, y, z, block.Right, FaceType.Right);
+	}
 	
-	scene.add(cube);
+	if(block.Top != undefined && block.Top.wall != 0)
+	{
+		CreateEdge(x, y, z, block.Top, FaceType.Top);
+	}
+	
+	if(block.Bottom != undefined && block.Bottom.wall != 0)
+	{
+		CreateEdge(x, y, z, block.Bottom, FaceType.Bottom);
+	}
+	
+	if(block.Lid != undefined && block.Lid.tileNumber != 0 && z > 2)
+	{
+		CreateEdge(x, y, z, block.Lid, FaceType.Lid);
+	}
+}
+
+var levelXOffset = -85;
+var levelYOffset = -190;
+
+function CreateEdge(x, y, z, face, type, color)
+{
+	var color;
+		
+	if(type == FaceType.Left)
+	{
+		color = 0xFFAA00;
+	}
+	else if(type == FaceType.Right)
+	{
+		color = 0x00AAFF;
+	}
+	else if(type == FaceType.Top)
+	{
+		color = 0xAA00FF;
+	}
+	else if(type == FaceType.Bottom)
+	{
+		color = 0xFF00AA;
+	}
+	else if(type == FaceType.Lid)
+	{
+		color = 0xCCCCCC;
+	}
+	
+	var material;
+	
+	material = new THREE.MeshBasicMaterial( { color: color} );
+	wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
+	
+	if(type == FaceType.Lid)
+	{
+		var edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry, [material, wireMaterial]);
+	}
+	else
+	{
+		var edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry, [material, wireMaterial]);
+	}
+	
+	var x = (x + levelXOffset) * tileSize;
+	var y = (y + levelYOffset) * tileSize;
+	var z = z * tileSize;
+	
+	if(type == FaceType.Left)
+	{
+		x -= tileSize / 2;
+		Rotate(edge, 0, 0, 90);
+	}
+	else if(type == FaceType.Right)
+	{
+		x += tileSize / 2;
+		Rotate(edge, 0, 0, -90);
+	}
+	else if(type == FaceType.Top)
+	{
+		y -= tileSize / 2;
+		//Rotate(edge, 90, 0, 0);
+	}
+	else if(type == FaceType.Bottom)
+	{
+		y += tileSize / 2;
+		Rotate(edge, 0, 0, 180);
+	}
+	else if(type == FaceType.Lid)
+	{
+		z += tileSize / 2;
+	}
+	
+
+	
+	edge.position.x = x;
+	edge.position.y = -y;	
+	edge.position.z = z;
+
+	scene.add(edge);
+}
+
+function Rotate(target, x, y, z)
+{
+	if(x != 0)
+		target.rotation.x += (x / 360) * (Math.PI*2);
+	
+	if(y != 0)
+		target.rotation.y += (y / 360) * (Math.PI*2);
+	
+	if(z != 0)
+		target.rotation.z += (z / 360) * (Math.PI*2);
 }
 
 function onWindowResize() {
@@ -178,7 +306,7 @@ function render() {
 
 	renderer.render( scene, camera );
 
-	camera.position.y = Math.sin(Date.now()/1000)*50;
-	camera.position.x = Math.cos(Date.now()/1000)*50;
+	//camera.position.y = Math.sin(Date.now()/1000)*50;
+	//camera.position.x = Math.cos(Date.now()/1000)*50;
 
 }

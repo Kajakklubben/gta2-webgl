@@ -74,6 +74,10 @@ function ReadDMAP(reader)
 	return cityBlocks;
 }
 
+FaceType = {
+	Left:0, Right:1, Top:2, Bottom:3, Lid:4
+}
+
 function CreateUncompressedMap(baseOffsets, columns, blocks)
 {
 	var cityBlocks = new Array();
@@ -146,7 +150,7 @@ function BlockInfo()
 
 
 BlockFaceRotation = {
-	None:0, R90:1, R180:2, R270:3
+	None:0, R90:90, R180:180, R270:270
 }
 
 BlockFaceDirection = {
@@ -166,25 +170,25 @@ function BlockFace(value)
 		tile = tile + (value & Math.pow(2, i));
 	}
 	
-	TileNumber = tile;
-
-	Flat = CheckBit(value, 12); //Bit 12
-	Flip = CheckBit(value, 13); //Bit 13
+	this.tileNumber = tile;
+	
+	this.flat = CheckBit(value, 12); //Bit 12
+	this.flip = CheckBit(value, 13); //Bit 13
 
 	var bit14 = CheckBit(value, 14);
 	var bit15 = CheckBit(value, 15);
 	
 	if (!bit14 && !bit15)
-		Rotation = BlockFaceRotation.None;
+		this.rotation = BlockFaceRotation.None;
 		
 	if (bit14 && !bit15)
-		Rotation = BlockFaceRotation.R90;
+		this.rotation = BlockFaceRotation.R90;
 		
 	if (!bit14 && bit15)
-		Rotation = BlockFaceRotation.R180;
+		this.rotation = BlockFaceRotation.R180;
 		
 	if (bit14 && bit15)
-		Rotation = BlockFaceRotation.R270;
+		this.rotation = BlockFaceRotation.R270;
 
 }
 
@@ -192,7 +196,7 @@ function BlockFaceEdge(value)
 {
 	this.inheritFrom = BlockFace;
 	this.inheritFrom(value);
-	
+
 	this.wall = CheckBit(value, 10);
 	this.bulletWall = CheckBit(value, 11);
 }
