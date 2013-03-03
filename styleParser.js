@@ -5,10 +5,9 @@ function Skip(reader, num)
 
 function createCanvas(width, height) {
     var canvas = document.createElement('canvas');
-	document.body.appendChild(canvas);
-    canvas.width = width;
+	canvas.width = width;
     canvas.height = height;
-    return canvas.getContext("2d");
+    return canvas;
 }
 
 function ParseStyle(data) {
@@ -80,6 +79,7 @@ function ParseStyle(data) {
 	var palx = ReadPALX(reader, style.palxDataStart, style.palxDataLength);
 	
 	style.tiles = ReadTiles(reader, style.tileDataStart, style.tileDataLength, ppal, palx);
+	return style;
 }
 
 function Color(r,g,b,a)
@@ -129,19 +129,23 @@ function ReadPPAL(reader, start, size) {
 function ReadTiles(reader, start, size, ppal, palx) {
 	var tiles = new Array();
 	var tilesCount = size / (64 * 64);
-	for (var id = 0; id < 4; id++)
+	for (var id = 0; id < tilesCount; id++)
 	{
 		var pallete = palx[id];
-		var img = createCanvas(64, 64);
+		var canvas = createCanvas(64, 64);
+		var context = canvas.getContext("2d");
 		
 		for (var y = 0; y < 64; ++y) {
 			for (var x = 0; x < 64; ++x) {
-				reader.seek(start + (y + (id / 4) * 64) * 256 + (x + (id % 4) * 64));
-				var tileColor = reader.getUint8();
+				var tileColor = reader.getUint8(start + (y + Math.floor(id/4) * 64) * 256 + (x + (id % 4) * 64));
 				var palID = (pallete / 64) * 256 * 64 + (pallete % 64) + tileColor * 64;
 				var baseColor = ppal[palID];
-				drawPixel(img, x, y, baseColor); 
+				drawPixel(context, x, y, baseColor); 
 			}
 		}
+		var image = new Image();
+		image.src = canvas.toDataURL("image/png");		
+		tiles.push(image);
 	}
+	return tiles;
 }

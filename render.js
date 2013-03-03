@@ -12,18 +12,6 @@ var windowHalfY = window.innerHeight / 2;
 //animate();
 
 function init() {
-
-	container = document.createElement( 'div' );
-	document.body.appendChild( container );
-
-	var info = document.createElement( 'div' );
-	info.style.position = 'absolute';
-	info.style.top = '10px';
-	info.style.width = '100%';
-	info.style.textAlign = 'center';
-	info.innerHTML = 'Camere moves in a circle to get perspective';
-	container.appendChild( info );
-
 	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000 );
 //	camera.rotation.x += 1;
 	camera.position.z = 700;
