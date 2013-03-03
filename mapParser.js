@@ -2,12 +2,13 @@ function Skip(reader, num)
 {
 	reader.seek(reader.tell()+num);
 }
-
 function ReadFromData(data)
 {
 	var reader = new jDataView(data);
 	
 	var start = reader.getString(4);
+	if(start != "GBMP")
+		throw "File format for map file not correct";
 	
 	var version = reader.getUint16();	
 

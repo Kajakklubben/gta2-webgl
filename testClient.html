@@ -16,6 +16,8 @@
 </script>
 <script src="/mapParser.js" type="application/javascript" language="javascript">
 </script>
+<script src="/styleParser.js" type="application/javascript" language="javascript">
+</script>
 
 <script>
 
@@ -54,18 +56,26 @@ function getBinaryData(url, callback){
 <script>
 	var level;
 	
-	getBinaryData("http://localhost:8000/map/", LoadComplete);
+	getBinaryData("http://localhost:8000/MP1-comp.gmp", LoadComplete);
 	
 	function LoadComplete(data, err)
 	{
 		var mapData = data.responseText;
 		level = new ReadFromData(mapData);
-		
-		init();
-		animate();
+		getBinaryData("http://localhost:8000/wil.sty", function (data, err) {
+			var styleData = data.responseText;
+			style = new ParseStyle(styleData);
+
+				init();
+				animate();
+
+
+			}
+		);
 	}
-	
 </script>
+
+
 
 <script src="/three/build/three.min.js"></script>
 

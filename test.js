@@ -8,20 +8,25 @@ var server = http.createServer(function (request, response) {
 			
 	var header;
 	var url;
-	
-	if(request.url == "/client/")
-	{
-		url = "testClient.html";
-		header = "text/html";
-	}
-	else if(request.url == "/map/")
-	{	
-		url = "MP1-comp.gmp";
+	var ext = request.url.split('.').pop();
+
+	if(ext == "gmp" || ext == "sty") {
+		console.log("gmp");
+		url = request.url.substr(1);
 		header = "application/octet-stream; charset=x-user-defined";	
 	}
-	else {
+	else if(ext == "htm" || ext == "html") {
 		url = request.url.substr(1);
+		header = "text/html";
+	}
+	else if(ext == "js") {
+		url = request.url.substr(1);
+		console.log(url);
 		header = "application/javascript";
+	}
+	else {
+		url = "testClient.html";
+		header = "text/html";
 	}
 
 	fs.readFile(url, function (err, data) {
@@ -30,7 +35,6 @@ var server = http.createServer(function (request, response) {
 			console.log("Cold not find file:"+request.url);
 		}
 		
-		//console.log(data);
 		response.writeHead(200, {"Content-Type": header});
 		response.end(data);			
 	});  
