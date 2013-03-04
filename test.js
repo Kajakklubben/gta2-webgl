@@ -19,6 +19,10 @@ var server = http.createServer(function (request, response) {
 		url = request.url.substr(1);
 		header = "text/html";
 	}
+	else if(ext == "jpg") {
+		url = request.url.substr(1);
+		header = "image/jpeg";
+	}
 	else if(ext == "js") {
 		url = request.url.substr(1);
 		console.log(url);

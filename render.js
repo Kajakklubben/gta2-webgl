@@ -8,13 +8,15 @@ var cube, plane;
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
-//init();
-//animate();
 
 function init() {
-	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000 );
+
+	container = document.createElement( 'div' );
+	document.body.appendChild( container );
+
+	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1300 );
 //	camera.rotation.x += 1;
-	camera.position.z = 700;
+	camera.position.z = 1200;
 
 
 	scene = new THREE.Scene();
@@ -65,7 +67,7 @@ function createScene()
 	}
 }
 
-var tileSize = 25;
+var tileSize = 64;
 //var material = new THREE.MeshLambertMaterial( { color: 0x333333} ); 
 //var wireMaterial = new THREE.MeshLambertMaterial({color: 0xFFFFFF, wireframe:true});
 
@@ -86,10 +88,6 @@ edgeGeometry.vertices.push(v4);
 
 edgeGeometry.faces.push( new THREE.Face4( 3, 2, 1, 0));
 edgeGeometry.computeFaceNormals();
-	
-var material = new THREE.MeshBasicMaterial( { color: 0xFFAA00} );
-var materialAlt = new THREE.MeshBasicMaterial( { color: 0x00AAFF} );
-var wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
 	
 function CreateBlock(x, y, z, block)
 {	
@@ -113,7 +111,7 @@ function CreateBlock(x, y, z, block)
 		CreateEdge(x, y, z, block.Bottom, FaceType.Bottom);
 	}
 	
-	if(block.Lid != undefined && block.Lid.tileNumber != 0 && z > 2)
+	if(block.Lid != undefined && block.Lid.tileNumber != 0)
 	{
 		CreateEdge(x, y, z, block.Lid, FaceType.Lid);
 	}
@@ -121,44 +119,61 @@ function CreateBlock(x, y, z, block)
 
 var levelXOffset = -85;
 var levelYOffset = -190;
-
-function CreateEdge(x, y, z, face, type, color)
+var cnt = 0;
+function CreateEdge(x, y, z, face, type)
 {
-	var color;
-		
-	if(type == FaceType.Left)
-	{
-		color = 0xFFAA00;
-	}
-	else if(type == FaceType.Right)
-	{
-		color = 0x00AAFF;
-	}
-	else if(type == FaceType.Top)
-	{
-		color = 0xAA00FF;
-	}
-	else if(type == FaceType.Bottom)
-	{
-		color = 0xFF00AA;
-	}
-	else if(type == FaceType.Lid)
-	{
-		color = 0xCCCCCC;
-	}
-	
 	var material;
-	
-	material = new THREE.MeshBasicMaterial( { color: color} );
+	if(type != FaceType.Lid) {
+		var color;
+		if(type == FaceType.Left)
+		{
+			color = 0xFFAA00;
+		}
+		else if(type == FaceType.Right)
+		{
+			color = 0x00AAFF;
+		}
+		else if(type == FaceType.Top)
+		{
+			color = 0xAA00FF;
+		}
+		else if(type == FaceType.Bottom)
+		{
+			color = 0xFF00AA;
+		}
+		else if(type == FaceType.Lid)
+		{
+			color = 0xCCCCCC;
+		}
+		else
+			color = 0xFF00FF;
+		
+		material = new THREE.MeshBasicMaterial( { color: color} );
+	}
+	else {
+		if(face.tileNumber == undefined) {
+			color = 0xFF00FF;
+			material = new THREE.MeshBasicMaterial( { color: color} );
+			return;
+		}
+		else {
+			console.log(face.tileNumber);
+			var texture = new THREE.Texture(style.tiles[face.tileNumber]);
+			texture.needsUpdate = true;
+			material = new THREE.MeshBasicMaterial( { map: texture } );	
+		}
+    }
+
 	wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
-	
+		
+	var edge;
 	if(type == FaceType.Lid)
 	{
-		var edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry, [material, wireMaterial]);
+		edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry, [material/*, wireMaterial*/]);
 	}
 	else
 	{
-		var edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry, [material, wireMaterial]);
+		edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry, [material, wireMaterial]);
 	}
 	
 	var x = (x + levelXOffset) * tileSize;
@@ -187,10 +202,11 @@ function CreateEdge(x, y, z, face, type, color)
 	}
 	else if(type == FaceType.Lid)
 	{
+		Rotate(edge, 0, 0, face.rotation);
+		/*if(face.flip)
+			Rotate(edge, 0, 0, 180);*/
 		z += tileSize / 2;
 	}
-	
-
 	
 	edge.position.x = x;
 	edge.position.y = -y;	
@@ -294,7 +310,7 @@ function render() {
 
 	renderer.render( scene, camera );
 
-	//camera.position.y = Math.sin(Date.now()/1000)*50;
-	//camera.position.x = Math.cos(Date.now()/1000)*50;
+	camera.position.y = Math.sin(Date.now()/1000)*50;
+	camera.position.x = Math.cos(Date.now()/1000)*50;
 
 }

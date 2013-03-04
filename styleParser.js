@@ -138,7 +138,7 @@ function ReadTiles(reader, start, size, ppal, palx) {
 		for (var y = 0; y < 64; ++y) {
 			for (var x = 0; x < 64; ++x) {
 				var tileColor = reader.getUint8(start + (y + Math.floor(id/4) * 64) * 256 + (x + (id % 4) * 64));
-				var palID = (pallete / 64) * 256 * 64 + (pallete % 64) + tileColor * 64;
+				var palID = (Math.floor(pallete / 64)) * 256 * 64 + (pallete % 64) + tileColor * 64;
 				var baseColor = ppal[palID];
 				drawPixel(context, x, y, baseColor); 
 			}
