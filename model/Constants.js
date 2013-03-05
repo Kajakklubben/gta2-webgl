@@ -16,6 +16,7 @@
 		
 		},
 
+
 		// The client sends this bitmask to the server
 		// See (Keyboard.js)
 		INPUT_BITMASK:
@@ -27,6 +28,20 @@
 			SPACE	: 1 << 4,
 			SHIFT	: 1 << 5,
 			TAB		: 1 << 6
+		},
+
+		MESSAGE_TYPES:
+		{
+			INPUT 			: '0',
+			SYNC			: '1',
+			ADDPLAYER 		: '2',
+			ADDCLIENTPLAYER	: '3' 
+		},
+
+		PLAYER:
+		{
+			MOVESPEED 		: 100
 		}
+
 	}
 })();

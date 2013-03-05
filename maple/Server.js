@@ -110,7 +110,7 @@ Maple.Server = Maple.Class(function(clientClass, messageTypes) {
       * Broadcase a message.
       */
     broadcast: function(type, data, clients, excluded) {
-
+      console.log('sending:'+data);
         // Add type and tick to the message, unless we're just sending a
         // single Number for tick syncing
         if (type !== null) {
