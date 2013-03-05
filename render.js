@@ -14,7 +14,20 @@ function init() {
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 
+<<<<<<< HEAD
 	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1300 );
+=======
+	var info = document.createElement( 'div' );
+	info.style.position = 'absolute';
+	info.style.top = '10px';
+	info.style.width = '100%';
+	info.style.textAlign = 'center';
+//	info.innerHTML = 'Camere moves in a circle to get perspective';
+	container.appendChild( info );
+
+	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000 );
+	
+>>>>>>> stuff
 //	camera.rotation.x += 1;
 	camera.position.z = 1200;
 
@@ -169,11 +182,19 @@ function CreateEdge(x, y, z, face, type)
 	var edge;
 	if(type == FaceType.Lid)
 	{
+<<<<<<< HEAD
 		edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry, [material/*, wireMaterial*/]);
 	}
 	else
 	{
 		edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry, [material, wireMaterial]);
+=======
+		var edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry, [material]);
+	}
+	else
+	{
+		var edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry, [material]);
+>>>>>>> stuff
 	}
 	
 	var x = (x + levelXOffset) * tileSize;

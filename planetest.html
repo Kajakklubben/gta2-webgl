@@ -1,0 +1,100 @@
+<html>
+<script src="http://www.html5canvastutorials.com/libraries/Three.js">
+</script>
+<script>
+    window.requestAnimFrame = (function(callback){
+        return window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        function(callback){
+            window.setTimeout(callback, 1000 / 60);
+        };
+    })();
+ 
+    function animate(lastTime, angularSpeed, three){
+        // update
+        var date = new Date();
+        var time = date.getTime();
+        var timeDiff = time - lastTime;
+        var angleChange = angularSpeed * timeDiff * 2 * Math.PI / 1000;
+        //three.plane.rotation.z += angleChange;
+        //three.plane1.rotation.y += angleChange;
+        lastTime = time;
+ 
+        // render
+        three.renderer.render(three.scene, three.camera);
+ 
+        // request new frame
+        requestAnimFrame(function(){
+            animate(lastTime, angularSpeed, three);
+        });
+    }
+ 
+    window.onload = function(){
+        var angularSpeed = 0.2; // revolutions per second
+        var lastTime = 0;
+ 
+        var renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+ 
+        // camera
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+        camera.position.y = -600;
+        camera.position.z = 600;
+        camera.position.x = -200;
+        camera.rotation.x = 45 * (Math.PI / 180);
+ 
+        // scene
+        var scene = new THREE.Scene();
+
+        var tileSize = 64;
+        var displacement = tileSize / 2;
+ 
+        var planeLid = new THREE.Mesh(new THREE.PlaneGeometry(tileSize, tileSize), new THREE.MeshBasicMaterial({
+            color: 0x0000ff
+        }));
+        planeLid.overdraw = true;
+
+        var planeFront = new THREE.Mesh(new THREE.PlaneGeometry(tileSize, tileSize), new THREE.MeshBasicMaterial({
+            color: 0x00ff00
+        }));
+        planeFront.overdraw = true;
+        planeFront.rotation.x = Math.PI / 2;
+        planeFront.position.y -= displacement;
+        planeFront.position.z -= displacement;
+
+        var planeRight = new THREE.Mesh(new THREE.PlaneGeometry(tileSize, tileSize), new THREE.MeshBasicMaterial({
+            color: 0xff0000
+        }));
+        planeRight.overdraw = true;
+        planeRight.rotation.y = Math.PI / 2;
+        planeRight.position.z -= displacement;
+        planeRight.position.x += displacement;
+
+        var planeLeft = new THREE.Mesh(new THREE.PlaneGeometry(tileSize, tileSize), new THREE.MeshBasicMaterial({
+            color: 0xff0000
+        }));
+        planeLeft.overdraw = true;
+        planeLeft.rotation.y = 3/2*Math.PI ;
+        planeLeft.position.z -= displacement;
+        planeLeft.position.x -= displacement;
+
+        scene.add(planeLid);
+        scene.add(planeFront);
+        scene.add(planeRight);
+        scene.add(planeLeft);
+
+        // create wrapper object that contains three.js objects
+        var three = {
+            renderer: renderer,
+            camera: camera,
+            scene: scene
+    };
+ 
+        animate(lastTime, angularSpeed, three);
+    };
+</script>
+</html>
