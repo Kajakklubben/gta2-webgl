@@ -121,6 +121,7 @@ function ReadPPAL(reader, start, size) {
 			ppal.push(new Color(0, 0, 0, 0));
 		else
 			ppal.push(new Color(r, g, b, 255));
+	
 	}
 	
 	return ppal;

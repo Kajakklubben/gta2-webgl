@@ -92,10 +92,11 @@ edgeGeometry.vertices.push(v4);
 edgeGeometry.faces.push( new THREE.Face4( 3, 2, 1, 0));
 	
 var faceuv = [
+	new THREE.Vector2(1, 1),	
+	new THREE.Vector2(0, 1),
 	new THREE.Vector2(0, 0),
-	new THREE.Vector2(1, 0),
-	new THREE.Vector2(1, 1),
-	new THREE.Vector2(0, 1)
+	new THREE.Vector2(1, 0)
+	
 ];
 
 edgeGeometry.faceVertexUvs[0].push(faceuv); 
@@ -139,7 +140,6 @@ function CreateEdge(x, y, z, face, type)
 	if(face.tileNumber == undefined) {
 		color = 0xFF00FF;
 		material = new THREE.MeshBasicMaterial( { color: color} );
-		return;
 	}
 	else {
 		var texture = new THREE.Texture(style.tiles[face.tileNumber]);
@@ -153,14 +153,16 @@ function CreateEdge(x, y, z, face, type)
 	var edge;
 	if(type == FaceType.Lid)
 	{
-		//edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry, [material, /*wireMaterial*/]);
-		edge = new THREE.Mesh(lidGeometry, [material, /*wireMaterial*/]);
+		edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry.clone(), [material,/* wireMaterial*/]);
+		//debugger;
+		//edge = new THREE.Mesh(new THREE.PlaneGeometry( tileSize, tileSize), material);
 	}
 	else
 	{
-		//edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry, [material, /*wireMaterial*/]);
-		edge = new THREE.Mesh(lidGeometry, [material, /*wireMaterial*/]);
-		debugger;
+
+		edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry.clone(), [material, /*wireMaterial*/]);
+		//edge = new THREE.Mesh(edgeGeometry, material);
+		//debugger;
 	}
 	
 	var x = (x + levelXOffset) * tileSize;
@@ -188,18 +190,21 @@ function CreateEdge(x, y, z, face, type)
 	}
 	else if(type == FaceType.Lid)
 	{
-//		Rotate(edge, 0, 0, face.rotation);
+		//Rotate(edge, 0, 0, face.rotation);
 
 		z += tileSize / 2;
 	}
 	
-	//RotateUV(edge.children[0].geometry, face.rotation);
-			
+	RotateUV(edge.children[0].geometry, face.rotation);
+	
+	if(face.flip == 1)
+		MirrorUV(edge.children[0].geometry, 'y');
+		
 	edge.position.x = x;
 	edge.position.y = -y;	
 	edge.position.z = z;
 
-	scene.add(edge);
+	scene.add(edge);	
 }
 
 function Rotate(target, x, y, z)
@@ -316,12 +321,12 @@ function RotateUV(target, value)
 		uvs.push(uvs.shift());
 		uvs.push(uvs.shift());
 	}
-	else if(value == -90)
+	else if(value == 270 || -90)
 	{
-
 		uvs.unshift(uvs.pop());
 	}
 	
+	target.faceVertexUvs[0][0] = uvs;
 	target.uvsNeedUpdate = true;
 }
 
