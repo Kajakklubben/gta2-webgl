@@ -14,26 +14,20 @@ function init() {
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 
-<<<<<<< HEAD
 	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1300 );
-=======
+
 	var info = document.createElement( 'div' );
 	info.style.position = 'absolute';
 	info.style.top = '10px';
 	info.style.width = '100%';
 	info.style.textAlign = 'center';
-//	info.innerHTML = 'Camere moves in a circle to get perspective';
+	
 	container.appendChild( info );
 
-	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000 );
-	
->>>>>>> stuff
-//	camera.rotation.x += 1;
+	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1500 );
 	camera.position.z = 1200;
 
-
 	scene = new THREE.Scene();
-
 	
 	createScene();
 
@@ -54,8 +48,6 @@ function init() {
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 	document.addEventListener( 'touchstart', onDocumentTouchStart, false );
 	document.addEventListener( 'touchmove', onDocumentTouchMove, false );
-
-	//
 
 	window.addEventListener( 'resize', onWindowResize, false );
 
@@ -81,13 +73,11 @@ function createScene()
 }
 
 var tileSize = 64;
-//var material = new THREE.MeshLambertMaterial( { color: 0x333333} ); 
-//var wireMaterial = new THREE.MeshLambertMaterial({color: 0xFFFFFF, wireframe:true});
 
+//Lid Geometry
 var lidGeometry = new THREE.PlaneGeometry( tileSize, tileSize);
-//var cubeGeometry = new THREE.CubeGeometry( tileSize, tileSize, tileSize);
 	
-//Edge
+//Edge Geometry
 var edgeGeometry = new THREE.Geometry(); 
 var v1 = new THREE.Vector3(-tileSize/2, 0, -tileSize/2);
 var v2 = new THREE.Vector3(tileSize/2, 0, -tileSize/2);
@@ -100,6 +90,15 @@ edgeGeometry.vertices.push(v3);
 edgeGeometry.vertices.push(v4);
 
 edgeGeometry.faces.push( new THREE.Face4( 3, 2, 1, 0));
+	
+var faceuv = [
+	new THREE.Vector2(0, 0),
+	new THREE.Vector2(1, 0),
+	new THREE.Vector2(1, 1),
+	new THREE.Vector2(0, 1)
+];
+
+edgeGeometry.faceVertexUvs[0].push(faceuv); 
 edgeGeometry.computeFaceNormals();
 	
 function CreateBlock(x, y, z, block)
@@ -136,65 +135,32 @@ var cnt = 0;
 function CreateEdge(x, y, z, face, type)
 {
 	var material;
-	if(type != FaceType.Lid) {
-		var color;
-		if(type == FaceType.Left)
-		{
-			color = 0xFFAA00;
-		}
-		else if(type == FaceType.Right)
-		{
-			color = 0x00AAFF;
-		}
-		else if(type == FaceType.Top)
-		{
-			color = 0xAA00FF;
-		}
-		else if(type == FaceType.Bottom)
-		{
-			color = 0xFF00AA;
-		}
-		else if(type == FaceType.Lid)
-		{
-			color = 0xCCCCCC;
-		}
-		else
-			color = 0xFF00FF;
-		
+	
+	if(face.tileNumber == undefined) {
+		color = 0xFF00FF;
 		material = new THREE.MeshBasicMaterial( { color: color} );
+		return;
 	}
 	else {
-		if(face.tileNumber == undefined) {
-			color = 0xFF00FF;
-			material = new THREE.MeshBasicMaterial( { color: color} );
-			return;
-		}
-		else {
-			console.log(face.tileNumber);
-			var texture = new THREE.Texture(style.tiles[face.tileNumber]);
-			texture.needsUpdate = true;
-			material = new THREE.MeshBasicMaterial( { map: texture } );	
-		}
-    }
+		var texture = new THREE.Texture(style.tiles[face.tileNumber]);
+		texture.needsUpdate = true;
+		
+		material = new THREE.MeshBasicMaterial( { map: texture } );	
+	}
 
 	wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
 		
 	var edge;
 	if(type == FaceType.Lid)
 	{
-<<<<<<< HEAD
-		edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry, [material/*, wireMaterial*/]);
+		//edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry, [material, /*wireMaterial*/]);
+		edge = new THREE.Mesh(lidGeometry, [material, /*wireMaterial*/]);
 	}
 	else
 	{
-		edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry, [material, wireMaterial]);
-=======
-		var edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry, [material]);
-	}
-	else
-	{
-		var edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry, [material]);
->>>>>>> stuff
+		//edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry, [material, /*wireMaterial*/]);
+		edge = new THREE.Mesh(lidGeometry, [material, /*wireMaterial*/]);
+		debugger;
 	}
 	
 	var x = (x + levelXOffset) * tileSize;
@@ -214,7 +180,6 @@ function CreateEdge(x, y, z, face, type)
 	else if(type == FaceType.Top)
 	{
 		y -= tileSize / 2;
-		//Rotate(edge, 90, 0, 0);
 	}
 	else if(type == FaceType.Bottom)
 	{
@@ -223,12 +188,13 @@ function CreateEdge(x, y, z, face, type)
 	}
 	else if(type == FaceType.Lid)
 	{
-		Rotate(edge, 0, 0, face.rotation);
-		/*if(face.flip)
-			Rotate(edge, 0, 0, 180);*/
+//		Rotate(edge, 0, 0, face.rotation);
+
 		z += tileSize / 2;
 	}
 	
+	//RotateUV(edge.children[0].geometry, face.rotation);
+			
 	edge.position.x = x;
 	edge.position.y = -y;	
 	edge.position.z = z;
@@ -333,5 +299,50 @@ function render() {
 
 	camera.position.y = Math.sin(Date.now()/1000)*50;
 	camera.position.x = Math.cos(Date.now()/1000)*50;
+}
 
+function RotateUV(target, value)
+{
+	if(value == 0) return;
+
+	var uvs = target.faceVertexUvs[0][0];
+	
+	if(value == 90)
+	{
+		uvs.push(uvs.shift());
+	}
+	else if(value == 180 || value == -180)
+	{
+		uvs.push(uvs.shift());
+		uvs.push(uvs.shift());
+	}
+	else if(value == -90)
+	{
+
+		uvs.unshift(uvs.pop());
+	}
+	
+	target.uvsNeedUpdate = true;
+}
+
+function MirrorUV(target, value)
+{
+	var uvs = target.faceVertexUvs[0][0];
+			
+	if(value == 'y')
+	{
+		//Y mirror
+		uvs.reverse();
+	}
+	else
+	{
+		//x mirror
+		uvs.reverse();
+		var f = uvs.shift();
+		uvs.push(f);
+		var f = uvs.shift();
+		uvs.push(f);
+	}
+	
+	target.uvsNeedUpdate = true;
 }

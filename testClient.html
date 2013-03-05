@@ -66,60 +66,65 @@ function getBinaryData(url, callback){
 	style.tiles[0] = new Image();
 	
 	var dummyTexture = new Image();
-	dummyTexture.src = "http://localhost:8000/texture.jpg";
 	
-	var loadTextures = true;
-	if(!loadTextures) {
-		for(i = 0;i < 1024;i++) {
-			style.tiles[i] = dummyTexture;
+	dummyTexture.onload = function () {
+	
+		var loadTextures = false;
+	
+		if(!loadTextures) {
+			for(i = 0;i < 1024;i++) {
+				style.tiles[i] = dummyTexture;
+			}
 		}
-	}
-
 	
-	$(function () {
-		$("#statusmessage").text("Downloading map...");
-		
-		getBinaryData("http://localhost:8000/MP1-comp.gmp", LoadComplete);
-		
-		function LoadComplete(data, err)
-		{
-			$("#statusmessage").text("Parsing map...");
-			var mapData = data.responseText;
-			level = new ReadFromData(mapData);
-			$("#statusmessage").text("Downloading styles...");
-			getBinaryData("http://localhost:8000/bil.sty", function (data, err) {
-					var styleData = data.responseText;
-					$("#statusmessage").text("Parsing styles...");
-					if(loadTextures) {
-						style = ParseStyle(styleData);
-					}
-					
-					$("#statusmessage").text("Initalizing game...");
-					init();
+		$(function () {
+			$("#statusmessage").text("Downloading map...");
+			
+			getBinaryData("http://localhost:8000/MP1-comp.gmp", LoadComplete);
+			
+			function LoadComplete(data, err)
+			{
+				$("#statusmessage").text("Parsing map...");
+				var mapData = data.responseText;
+				level = new ReadFromData(mapData);
+				$("#statusmessage").text("Downloading styles...");
+				
+				getBinaryData("http://localhost:8000/bil.sty", function (data, err) {
+						var styleData = data.responseText;
+						$("#statusmessage").text("Parsing styles...");
 						
-					$("#statusmessage").hide();
-					animate();
-					/*for (var i = 20; i < 250; i++)
-					{	
-						for (var j = 20; j < 250; j++)
-						{		
-							for (var k = 3; k < 4; k++)
-							{
-								var block = level.map[i][j][k];
-					
-								if(block != undefined && block.Lid != undefined && block.Lid.tileNumber != undefined)
-								{ 
-									debugger;
-									document.body.appendChild(style.tiles[block.Lid.tileNumber]);
+						if(loadTextures) {
+							style = ParseStyle(styleData);
+						}
+						
+						$("#statusmessage").text("Initalizing game...");
+						init();
+							
+						$("#statusmessage").hide();
+						animate();
+						/*for (var i = 20; i < 250; i++)
+						{	
+							for (var j = 20; j < 250; j++)
+							{		
+								for (var k = 3; k < 4; k++)
+								{
+									var block = level.map[i][j][k];
+						
+									if(block != undefined && block.Lid != undefined && block.Lid.tileNumber != undefined)
+									{ 
+										debugger;
+										document.body.appendChild(style.tiles[block.Lid.tileNumber]);
+									}
 								}
 							}
-						}
-					}*/
-				}
-			);
-		}
-	});
-
+						}*/
+					}
+				);
+			}
+		});
+	};
+	
+	dummyTexture.src = "http://localhost:8000/texture.jpg";
 	
 </script>
 
