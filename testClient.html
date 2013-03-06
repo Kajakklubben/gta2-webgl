@@ -50,9 +50,14 @@ function getBinaryData(url, callback){
         xhr.onerror = function(){callback(xhr, false)};
     }
     xhr.send();
-    return callback ? undefined : xhr.responseText;
-}
 
+	if(typeof callback == "function"){
+		callback();
+		return  undefined;
+	} else {
+		return xhr.responseText;
+	}
+}
 </script>
 
 </head>
@@ -79,31 +84,42 @@ function getBinaryData(url, callback){
 	
 		$(function () {
 			$("#statusmessage").text("Downloading map...");
+			$("#progressbarContent").css("width", "10%");		
 			
 			getBinaryData("http://localhost:8000/MP1-comp.gmp", LoadComplete);
 			
 			function LoadComplete(data, err)
 			{
+				
 				$("#statusmessage").text("Parsing map...");
+				$("#progressbarContent").css("width", "20%");
+			
 				var mapData = data.responseText;
 				level = new ReadFromData(mapData);
+				
 				$("#statusmessage").text("Downloading styles...");
+				$("#progressbarContent").css("width", "50%");
 				
 				getBinaryData("http://localhost:8000/bil.sty", StyleLoadComplete);
 			}
 			
 			function StyleLoadComplete(data, err) {
 				var styleData = data.responseText;
+				
+				
 				$("#statusmessage").text("Parsing styles...");
+				$("#progressbarContent").css("width", "70%");
 				
 				if(loadTextures) {
 					style = ParseStyle(styleData, level);
 				}
 				
 				$("#statusmessage").text("Initalizing game...");
+				$("#progressbarContent").css("width", "90%");
+		
 				init();
 					
-				$("#statusmessage").hide();
+				$("#loadingScreen").hide();
 				animate();
 				/*for (var i = 20; i < 250; i++)
 				{	
@@ -130,9 +146,13 @@ function getBinaryData(url, callback){
 	
 </script>
 
-<div id="statusmessage" style="position: absolute; top: 10%; width: 100%; text-align: center;"></div>
+<div id="loadingScreen" style="position:absolute; width:100%; height:100%">
+	<div id="statusmessage" style="position: absolute; top: 10%; width: 100%; text-align: center;"></div>
+	<div id="progressbar" style="width: 250px; border: 1px solid #bbb; height:20px; margin:0 auto; margin-top:150px">
+		<div id="progressbarContent" style="position:relative; height:100%; background:#ccc; width:0%"></div>
+</div>
 
-
+</div>
 </body>
 
 </html>
