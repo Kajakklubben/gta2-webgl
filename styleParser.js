@@ -10,7 +10,31 @@ function createCanvas(width, height) {
     return canvas;
 }
 
-function ParseStyle(data) {
+function ParseStyle(data, level) {
+	//Find unique tileNumbers (for selective loading)
+	var uniqueTileNumbers = [];
+
+	var temp = {};
+	for (var i = 0; i < level.map.length; i++){
+	    for (var ii = 0; ii < level.map[i].length; ii++){
+			for(var iii = 0; iii < level.map[i][ii].length; iii++){	
+				if(level.map[i][ii][iii] != undefined){
+				  	temp[level.map[i][ii][iii].Top.tileNumber] = true;
+				  	temp[level.map[i][ii][iii].Left.tileNumber] = true;
+				  	temp[level.map[i][ii][iii].Right.tileNumber] = true;
+				  	temp[level.map[i][ii][iii].Bottom.tileNumber] = true;
+				  	temp[level.map[i][ii][iii].Lid.tileNumber] = true;
+				}
+			}
+		}
+	}
+      
+    for (var k in temp)
+        uniqueTileNumbers.push(parseInt(k));
+	
+
+	
+	
 	var style = new Object();
 
 	var reader = new jDataView(data);
@@ -78,7 +102,7 @@ function ParseStyle(data) {
 	var sprb = null;//ReadSPRB(reader, style.sprbDataStart, style.sprbDataLength);
 	var palx = ReadPALX(reader, style.palxDataStart, style.palxDataLength);
 	
-	style.tiles = ReadTiles(reader, style.tileDataStart, style.tileDataLength, ppal, palx);
+	style.tiles = ReadTiles(reader, style.tileDataStart, style.tileDataLength, ppal, palx, uniqueTileNumbers);
 	return style;
 }
 
@@ -127,26 +151,40 @@ function ReadPPAL(reader, start, size) {
 	return ppal;
 }
 
-function ReadTiles(reader, start, size, ppal, palx) {
+function ReadTiles(reader, start, size, ppal, palx, uniqueTileNumbers) {
 	var tiles = new Array();
 	var tilesCount = size / (64 * 64);
+	
+	var loaded = 0;
+	var skipped = 0;
+	
 	for (var id = 0; id < tilesCount; id++)
 	{
-		var pallete = palx[id];
-		var canvas = createCanvas(64, 64);
-		var context = canvas.getContext("2d");
+		if($.inArray(id, uniqueTileNumbers) != -1){
+			var pallete = palx[id];
+			var canvas = createCanvas(64, 64);
+			var context = canvas.getContext("2d");
 		
-		for (var y = 0; y < 64; ++y) {
-			for (var x = 0; x < 64; ++x) {
-				var tileColor = reader.getUint8(start + (y + Math.floor(id/4) * 64) * 256 + (x + (id % 4) * 64));
-				var palID = (Math.floor(pallete / 64)) * 256 * 64 + (pallete % 64) + tileColor * 64;
-				var baseColor = ppal[palID];
-				drawPixel(context, x, y, baseColor); 
+			for (var y = 0; y < 64; ++y) {
+				for (var x = 0; x < 64; ++x) {
+					var tileColor = reader.getUint8(start + (y + Math.floor(id/4) * 64) * 256 + (x + (id % 4) * 64));
+					var palID = (Math.floor(pallete / 64)) * 256 * 64 + (pallete % 64) + tileColor * 64;
+					var baseColor = ppal[palID];
+					drawPixel(context, x, y, baseColor); 
+				}
 			}
+			var image = new Image();
+			image.src = canvas.toDataURL("image/png");		
+			tiles.push(image);
+			loaded++;
+		} else {
+			//Skipping tile since it's not part of the map
+			tiles.push(null);
+			skipped++;
 		}
-		var image = new Image();
-		image.src = canvas.toDataURL("image/png");		
-		tiles.push(image);
 	}
+	
+	console.log("Loaded " + loaded + "tiles, skipped "+skipped);
+	
 	return tiles;
 }

@@ -97,7 +97,7 @@ function getBinaryData(url, callback){
 				$("#statusmessage").text("Parsing styles...");
 				
 				if(loadTextures) {
-					style = ParseStyle(styleData);
+					style = ParseStyle(styleData, level);
 				}
 				
 				$("#statusmessage").text("Initalizing game...");
