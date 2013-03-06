@@ -52,7 +52,6 @@ function getBinaryData(url, callback){
     xhr.send();
 
 	if(typeof callback == "function"){
-		callback();
 		return  undefined;
 	} else {
 		return xhr.responseText;
