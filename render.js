@@ -8,6 +8,7 @@ var cube, plane;
 var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
+var mouseDownX, mouseDownY;
 
 function init() {
 
@@ -29,8 +30,10 @@ function init() {
 
 	scene = new THREE.Scene();
 	
+	console.log("Load scene");
 	createScene();
-
+	console.log("Loaded scene");
+	
 	// setup renderer
 //	renderer = new THREE.CanvasRenderer();
 	renderer = new THREE.WebGLRenderer();
@@ -241,11 +244,21 @@ function onDocumentMouseDown( event ) {
 	document.addEventListener( 'mouseup', onDocumentMouseUp, false );
 	document.addEventListener( 'mouseout', onDocumentMouseOut, false );
 
+	mouseDownX = event.clientX;
+	mouseDownY = event.clientY;
 }
 
 function onDocumentMouseMove( event ) {
 
-	mouseX = event.clientX - windowHalfX;
+	diffX = event.clientX - mouseDownX;
+	diffY = event.clientY - mouseDownY;
+	
+	mouseDownX = event.clientX;
+	mouseDownY = event.clientY;
+	
+
+	camera.position.y += diffY*3;
+	camera.position.x -= diffX*3;
 
 }
 
@@ -302,8 +315,8 @@ function render() {
 
 	renderer.render( scene, camera );
 
-	camera.position.y = Math.sin(Date.now()/1000)*50;
-	camera.position.x = Math.cos(Date.now()/1000)*50;
+	// camera.position.y = Math.sin(Date.now()/1000)*50;
+	// camera.position.x = Math.cos(Date.now()/1000)*50;
 }
 
 function RotateUV(target, value)
