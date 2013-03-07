@@ -17,6 +17,8 @@ function init() {
 
 	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1500);
 	camera.position.z = 1200;
+	camera.position.x = 85 * tileSize;
+	camera.position.y = -190 * tileSize;
 
 	scene = new THREE.Scene();
 	
@@ -99,7 +101,8 @@ edgeGeometry.faceVertexUvs[0].push(faceuv);
 edgeGeometry.computeFaceNormals();
 
 function CreateBlock(x, y, z, block)
-{	
+{
+
 	if(block.Left != undefined && block.Left.wall != 0)
 	{
 		CreatePolygon(x, y, z, block.Left, FaceType.Left);
@@ -171,7 +174,7 @@ function CreatePolygon(x, y, z, face, type)
 		geometry = lidGeometry.clone();
 	}
 
-	var	edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, [material, /*wireMaterial*/]);
+	var	edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, [material, wireMaterial]);
 	
 	
 	var x = x * tileSize;
