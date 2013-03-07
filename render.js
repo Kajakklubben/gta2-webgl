@@ -38,6 +38,7 @@ function init() {
 //	renderer = new THREE.CanvasRenderer();
 	renderer = new THREE.WebGLRenderer();
 	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.setClearColorHex(0xff0000, 1);
 
 	container.appendChild( renderer.domElement );
 
@@ -140,7 +141,8 @@ function CreateEdge(x, y, z, face, type)
 {
 	var material;
 	
-	if(face.tileNumber == undefined) {
+	if (face.tileNumber == undefined) {
+	    return;
 		color = 0xFF00FF;
 		material = new THREE.MeshBasicMaterial( { color: color} );
 	}
@@ -148,7 +150,7 @@ function CreateEdge(x, y, z, face, type)
 		var texture = new THREE.Texture(style.tiles[face.tileNumber]);
 		texture.needsUpdate = true;
 		
-		material = new THREE.MeshBasicMaterial( { map: texture } );	
+		material = new THREE.MeshBasicMaterial( { map: texture, transparent: true } );	
 	}
 
 	wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );

@@ -10,29 +10,7 @@ function createCanvas(width, height) {
     return canvas;
 }
 
-function ParseStyle(data, level) {
-	//Find unique tileNumbers (for selective loading)
-	var uniqueTileNumbers = [];
-
-	var temp = {};
-	for (var i = 0; i < level.map.length; i++){
-	    for (var ii = 0; ii < level.map[i].length; ii++){
-			for(var iii = 0; iii < level.map[i][ii].length; iii++){	
-				if(level.map[i][ii][iii] != undefined){
-				  	temp[level.map[i][ii][iii].Top.tileNumber] = true;
-				  	temp[level.map[i][ii][iii].Left.tileNumber] = true;
-				  	temp[level.map[i][ii][iii].Right.tileNumber] = true;
-				  	temp[level.map[i][ii][iii].Bottom.tileNumber] = true;
-				  	temp[level.map[i][ii][iii].Lid.tileNumber] = true;
-				}
-			}
-		}
-	}
-      
-    for (var k in temp)
-        uniqueTileNumbers.push(parseInt(k));
-	
-
+function ParseStyle(data, tileNumbers) {
 	
 	
 	var style = new Object();
@@ -102,22 +80,30 @@ function ParseStyle(data, level) {
 	var sprb = null;//ReadSPRB(reader, style.sprbDataStart, style.sprbDataLength);
 	var palx = ReadPALX(reader, style.palxDataStart, style.palxDataLength);
 	
-	style.tiles = ReadTiles(reader, style.tileDataStart, style.tileDataLength, ppal, palx, uniqueTileNumbers);
+	style.tiles = ReadTiles(reader, style.tileDataStart, style.tileDataLength, ppal, palx, tileNumbers);
 	return style;
 }
 
-function Color(r,g,b,a)
+function Color(r,g,b)
 {
   this.r = r;
   this.g = g;
   this.b = b;
-  this.a = a;
 }
 
 
 function drawPixel(ctx, x, y, color) {
-    ctx.fillStyle = "rgba("+color.r+","+color.g+","+color.b+","+(color.	a/255)+")";
-    ctx.fillRect( x, y, 1, 1 );    
+    imgd = ctx.getImageData(x, y, 1, 1);
+    pix = imgd.data;
+    pix[0] = color.r;
+    pix[1] = color.g;
+    pix[2] = color.b;
+    if(color.r+color.g+color.b < 13)
+        pix[3] = 0;
+    else
+        pix[3] = 255;
+
+    ctx.putImageData(imgd, x, y);
 }
 
 function ReadPALX(reader, start, size) {
@@ -140,11 +126,10 @@ function ReadPPAL(reader, start, size) {
 		var g = reader.getUint8();
 		var r = reader.getUint8();
 		var a = reader.getUint8();
+		if (a != 0)
+		    console.log("not zero");
 		
-		if(r+g+b == 0)
-			ppal.push(new Color(0, 0, 0, 0));
-		else
-			ppal.push(new Color(r, g, b, 255));
+        ppal.push(new Color(r, g, b));
 	
 	}
 	
@@ -160,7 +145,8 @@ function ReadTiles(reader, start, size, ppal, palx, uniqueTileNumbers) {
 	
 	for (var id = 0; id < tilesCount; id++)
 	{
-		if($.inArray(id, uniqueTileNumbers) != -1){
+	    if (uniqueTileNumbers.length == 0 || $.inArray(id, uniqueTileNumbers) != -1) {
+	        console.log("Parsing tile " + id);
 			var pallete = palx[id];
 			var canvas = createCanvas(64, 64);
 			var context = canvas.getContext("2d");

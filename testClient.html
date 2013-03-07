@@ -12,52 +12,15 @@
     }
 </style>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-<script src="/jdataview.js" type="application/javascript" language="javascript">
-</script>
-<script src="/mapParser.js" type="application/javascript" language="javascript">
-</script>
-<script src="/styleParser.js" type="application/javascript" language="javascript">
-</script>
+<script src="/jdataview.js" type="application/javascript"></script>
+<script src="/mapParser.js" type="application/javascript"></script>
+<script src="/styleParser.js" type="application/javascript"></script>
 <script src="/three/build/three.min.js"></script>
 
 <script src="/three/examples/js/libs/stats.min.js"></script>
 <script src="/render.js"></script>
+<script src="/getBinaryData.js" type="application/javascript"></script>
 
-
-<script>
-
-function getXHR(){
-    var xhr;
-    try{
-        xhr = new XMLHttpRequest();
-    }catch(e){
-        try{
-            xhr = new ActiveXObject("MSXML2.XMLHTTP.6.0");
-        }catch(e2){
-            try{
-                xhr = new ActiveXObject("MSXML2.XMLHTTP");
-            }catch(e3){}
-        }
-    }
-    return xhr;
-}
-
-function getBinaryData(url, callback){
-    var xhr = getXHR();
-    xhr.open("GET", url, !!callback);
-    if(callback){
-        xhr.onload = function(){callback(xhr, true)};
-        xhr.onerror = function(){callback(xhr, false)};
-    }
-    xhr.send();
-
-	if(typeof callback == "function"){
-		return  undefined;
-	} else {
-		return xhr.responseText;
-	}
-}
-</script>
 
 </head>
 
@@ -82,8 +45,7 @@ function getBinaryData(url, callback){
 		}
 	
 		$(function () {
-			
-			$("#statusmessage").text("Downloading map...");
+		    $("#statusmessage").text("Downloading map...");
 			$("#progressbarContent").css("width", "10%");		
 			
 			var startDate = new Date();
@@ -114,7 +76,7 @@ function getBinaryData(url, callback){
 				
 				   setTimeout(function(){
 						if(loadTextures) {
-							style = ParseStyle(styleData, level);
+						    style = ParseStyle(styleData, getTileNumbers(level));
 						}   
 						
 						$("#statusmessage").text("Initalizing game...");
@@ -158,6 +120,33 @@ function getBinaryData(url, callback){
 	};
 	
 	dummyTexture.src = "http://localhost:8000/texture.jpg";
+
+	function getTileNumbers(level) {
+	    //Find unique tileNumbers (for selective loading)
+	    var uniqueTileNumbers = [];
+	    if (level) {
+	        var temp = {};
+	        for (var i = 0; i < level.map.length; i++) {
+	            for (var ii = 0; ii < level.map[i].length; ii++) {
+	                for (var iii = 0; iii < level.map[i][ii].length; iii++) {
+	                    if (level.map[i][ii][iii] != undefined) {
+	                        temp[level.map[i][ii][iii].Top.tileNumber] = true;
+	                        temp[level.map[i][ii][iii].Left.tileNumber] = true;
+	                        temp[level.map[i][ii][iii].Right.tileNumber] = true;
+	                        temp[level.map[i][ii][iii].Bottom.tileNumber] = true;
+	                        temp[level.map[i][ii][iii].Lid.tileNumber] = true;
+	                    }
+	                }
+	            }
+	        }
+
+	        for (var k in temp)
+	            uniqueTileNumbers.push(parseInt(k));
+	    }
+
+	    return uniqueTileNumbers;
+
+	}
 	
 </script>
 
