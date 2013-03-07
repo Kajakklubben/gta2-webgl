@@ -15,26 +15,18 @@ function init() {
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 
-	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1300 );
-
-	var info = document.createElement( 'div' );
-	info.style.position = 'absolute';
-	info.style.top = '10px';
-	info.style.width = '100%';
-	info.style.textAlign = 'center';
-	
-	container.appendChild( info );
-
-	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1500 );
+	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1500);
 	camera.position.z = 1200;
 
 	scene = new THREE.Scene();
 	
 	console.log("Load scene");
 	createScene();
+
 	console.log("Loaded scene");
 	
 	// setup renderer
+
 //	renderer = new THREE.CanvasRenderer();
 	renderer = new THREE.WebGLRenderer();
 	renderer.setSize( window.innerWidth, window.innerHeight );
@@ -59,9 +51,9 @@ function init() {
 
 function createScene()
 {	
-	for (var i = 20; i < 250; i++)
+	for (var i = 50; i < 200; i++)
 	{	
-		for (var j = 20; j < 250; j++)
+		for (var j = 50; j < 200; j++)
 		{		
 			for (var k = 0; k < 8; k++)
 			{
@@ -80,7 +72,7 @@ var tileSize = 64;
 
 //Lid Geometry
 var lidGeometry = new THREE.PlaneGeometry( tileSize, tileSize);
-	
+
 //Edge Geometry
 var edgeGeometry = new THREE.Geometry(); 
 var v1 = new THREE.Vector3(-tileSize/2, 0, -tileSize/2);
@@ -105,45 +97,45 @@ var faceuv = [
 
 edgeGeometry.faceVertexUvs[0].push(faceuv); 
 edgeGeometry.computeFaceNormals();
-	
+
 function CreateBlock(x, y, z, block)
 {	
 	if(block.Left != undefined && block.Left.wall != 0)
 	{
-		CreateEdge(x, y, z, block.Left, FaceType.Left);
+		CreatePolygon(x, y, z, block.Left, FaceType.Left);
 	}
 	
 	if(block.Right != undefined && block.Right.wall != 0)
 	{
-		CreateEdge(x, y, z, block.Right, FaceType.Right);
+		CreatePolygon(x, y, z, block.Right, FaceType.Right);
 	}
 	
 	if(block.Top != undefined && block.Top.wall != 0)
 	{
-		CreateEdge(x, y, z, block.Top, FaceType.Top);
+		CreatePolygon(x, y, z, block.Top, FaceType.Top);
 	}
 	
 	if(block.Bottom != undefined && block.Bottom.wall != 0)
 	{
-		CreateEdge(x, y, z, block.Bottom, FaceType.Bottom);
+		CreatePolygon(x, y, z, block.Bottom, FaceType.Bottom);
 	}
 	
 	if(block.Lid != undefined && block.Lid.tileNumber != 0)
 	{
-		CreateEdge(x, y, z, block.Lid, FaceType.Lid);
+		CreatePolygon(x, y, z, block.Lid, FaceType.Lid);
 	}
 }
 
-var levelXOffset = -85;
-var levelYOffset = -190;
 var cnt = 0;
-function CreateEdge(x, y, z, face, type)
+function CreatePolygon(x, y, z, face, type)
 {
 	var material;
 	
-	if (face.tileNumber == undefined) {
-	    return;
+
+	if(face.tileNumber == undefined) {
+		return;
 		color = 0xFF00FF;
+		
 		material = new THREE.MeshBasicMaterial( { color: color} );
 	}
 	else {
@@ -155,61 +147,89 @@ function CreateEdge(x, y, z, face, type)
 
 	wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
 		
-	var edge;
-	if(type == FaceType.Lid)
-	{
-		edge = new THREE.SceneUtils.createMultiMaterialObject(lidGeometry.clone(), [material,/* wireMaterial*/]);
-		//debugger;
-		//edge = new THREE.Mesh(new THREE.PlaneGeometry( tileSize, tileSize), material);
-	}
-	else
-	{
-
-		edge = new THREE.SceneUtils.createMultiMaterialObject(edgeGeometry.clone(), [material, /*wireMaterial*/]);
-		//edge = new THREE.Mesh(edgeGeometry, material);
-		//debugger;
-	}
 	
-	var x = (x + levelXOffset) * tileSize;
-	var y = (y + levelYOffset) * tileSize;
-	var z = z * tileSize;
-	
-	if(type == FaceType.Left)
+	var geometry;
+		
+	if(type == FaceType.Top)
 	{
-		x -= tileSize / 2;
-		Rotate(edge, 0, 0, 90);
-	}
-	else if(type == FaceType.Right)
-	{
-		x += tileSize / 2;
-		Rotate(edge, 0, 0, -90);
-	}
-	else if(type == FaceType.Top)
-	{
-		y -= tileSize / 2;
+		geometry = CreateEdge(new THREE.Vector2(-tileSize/2, tileSize/2), new THREE.Vector2(tileSize, 0));
 	}
 	else if(type == FaceType.Bottom)
 	{
-		y += tileSize / 2;
-		Rotate(edge, 0, 0, 180);
+		geometry = CreateEdge(new THREE.Vector2(tileSize/2, -tileSize/2), new THREE.Vector2(-tileSize, 0));
+	}
+	else if(type == FaceType.Left)
+	{
+		geometry = CreateEdge(new THREE.Vector2(-tileSize/2, -tileSize/2), new THREE.Vector2(0, tileSize));
+	}
+	else if(type == FaceType.Right)
+	{
+		geometry = CreateEdge(new THREE.Vector2(tileSize/2, tileSize/2), new THREE.Vector2(0, -tileSize));
 	}
 	else if(type == FaceType.Lid)
 	{
-		//Rotate(edge, 0, 0, face.rotation);
+		geometry = lidGeometry.clone();
+	}
 
-		z += tileSize / 2;
+	var	edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, [material, /*wireMaterial*/]);
+	
+	
+	var x = x * tileSize;
+	var y = y * tileSize;
+	var z = z * tileSize;
+	
+	if(type == FaceType.Lid)
+	{
+		z += tileSize / 2;	
 	}
 	
 	RotateUV(edge.children[0].geometry, face.rotation);
 	
 	if(face.flip == 1)
 		MirrorUV(edge.children[0].geometry, 'y');
+	
 		
 	edge.position.x = x;
 	edge.position.y = -y;	
 	edge.position.z = z;
 
 	scene.add(edge);	
+}
+
+function CreateEdge(start, span)
+{
+	var v1 = new THREE.Vector3(start.x, start.y, -tileSize/2);
+	var v2 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSize/2);
+	var v3 = new THREE.Vector3(start.x + span.x, start.y + span.y, tileSize/2);
+	var v4 = new THREE.Vector3(start.x, start.y, tileSize/2);
+
+	geometry = CreateFace(v1, v2, v3, v4);
+	return geometry;
+}
+
+function CreateFace(v1, v2, v3, v4)
+{
+	//Edge Geometry
+	var g = new THREE.Geometry(); 
+	
+	g.vertices.push(v1);
+	g.vertices.push(v2);
+	g.vertices.push(v3);
+	g.vertices.push(v4);
+	
+	g.faces.push( new THREE.Face4( 3, 2, 1, 0));
+		
+	var faceuv = [
+		new THREE.Vector2(1, 1),	
+		new THREE.Vector2(0, 1),
+		new THREE.Vector2(0, 0),
+		new THREE.Vector2(1, 0)	
+	];
+	
+	g.faceVertexUvs[0].push(faceuv); 
+	g.computeFaceNormals();
+	
+	return g;
 }
 
 function Rotate(target, x, y, z)
@@ -316,9 +336,7 @@ function animate() {
 function render() {
 
 	renderer.render( scene, camera );
-
-	// camera.position.y = Math.sin(Date.now()/1000)*50;
-	// camera.position.x = Math.cos(Date.now()/1000)*50;
+	
 }
 
 function RotateUV(target, value)
