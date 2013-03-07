@@ -31,7 +31,7 @@ function ParseStyle(data, tileNumbers) {
 		var chunkType = reader.getString(4);
 		var chunkSize = reader.getUint32();
 
-		console.log(chunkType + ":" + chunkSize);
+		//console.log(chunkType + ":" + chunkSize);
 		
 		switch(chunkType)
 		{
@@ -70,7 +70,7 @@ function ParseStyle(data, tileNumbers) {
 			case "SPEC": //Undocumented
 				break;
 			default:
-				console.log("Skipping.");
+				//console.log("Skipping.");
 				break;
 		}
 		Skip(reader, chunkSize);
@@ -146,7 +146,7 @@ function ReadTiles(reader, start, size, ppal, palx, uniqueTileNumbers) {
 	for (var id = 0; id < tilesCount; id++)
 	{
 	    if (uniqueTileNumbers.length == 0 || $.inArray(id, uniqueTileNumbers) != -1) {
-	        console.log("Parsing tile " + id);
+	        //console.log("Parsing tile " + id);
 			var pallete = palx[id];
 			var canvas = createCanvas(64, 64);
 			var context = canvas.getContext("2d");
