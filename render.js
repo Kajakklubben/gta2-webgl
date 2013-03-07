@@ -129,24 +129,37 @@ function CreateBlock(x, y, z, block)
 	}
 }
 
+var tileCache = new Array();
+
+function getTile(tileNo) {
+    var cache = tileCache[tileNo];
+    if (cache != undefined)
+        return cache;
+
+    var texture = new THREE.Texture(style.tiles[tileNo]);
+    texture.needsUpdate = true;
+    var material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+
+    tileCache[tileNo] = material;
+
+    return material;
+
+}
+
 var cnt = 0;
 function CreatePolygon(x, y, z, face, type)
 {
-	var material;
-	
+    var material;
+    if (face.tileNumber == undefined) {
+        return;
+        color = 0xFF00FF;
 
-	if(face.tileNumber == undefined) {
-		return;
-		color = 0xFF00FF;
-		
-		material = new THREE.MeshBasicMaterial( { color: color} );
-	}
-	else {
-		var texture = new THREE.Texture(style.tiles[face.tileNumber]);
-		texture.needsUpdate = true;
-		
-		material = new THREE.MeshBasicMaterial( { map: texture, transparent: true } );	
-	}
+        material = new THREE.MeshBasicMaterial({ color: color });
+    }
+    else {
+        material = getTile(face.tileNumber);
+    }
+
 
 	var geometry;
 		
@@ -192,7 +205,6 @@ function CreatePolygon(x, y, z, face, type)
 	
 	if(face.flip == 1)
 		MirrorUV(edge.children[0].geometry, 'y');
-	
 		
 	edge.position.x = x;
 	edge.position.y = -y;	
