@@ -18,8 +18,8 @@ function init() {
 
 	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1500);
 	camera.position.z = 1200;
-	camera.position.x = 85 * tileSize;
-	camera.position.y = -190 * tileSize;
+	camera.position.x = startCamPosition[0] * tileSize;
+	camera.position.y = startCamPosition[1] * tileSize;
 
 	scene = new THREE.Scene();
 	
@@ -49,14 +49,13 @@ function init() {
 	document.addEventListener( 'touchmove', onDocumentTouchMove, false );
 
 	window.addEventListener( 'resize', onWindowResize, false );
-
 }
 
 function createScene()
 {	
-	for (var i = 50; i < 200; i++)
+    for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++)
 	{	
-		for (var j = 50; j < 200; j++)
+        for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++)
 		{		
 			for (var k = 0; k < 8; k++)
 			{
@@ -177,7 +176,7 @@ function CreatePolygon(x, y, z, face, type)
 	    wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
 	    materialList.push(wireMaterial);
 	}
-	var	edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, );
+	var edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, materialList);
 	
 	
 	var x = x * tileSize;
