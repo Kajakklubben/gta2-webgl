@@ -18,6 +18,7 @@
 <script src="/three/build/three.min.js"></script>
 
 <script src="/three/examples/js/libs/stats.min.js"></script>
+<script src="/physics.js"></script>
 <script src="/render.js"></script>
 <script src="/getBinaryData.js" type="application/javascript"></script>
 
@@ -37,6 +38,7 @@
     var level;
 	var style;
 	var style = new Object();
+		
 	style.tiles = new Array();
 	style.tiles[0] = new Image();
 	
@@ -90,6 +92,7 @@
 						
 					setTimeout(function(){
 						init();
+							initPhysics();
                         
 						$("#loadingScreen").hide();
 							
