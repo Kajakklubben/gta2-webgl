@@ -27,7 +27,11 @@ var server = http.createServer(function (request, response) {
 		url = request.url.substr(1);
 		header = "image/jpeg";
 	}
-	else if(ext == "js") {
+	else if (ext == "appcache") {
+	    url = request.url.substr(1);
+	    header = "text/cache-manifest";
+	}
+	else if (ext == "js") {
 		url = request.url.substr(1);
 		console.log(url);
 		header = "application/javascript";
