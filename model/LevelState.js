@@ -24,6 +24,8 @@
 		return json;
 	}
 	
+	
+
 	GTA.model.LevelState.prototype.fromJson = function(json)
 	{
 		for(var i in this.players)

@@ -16,7 +16,9 @@ var TestServer = Maple.Class(function(clientClass) {
         'echo',GTA.Constants.MESSAGE_TYPES.INPUT,
         GTA.Constants.MESSAGE_TYPES.SYNC,
         GTA.Constants.MESSAGE_TYPES.ADDPLAYER,
-        GTA.Constants.MESSAGE_TYPES.ADDCLIENTPLAYER
+        GTA.Constants.MESSAGE_TYPES.ADDCLIENTPLAYER,
+        GTA.Constants.MESSAGE_TYPES.REMOVEPLAYER,
+        GTA.Constants.MESSAGE_TYPES.STARTSYNC
     ]);
 
 }, Maple.Server, {
@@ -31,12 +33,7 @@ var TestServer = Maple.Class(function(clientClass) {
     update: function(t, tick) {
      
        this.broadcast(GTA.Constants.MESSAGE_TYPES.SYNC, [this.game.toJson()]);
-        if (tick % 50 === 0) {
-            //this.broadcast('echo', ['Server', tick, this.getRandom()]);
-           
-         
-            
-        }
+     
     },
 
     stopped: function() {
@@ -44,6 +41,12 @@ var TestServer = Maple.Class(function(clientClass) {
     },
 
     connected: function(client) {
+        
+        //First let the client have a full update of what is happening
+        console.log('to client');
+        this.broadcast(GTA.Constants.MESSAGE_TYPES.STARTSYNC, [this.game.toJson()],[client]);
+
+
         this.log('Client has connected:', client.id, client.isBinary);
         client.player = this.game.addPlayer(client);
 
@@ -60,7 +63,6 @@ var TestServer = Maple.Class(function(clientClass) {
         if(type == GTA.Constants.MESSAGE_TYPES.INPUT)
         {
             client.player.setInput(data[0]);
-            console.log(data[0]);
         }
     },
 
@@ -69,7 +71,9 @@ var TestServer = Maple.Class(function(clientClass) {
     },
 
     disconnected: function(client) {
-        this.log('Client has disconnected:', client.id);
+       
+           this.broadcast(GTA.Constants.MESSAGE_TYPES.REMOVEPLAYER,[{id:client.id}]);
+           this.game.removePlayer(client.id);
     }
 
 });
@@ -89,6 +93,6 @@ var TestClient = Maple.Class(function(server, conn, isBinary) {
 var srv = new TestServer(TestClient);
 srv.start({
     port: GTA.Constants.SERVER_SETTING.SOCKET_PORT,
-    logicRate: 1 // only update logic every n ticks
+    logicRate: 1 // only update logic and send back every n ticks
 });
 

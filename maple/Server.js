@@ -110,7 +110,8 @@ Maple.Server = Maple.Class(function(clientClass, messageTypes) {
       * Broadcase a message.
       */
     broadcast: function(type, data, clients, excluded) {
-      console.log('sending:'+data);
+      
+       console.log('broadcast 1');
         // Add type and tick to the message, unless we're just sending a
         // single Number for tick syncing
         if (type !== null) {
@@ -121,7 +122,6 @@ Maple.Server = Maple.Class(function(clientClass, messageTypes) {
             }
 
             data = msg;
-
         }
 
         data = BISON.encode(data);
@@ -133,9 +133,13 @@ Maple.Server = Maple.Class(function(clientClass, messageTypes) {
 
         this._clients.each(function(client) {
 
+          if(clients.indexOf(client) != -1)
+          {
             if (!excluded || excluded.indexOf(client) === -1) {
+              
                 this._bytesSend += client.sendRaw(data);
             }
+          }
 
         }, this);
 

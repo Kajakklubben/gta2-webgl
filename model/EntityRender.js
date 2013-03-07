@@ -3,7 +3,8 @@
 (function(){
 	GTA.namespace("GTA.model");
 	//constructor
-	GTA.model.EntityRender = function( ) {
+	GTA.model.EntityRender = function( ) 
+	{
 
 		this.geometry = new THREE.CubeGeometry( 200, 200, 200 );
 
@@ -14,5 +15,10 @@
 
 		return this;
 	};
+
+	GTA.model.EntityRender.prototype.destroy = function( ) 
+	{
+		
+	}
 
 })();

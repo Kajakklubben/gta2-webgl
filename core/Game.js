@@ -1,9 +1,11 @@
 // We should create one of this for each from to send the data.
 // It should have a delta function for compression
 
+
 (function(){
 	GTA.namespace("GTA.game");
 	//constructor
+
 	GTA.game.Game = function() {
 		this.levelState = new GTA.model.LevelState();
 		this.lastTime= -1;
@@ -42,11 +44,44 @@
 		return player;
 	}
 
+	GTA.game.Game.prototype.removePlayer = function(id)
+	{
+		for(var p in this.levelState.players)
+		{
+			if(this.levelState.players[p].id == id)
+			{
+				if(this.render)
+				{
+					this.render.scene.remove(this.levelState.players[p].render.mesh);
+				}
+				this.levelState.players[p].destroy();
+
+				this.levelState.players.splice(p,1);
+			}
+		}
+	}
+
 	GTA.game.Game.prototype.toJson = function()
 	{
 		return this.levelState.toJson();
 	}
 	
+	GTA.game.Game.prototype.initFromJson = function(json)
+	{
+		for(var i in json.players)
+		{
+			console.log('new player');
+			var client = new Object(); //we don't send the whole client.
+			client.id = json.players[i].id;
+			var newPlayer = this.addPlayer(client);
+			if(this.render)
+			{
+				this.render.scene.add(newPlayer.createMesh());
+			}
+		}
+		this.levelState.fromJson(json);
+	}
+
 	GTA.game.Game.prototype.fromJson = function(json)
 	{
 		this.levelState.fromJson(json);

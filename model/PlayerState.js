@@ -65,13 +65,33 @@
 
 	GTA.model.PlayerState.prototype.toJson = function()
 	{
-		return {id:this.id,position:{x:this.position.x,y:this.position.y}};
+		///Fuck floating point precisions. 
+		var precision = 2;
+		var x = Math.round(this.position.x*Math.pow(10,precision));
+		
+		var y = (Math.round(this.position.y*Math.pow(10,precision)));
+		return {id:this.id,position:{x:x,y:y}};
 	}
 
 	GTA.model.PlayerState.prototype.fromJson = function(json)
 	{
-		this.position.x = json.position.x;
-		this.position.y = json.position.y;
+		///Fuck floating point precisions. 
+		var precision = 2;
+		var x = json.position.x/Math.pow(10,precision);
+		var y = json.position.y/Math.pow(10,precision);
+
+		this.position.x = x;
+		this.position.y = y;
+	}
+
+	GTA.model.PlayerState.prototype.destroy = function()
+	{
+		if(this.render)
+		{
+			this.render.destroy();
+			this.render = false;
+			
+		}
 	}
 
 	//Get as delta compressed string

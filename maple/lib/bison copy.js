@@ -1,5 +1,5 @@
 /**
-  * Copyright (c) 2009-2012 Ivo Wetzel.
+  * Copyright (c) 2009-2011 Ivo Wetzel.
   *
   * Permission is hereby granted, free of charge, to any person obtaining a copy
   * of this software and associated documentation files (the "Software"), to deal
@@ -22,82 +22,154 @@
 (function(Array, undefined) {
     "use strict";
 
-    // Some lookup tables
-    var chrTable = new Array(256),
-        maskTable = new Array(9),
-        powTable = new Array(9),
-        reversePowTable = new Array(9);
+    var BitStream = (function() {
 
-    for(var i = 0; i < 256; i++) {
-        chrTable[i] = String.fromCharCode(i);
-    }
-
-    for(var f = 0; f < 9; f++) {
-        maskTable[f] = ~((powTable[f] = Math.pow(2, f) - 1) ^ 0xFF);
-        reversePowTable[f] = Math.pow(10, f);
-    }
-
-    var bitStream = '',
-        bitValue = 0,
-        bitsLeft = 8,
-        streamIndex = 0;
-
-    function write(val, count) {
-
-        var overflow = count - bitsLeft,
-            use = bitsLeft < count ? bitsLeft : count,
-            shift = bitsLeft - use;
-
-        if (overflow > 0) {
-            bitValue += val >> overflow << shift;
-
-        } else {
-            bitValue += val << shift;
+        // Some lookup tables
+        var chrTable = new Array(255);
+        for(var i = 0; i < 256; i++) {
+            chrTable[i] = String.fromCharCode(i);
         }
 
-        bitsLeft -= use;
+        var maskTable = new Array(9),
+            powTable = new Array(9);
 
-        if (bitsLeft === 0) {
+        for(var f = 0; f < 9; f++) {
+            maskTable[f] = ~((powTable[f] = Math.pow(2, f) - 1) ^ 0xFF);
+        }
 
-            bitStream += chrTable[bitValue];
-            bitsLeft = 8;
-            bitValue = 0;
+        var stream = null,
+            value = 0,
+            left = 8,
+            readIndex = 0,
+            streamLength = 0;
 
-            if (overflow > 0) {
-                bitValue += (val & powTable[overflow]) << (8 - overflow);
-                bitsLeft -= overflow;
+        return {
+
+            open: function(data) {
+
+                left = 8;
+
+                // Reading
+                if (data !== undefined) {
+                    streamLength = data.length;
+                    readIndex = 0;
+                    stream = data;
+                    value = stream.charCodeAt(readIndex);
+
+                // Writing
+                } else {
+                    value = 0;
+                    stream = '';
+                }
+
+            },
+
+            close: function() {
+
+                if (value > 0) {
+                    stream += chrTable[value];
+                }
+
+                return stream;
+
+            },
+
+            write: function write(val, count) {
+
+                var overflow = count - left,
+                    use = left < count ? left : count,
+                    shift = left - use;
+
+                if (overflow > 0) {
+                    value += val >> overflow << shift;
+
+                } else {
+                    value += val << shift;
+                }
+
+                left -= use;
+
+                if (left === 0) {
+
+                    stream += chrTable[value];
+                    left = 8;
+                    value = 0;
+
+                    if (overflow > 0) {
+                        write(val & powTable[overflow], overflow);
+                    }
+
+                }
+
+            },
+
+            writeRaw: function(raw) {
+
+                if (left !== 8) {
+                    stream += chrTable[value];
+                    value = 0;
+                    left = 8;
+                }
+
+                stream += raw;
+            },
+
+            read: function read(count) {
+
+                if (readIndex >= streamLength) {
+                    return null;
+                }
+
+                var overflow = count - left,
+                    use = left < count ? left : count,
+                    shift = left - use;
+
+                // Wrap bits over to next byte
+                var val = (value & maskTable[left]) >> shift;
+                left -= use;
+
+                if (left === 0) {
+
+                    value = stream.charCodeAt(++readIndex);
+                    left = 8;
+
+                    if (overflow > 0) {
+                        val = val << overflow | read(overflow);
+                    }
+
+                }
+
+                return val;
+
+            },
+
+            readRaw: function(count) {
+
+                if (left !== 8) {
+                    readIndex++;
+                    value = 0;
+                    left = 8;
+                }
+
+                var data = stream.substr(readIndex, count);
+
+                readIndex += count;
+                value = stream.charCodeAt(readIndex);
+                return data;
+
             }
 
-        }
+        };
 
-    }
+    })();
 
-    function read(count) {
-
-        var overflow = count - bitsLeft,
-            use = bitsLeft < count ? bitsLeft : count,
-            shift = bitsLeft - use;
-
-        // Wrap bits over to next byte
-        var val = (bitValue & maskTable[bitsLeft]) >> shift;
-        bitsLeft -= use;
-
-        if (bitsLeft === 0) {
-
-            bitValue = bitStream.charCodeAt(++streamIndex);
-            bitsLeft = 8;
-
-            if (overflow > 0) {
-                val = val << overflow | ((bitValue & maskTable[bitsLeft]) >> 8 - overflow);
-                bitsLeft -= overflow;
-            }
-
-        }
-
-        return val;
-
-    }
-
+    // Shorthands
+    var write = BitStream.write,
+        read = BitStream.read,
+        writeRaw = BitStream.writeRaw,
+        readRaw = BitStream.readRaw,
+        open = BitStream.open,
+        close = BitStream.close;
 
     // Encoder ----------------------------------------------------------------
     function _encode(value, top) {
@@ -105,7 +177,7 @@
         // Numbers
         if (typeof value === 'number') {
 
-            var type = value !== (value | 0) ? 1 : 0,
+            var type = value !== (value | 0),
                 sign = 0;
 
             if (value < 0) {
@@ -118,32 +190,29 @@
             // Float
             if (type) {
 
-                var shift = 0,
-                    step = 10,
-                    m = value,
-                    tmp = 0;
+                // Figure out how much we left shift we need
+                // to get a integer
+                var shift = 1,
+                    step = 10;
 
-                // Figure out the exponent
-                do {
-                    m = value * step;
-                    step *= 10;
+                while(step <= value) {
                     shift++;
-                    tmp = m | 0;
+                    step *= 10;
+                }
 
-                } while(m - tmp > 1 / step && shift < 8);
+                // Make sure that we don't lose precision
+                shift = (8 - shift) + 1;
+                value = Math.round(value * (1000000000 / step));
 
-                // Correct if we overshoot
-                step = tmp / 10;
-                if (step === (step | 0)) {
-                    tmp = step;
+                // Figure out the smallest exp for value
+                while(value / 10 === ((value  / 10) | 0)) {
+                    value /= 10;
                     shift--;
                 }
 
-                value = tmp;
-
             }
 
-            // 2 size 0-3: 0 = < 16 1 = < 256 2 = < 65536 3 >=
+            // 2 size 0-3: 0 = < 16 1 = < 256 2 = < 65536 3 >
             if (value < 2) {
                 write(value, 4);
 
@@ -183,7 +252,6 @@
                 write(value >> 16 & 0xff, 8);
                 write(value >> 8 & 0xff, 8);
                 write(value & 0xff, 8);
-                console.log('biiig number');
             }
 
             write(sign, 1);
@@ -218,14 +286,7 @@
                 write(len, 5);
             }
 
-            // Write a raw string to the stream
-            if (bitsLeft !== 8) {
-                bitStream += chrTable[bitValue];
-                bitValue = 0;
-                bitsLeft = 8;
-            }
-
-            bitStream += value;
+            writeRaw(value);
 
         // Booleans
         } else if (typeof value === 'boolean') {
@@ -266,22 +327,19 @@
     }
 
     function encode(value) {
-
-        bitsLeft = 8;
-        bitValue = 0;
-        bitStream = '';
-        
+        open();
         _encode(value, true);
-
         write(7, 3);
         write(1, 1);
-
-        if (bitValue > 0) {
-            bitStream += chrTable[bitValue];
-        }
-        return bitStream;
-
+        return close();
     }
+
+    // Another lookup table
+    var powTable = new Array(16);
+    for(var i = 0; i < 16; i++) {
+        powTable[i] = Math.pow(10, i);
+    }
+
 
     // Decoder ----------------------------------------------------------------
     function decode(string) {
@@ -290,11 +348,7 @@
             type, top, value,
             obj, getKey = false, key, isObj;
 
-        bitsLeft = 8;
-        streamIndex = 0;
-        bitStream = string;
-        bitValue = bitStream.charCodeAt(streamIndex);
-
+        open(string);
         while(true) {
 
             // Grab type
@@ -304,7 +358,7 @@
 
             // Bool
             case 0:
-                value = read(1) ? true : false;
+                value = read(1);
                 break;
 
             // Null / EOS
@@ -374,7 +428,7 @@
                 }
 
                 if (type === 2) {
-                    value /= reversePowTable[read(4)];
+                    value /= powTable[read(4)];
                 }
 
                 break;
@@ -404,16 +458,7 @@
 
                 }
 
-                // Read a raw string from the stream
-                if (bitsLeft !== 8) {
-                    streamIndex++;
-                    bitValue = 0;
-                    bitsLeft = 8;
-                }
-
-                value = bitStream.substr(streamIndex, size);
-                streamIndex += size;
-                bitValue = bitStream.charCodeAt(streamIndex);
+                value = readRaw(size);
 
                 if (getKey) {
                     key = value;
@@ -457,14 +502,11 @@
             if (isObj) {
                 top[key] = value;
                 getKey = true;
-                 
 
             } else if (top !== undefined) {
                 top.push(value);
 
-
             } else {
-               
                 return value;
             }
 

@@ -37,8 +37,7 @@
 		this.stats.domElement.style.top = '0px';
 		this.container.appendChild( this.stats.domElement );
 
-		//
-		window.addEventListener('resize', function(){this.onWindowResize.bind(this);}, false );
+		//window.addEventListener('resize', function(){this.onWindowResize.bind(this);}, false );
 		//this.animate();
 		return this;
 	};
