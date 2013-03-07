@@ -82,9 +82,12 @@ function getBinaryData(url, callback){
 		}
 	
 		$(function () {
+			
 			$("#statusmessage").text("Downloading map...");
 			$("#progressbarContent").css("width", "10%");		
 			
+			var startDate = new Date();
+         
 			getBinaryData("http://localhost:8000/MP1-comp.gmp", LoadComplete);
 			
 			function LoadComplete(data, err)
@@ -97,29 +100,42 @@ function getBinaryData(url, callback){
 				level = new ReadFromData(mapData);
 				
 				$("#statusmessage").text("Downloading styles...");
-				$("#progressbarContent").css("width", "50%");
+				$("#progressbarContent").css("width", "30%");
 				
 				getBinaryData("http://localhost:8000/bil.sty", StyleLoadComplete);
 			}
 			
 			function StyleLoadComplete(data, err) {
 				var styleData = data.responseText;
+				console.log("Parsing styles...");
+				$("#statusmessage").html("Parsing styles...");
+				$("#progressbarContent").css("width", "50%");
 				
 				
-				$("#statusmessage").text("Parsing styles...");
-				$("#progressbarContent").css("width", "70%");
+				   setTimeout(function(){
+						if(loadTextures) {
+							style = ParseStyle(styleData, level);
+						}   
+						
+						$("#statusmessage").text("Initalizing game...");
+						$("#progressbarContent").css("width", "80%");
+						
+						setTimeout(function(){
+							init();
+                        
+							$("#loadingScreen").hide();
+							
+							var endDate = new Date();
+							
+							console.log("Loaded in "+(endDate.getTime()-startDate.getTime())/1000+"sec");
+							animate();
+						},10);
+				    },10);
 				
-				if(loadTextures) {
-					style = ParseStyle(styleData, level);
-				}
 				
-				$("#statusmessage").text("Initalizing game...");
-				$("#progressbarContent").css("width", "90%");
+				
 		
-				init();
-					
-				$("#loadingScreen").hide();
-				animate();
+			
 				/*for (var i = 20; i < 250; i++)
 				{	
 					for (var j = 20; j < 250; j++)
