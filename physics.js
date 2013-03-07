@@ -179,38 +179,67 @@ function createPhysicsScene()
 	{	
         for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++)
 		{		
-			for (var k = 3; k < 8; k++)
+			
+			var create = false;
+			var category = 0;
+			
+			//Iterate all blocks in z coordinate and update box2d category
+			for (var k = 2; k < 8; k++)
 			{
 				var block = level.map[i][j][k];
 				
-				if(block != undefined)
+				if(block != undefined && !create)
 				{ 
-				//	console.log("ASOPDK");
-			        var bodyDef = new b2BodyDef;
+					if(block.Left != undefined && block.Left.wall != 0)
+					{
+						create = true;
+					}
+					if(block.Right != undefined && block.Right.wall != 0)
+					{
+						create = true;					
+					}	
+					if(block.Top != undefined && block.Top.wall != 0)
+					{
+						create = true;				
+					}
+					if(block.Bottom != undefined && block.Bottom.wall != 0)
+					{
+						create = true;										
+					}		
+				}
+				
+				if(create){
+					category += 1<<k;
+				}
+			}
+			
+			if(create){
+		        var bodyDef = new b2BodyDef;
 					
-			        //create ground
-			        bodyDef.type = b2Body.b2_staticBody;
-			        bodyDef.position.x = i * tileSize/10.0;// - 0.1*0.5;
-			        bodyDef.position.y = (-j * tileSize/10.0);// + 0.1*0.5;;
-			        fixDef.shape = new b2PolygonShape;
-			        fixDef.shape.SetAsBox(tileSize/10.0, tileSize/10.0);
-			        world.CreateBody(bodyDef).CreateFixture(fixDef);
+		        bodyDef.type = b2Body.b2_staticBody;
+		        bodyDef.position.x = i * tileSize/10.0;
+		        bodyDef.position.y = (-j * tileSize/10.0);
+
+		        fixDef.shape = new b2PolygonShape;
+		        fixDef.shape.SetAsBox(tileSize/10.0, tileSize/10.0);
+				fixDef.filter.categoryBits = category;
 					
-					//CreateBlock(i, j, k, block);			
-					
-					
-					geometry = new THREE.CubeGeometry( tileSize, tileSize, tileSize );
-					material = new THREE.MeshBasicMaterial( {transparent:true, color: 0x00ffFF, wireframe: true } );
+		        world.CreateBody(bodyDef).CreateFixture(fixDef);
+
+
+				//Debug polygon
+				/*
+				geometry = new THREE.CubeGeometry( tileSize, tileSize, tileSize );
+				material = new THREE.MeshBasicMaterial( {transparent:true, color: 0x00ffFF, wireframe: true } );
 
 	
-					mesh = new THREE.Mesh( geometry, material );
-					mesh.position.z = tileSize*2;
+				mesh = new THREE.Mesh( geometry, material );
+				mesh.position.z = tileSize*2;
 	
-					mesh.position.x = i * tileSize ;
-					mesh.position.y = (-j * tileSize);
-					scene.add( mesh );
-					
-				}
+				mesh.position.x = i * tileSize ;
+				mesh.position.y = (-j * tileSize);
+				scene.add( mesh );
+				*/
 			}
 		}
 	}
@@ -220,17 +249,15 @@ function createPhysicsScene()
 var physicsUpdate = function(){
 
 	update_car();
-    world.Step(
+    
+	world.Step(
           1 / 60   //frame-rate
        ,  10       //velocity iterations
        ,  10       //position iterations
     );
-   // world.DrawDebugData();
+
     world.ClearForces();
 	
-	car.mesh.position.x = car.body.GetPosition().x*10.0// + 0.2*tileSize*10.0*0.5;;
-	car.mesh.position.y = car.body.GetPosition().y*10.0; //- 10*0.35*tileSize*10.0*0.5;
-	car.mesh.rotation.z = car.body.GetAngle() ;
 }
 
 
@@ -262,6 +289,8 @@ function createBox(world, x, y, width, height, options)
 	
 	fix_def.shape.SetAsBox( width , height );
 	
+	fix_def.filter.maskBits = 1<<2; //Change this for other z levels
+	
 	body_def.position.Set(x , y);
 	
 	body_def.linearDamping = options.linearDamping;
@@ -278,8 +307,6 @@ function createBox(world, x, y, width, height, options)
 
 function create_car()
 {
-	
-	//car_pos = new b2Vec2(85 * tileSize , (-195 * tileSize));
 	car_pos = new b2Vec2(85*tileSize/10.0 ,-195*tileSize/10.0);
 	car_dim = new b2Vec2(carDimX , carDimY);
 	car.body = createBox(world , car_pos.x , car_pos.y , car_dim.x , car_dim.y , {'linearDamping' : 10.0 , 'angularDamping' : 10.0});
@@ -370,4 +397,11 @@ function update_car()
 		var angle_diff = steering_angle - wheel_joint.GetJointAngle();
 		wheel_joint.SetMotorSpeed(angle_diff * steer_speed);
 	}
+	
+	
+	//Mesh 
+	car.mesh.position.x = car.body.GetPosition().x*10.0;
+	car.mesh.position.y = car.body.GetPosition().y*10.0;
+	car.mesh.rotation.z = car.body.GetAngle() ;
+	
 }
