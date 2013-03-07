@@ -337,7 +337,8 @@ function animate() {
 }
 
 function render() {
-
+	physicsUpdate();
+	
 	renderer.render( scene, camera );
 	
 }
