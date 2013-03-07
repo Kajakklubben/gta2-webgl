@@ -12,6 +12,17 @@
     }
 </style>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>
+var startCamPosition = [85, -190]
+var loadTextures = true;
+var showWireframe = false;
+var drawLevelArea = [170,       // minY
+                        70,      // minX
+                        200,      // maxY
+                        90];     // maxX
+</script>
+
+<script src="/constants.js" type="application/javascript"></script>
 <script src="/jdataview.js" type="application/javascript"></script>
 <script src="/mapParser.js" type="application/javascript"></script>
 <script src="/styleParser.js" type="application/javascript"></script>
@@ -27,13 +38,6 @@
 
 <body>
 <script>
-    var startCamPosition = [85, -190]
-    var loadTextures = false;
-    var showWireframe = false;
-    var drawLevelArea = [   180,       // minY
-                            81,      // minX
-                            200,      // maxY
-                            85];     // maxX
 
     var level;
 	var style;
@@ -115,8 +119,8 @@
 	    var uniqueTileNumbers = [];
 	    if (level) {
 	        var temp = {};
-	        for (var i = 0; i < level.map.length; i++) {
-	            for (var ii = 0; ii < level.map[i].length; ii++) {
+	        for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++) {
+	            for (var ii = drawLevelArea[0]; ii < drawLevelArea[2]; ii++) {
 	                for (var iii = 0; iii < level.map[i][ii].length; iii++) {
 	                    if (level.map[i][ii][iii] != undefined) {
 	                        temp[level.map[i][ii][iii].Top.tileNumber] = true;
