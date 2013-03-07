@@ -1,4 +1,5 @@
 
+
 var container, stats;
 
 var camera, scene, renderer;
@@ -148,9 +149,6 @@ function CreatePolygon(x, y, z, face, type)
 		material = new THREE.MeshBasicMaterial( { map: texture, transparent: true } );	
 	}
 
-	wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
-		
-	
 	var geometry;
 		
 	if(type == FaceType.Top)
@@ -174,7 +172,12 @@ function CreatePolygon(x, y, z, face, type)
 		geometry = lidGeometry.clone();
 	}
 
-	var	edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, [material, wireMaterial]);
+	var materialList = [material];
+	if(showWireframe) {
+	    wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
+	    materialList.push(wireMaterial);
+	}
+	var	edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, );
 	
 	
 	var x = x * tileSize;
