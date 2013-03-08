@@ -10,7 +10,6 @@ var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
 var mouseDownX, mouseDownY;
-alert("test");
 function init() {
 
 	container = document.createElement( 'div' );
