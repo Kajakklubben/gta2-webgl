@@ -38,7 +38,6 @@ var drawLevelArea = [170,       // minY
 
 <body>
 <script>
-
     var level;
 	var style;
 	var style = new Object();
@@ -49,25 +48,24 @@ var drawLevelArea = [170,       // minY
 	var dummyTexture = new Image();
 	
 	dummyTexture.onload = function () {
-	
-	
+
 		if(!loadTextures) {
 			for(i = 0;i < 1024;i++) {
 				style.tiles[i] = dummyTexture;
 			}
 		}
-	
+
 		$(function () {
 		    $("#statusmessage").text("Downloading map...");
 			$("#progressbarContent").css("width", "10%");		
 			
 			var startDate = new Date();
          
-			getBinaryData("http://localhost:8000/MP1-comp.gmp", LoadComplete);
+			getBinaryData("/MP1-comp.gmp", LoadComplete);
 			
 			function LoadComplete(data, err)
 			{
-				
+
 				$("#statusmessage").text("Parsing map...");
 				$("#progressbarContent").css("width", "20%");
 			
@@ -77,11 +75,11 @@ var drawLevelArea = [170,       // minY
 				$("#statusmessage").text("Downloading styles...");
 				$("#progressbarContent").css("width", "30%");
 				
-				getBinaryData("http://localhost:8000/bil.sty", StyleLoadComplete);
+				getBinaryData("/bil.sty", StyleLoadComplete);
 			}
 			
 			function StyleLoadComplete(data, err) {
-				var styleData = data.responseText;
+			    var styleData = data.responseText;
 				console.log("Parsing styles...");
 				$("#statusmessage").html("Parsing styles...");
 				$("#progressbarContent").css("width", "50%");
@@ -109,10 +107,9 @@ var drawLevelArea = [170,       // minY
 				
 			}
 		});
-		
 	};
 	
-	dummyTexture.src = "http://localhost:8000/texture.jpg";
+	dummyTexture.src = "/texture.jpg";
 
 	function getTileNumbers(level) {
 	    //Find unique tileNumbers (for selective loading)
@@ -141,6 +138,13 @@ var drawLevelArea = [170,       // minY
 
 	}
 	
+	window.onerror = function (msg, url, line) {
+	    alert("Error");
+	    return true; // same as preventDefault
+	};
+
+
+
 </script>
 
 <div id="loadingScreen" style="position:absolute; width:100%; height:100%">

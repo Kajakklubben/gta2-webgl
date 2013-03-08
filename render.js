@@ -10,14 +10,14 @@ var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
 var mouseDownX, mouseDownY;
-
+alert("test");
 function init() {
 
 	container = document.createElement( 'div' );
 	document.body.appendChild( container );
 
-	camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1500);
-	camera.position.z = 1200;
+	camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1500);
+	camera.position.z = 600;
 	camera.position.x = startCamPosition[0] * tileSize;
 	camera.position.y = startCamPosition[1] * tileSize;
 
@@ -30,7 +30,7 @@ function init() {
 	
 	// setup renderer
 
-//	renderer = new THREE.CanvasRenderer();
+	//renderer = new THREE.CanvasRenderer();
 	renderer = new THREE.WebGLRenderer();
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	renderer.setClearColorHex(0xff0000, 1);
@@ -103,30 +103,30 @@ edgeGeometry.computeFaceNormals();
 function CreateBlock(x, y, z, block)
 {
 
-	if(block.Left != undefined && block.Left.wall != 0)
+    if (block.Left != undefined && block.Left.tileNumber != 0)
 	{
-		CreatePolygon(x, y, z, block.Left, FaceType.Left);
+	    CreatePolygon(x, y, z, block.Left, FaceType.Left, block);
 	}
 	
-	if(block.Right != undefined && block.Right.wall != 0)
+	if (block.Right != undefined && block.Right.tileNumber != 0)
 	{
-		CreatePolygon(x, y, z, block.Right, FaceType.Right);
+	    CreatePolygon(x, y, z, block.Right, FaceType.Right, block);
 	}
 	
-	if(block.Top != undefined && block.Top.wall != 0)
+	if (block.Top != undefined && block.Top.tileNumber != 0)
 	{
-		CreatePolygon(x, y, z, block.Top, FaceType.Top);
+	    CreatePolygon(x, y, z, block.Top, FaceType.Top, block);
 	}
 	
-	if(block.Bottom != undefined && block.Bottom.wall != 0)
+	if (block.Bottom != undefined && block.Bottom.tileNumber != 0)
 	{
-		CreatePolygon(x, y, z, block.Bottom, FaceType.Bottom);
+		CreatePolygon(x, y, z, block.Bottom, FaceType.Bottom, block);
 	}
 	
 	if(block.Lid != undefined && block.Lid.tileNumber != 0)
 	{
-		CreatePolygon(x, y, z, block.Lid, FaceType.Lid);
-	}
+	    CreatePolygon(x, y, z, block.Lid, FaceType.Lid, block);
+    }
 }
 
 var tileCache = new Array();
@@ -147,7 +147,7 @@ function getTile(tileNo) {
 }
 
 var cnt = 0;
-function CreatePolygon(x, y, z, face, type)
+function CreatePolygon(x, y, z, face, type, block)
 {
     var material;
     if (face.tileNumber == undefined) {
@@ -159,11 +159,24 @@ function CreatePolygon(x, y, z, face, type)
     else {
         material = getTile(face.tileNumber);
     }
-
-
 	var geometry;
-		
-	if(type == FaceType.Top)
+	
+	if (type == FaceType.Lid) {
+	    geometry = CreateLid(new THREE.Vector2(tileSize / 2, -tileSize / 2), block.slopeType);
+	}
+	else if (block.slopeType == SlopeType.DiagonalFacingDownRight && (type == FaceType.Bottom || type == FaceType.Right)) { // down right
+		geometry = CreateEdge(new THREE.Vector2(tileSize/2, tileSize/2), new THREE.Vector2(-tileSize, -tileSize));
+	}
+	else if (block.slopeType == SlopeType.DiagonalFacingDownLeft && (type == FaceType.Bottom || type == FaceType.Left)) { // down left
+	    geometry = CreateEdge(new THREE.Vector2(tileSize / 2, -tileSize / 2), new THREE.Vector2(-tileSize, tileSize));
+	}
+	else if (block.slopeType == SlopeType.DiagonalFacingUpRight && (type == FaceType.Top || type == FaceType.Right)) {  // up right
+	    geometry = CreateEdge(new THREE.Vector2(-tileSize / 2, tileSize / 2), new THREE.Vector2(tileSize, -tileSize));
+	}
+	else if (block.slopeType == SlopeType.DiagonalFacingUpLeft && (type == FaceType.Top || type == FaceType.Left)) {  // up left
+	    geometry = CreateEdge(new THREE.Vector2(-tileSize / 2, -tileSize / 2), new THREE.Vector2(tileSize, tileSize));
+	}
+	else if (type == FaceType.Top)
 	{
 		geometry = CreateEdge(new THREE.Vector2(-tileSize/2, tileSize/2), new THREE.Vector2(tileSize, 0));
 	}
@@ -173,15 +186,11 @@ function CreatePolygon(x, y, z, face, type)
 	}
 	else if(type == FaceType.Left)
 	{
-		geometry = CreateEdge(new THREE.Vector2(-tileSize/2, -tileSize/2), new THREE.Vector2(0, tileSize));
+	    geometry = CreateEdge(new THREE.Vector2(-tileSize / 2, -tileSize / 2), new THREE.Vector2(0, tileSize));
 	}
 	else if(type == FaceType.Right)
 	{
 		geometry = CreateEdge(new THREE.Vector2(tileSize/2, tileSize/2), new THREE.Vector2(0, -tileSize));
-	}
-	else if(type == FaceType.Lid)
-	{
-		geometry = lidGeometry.clone();
 	}
 
 	var materialList = [material];
@@ -195,22 +204,87 @@ function CreatePolygon(x, y, z, face, type)
 	var x = x * tileSize;
 	var y = y * tileSize;
 	var z = z * tileSize;
-	
-	if(type == FaceType.Lid)
-	{
-		z += tileSize / 2;	
-	}
-	
+		
 	RotateUV(edge.children[0].geometry, face.rotation);
 	
-	if(face.flip == 1)
-		MirrorUV(edge.children[0].geometry, 'y');
+	if (face.flip == 1) {
+	    if (type == FaceType.Lid) {
+	        MirrorUV(edge.children[0].geometry, 'x');
+	    } else {
+	        MirrorUV(edge.children[0].geometry, 'y');
+	    }
+	}
 		
 	edge.position.x = x;
-	edge.position.y = -y;	
+	edge.position.y = -y;
 	edge.position.z = z;
+	scene.overdraw = true;
 
 	scene.add(edge);	
+}
+
+
+function CreateLid(start, slopeType)
+{
+    var v1 = new THREE.Vector3(start.x, start.y, tileSize / 2);
+    var v2 = new THREE.Vector3(start.x - tileSize, start.y, tileSize / 2);
+    var v3 = new THREE.Vector3(start.x - tileSize, start.y + tileSize, tileSize / 2);
+    var v4 = new THREE.Vector3(start.x, start.y + tileSize, tileSize / 2);
+
+    if (slopeType == 7 || slopeType == 8) {
+        if (slopeType == 8) {
+            v1.z += tileSize / 2;
+            v2.z += tileSize / 2;
+            v3.z += tileSize / 2;
+            v4.z += tileSize / 2;
+        }
+        v1.z -= tileSize / 2;
+        v2.z -= tileSize;
+        v3.z -= tileSize;
+        v4.z -= tileSize / 2;
+    }
+
+    if (slopeType == 5 || slopeType == 6) {
+        if (slopeType == 6) {
+            v1.z += tileSize / 2;
+            v2.z += tileSize / 2;
+            v3.z += tileSize / 2;
+            v4.z += tileSize / 2;
+        }
+        v1.z -= tileSize;
+        v2.z -= tileSize / 2;
+        v3.z -= tileSize / 2;
+        v4.z -= tileSize;
+    }
+
+    if (slopeType == 1 || slopeType == 2) {
+        if (slopeType == 2) {
+            v1.z += tileSize / 2;
+            v2.z += tileSize / 2;
+            v3.z += tileSize / 2;
+            v4.z += tileSize / 2;
+        }
+        v1.z -= tileSize;
+        v2.z -= tileSize;
+        v3.z -= tileSize / 2;
+        v4.z -= tileSize / 2;
+    }
+
+    if (slopeType == 3 || slopeType == 4) {
+        if (slopeType == 4) {
+            v1.z += tileSize / 2;
+            v2.z += tileSize / 2;
+            v3.z += tileSize / 2;
+            v4.z += tileSize / 2;
+        }
+        v1.z -= tileSize / 2;
+        v2.z -= tileSize / 2;
+        v3.z -= tileSize;
+        v4.z -= tileSize;
+    }
+
+    var geometry = CreateFace(v1, v2, v3, v4);
+    return geometry;
 }
 
 function CreateEdge(start, span)
@@ -220,7 +294,7 @@ function CreateEdge(start, span)
 	var v3 = new THREE.Vector3(start.x + span.x, start.y + span.y, tileSize/2);
 	var v4 = new THREE.Vector3(start.x, start.y, tileSize/2);
 
-	geometry = CreateFace(v1, v2, v3, v4);
+	var geometry = CreateFace(v1, v2, v3, v4);
 	return geometry;
 }
 
