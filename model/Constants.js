@@ -32,10 +32,12 @@
 
 		MESSAGE_TYPES:
 		{
-			INPUT 			: '0',
-			SYNC			: '1',
-			ADDPLAYER 		: '2',
-			ADDCLIENTPLAYER	: '3' 
+			INPUT 				: '0',
+			SYNC				: '1',
+			ADDPLAYER 			: '2',
+			ADDCLIENTPLAYER		: '3',
+			REMOVEPLAYER		: '4',
+			STARTSYNC			: '5'
 		},
 
 		PLAYER:
