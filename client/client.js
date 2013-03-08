@@ -100,5 +100,5 @@ var Test = Class(function() {
 });
 
 var client = new Test();
-client.connect('localhost', GTA.Constants.SERVER_SETTING.SOCKET_PORT);
+client.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
 
