@@ -7,6 +7,7 @@ require('../model/EntityState');
 require('../model/PlayerState');
 require('../model/Point');
 require('../input/Keyboard');
+require('../render/ClientServer.js');
 
 
 // Test -----------------------------------------------------------------------
