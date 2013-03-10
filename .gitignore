@@ -10,3 +10,5 @@ planetest.html
 .DS_Store
 /constants.js
 /*.sty
+/render/constants.js
+/render/constants.js
