@@ -46,6 +46,10 @@ function init() {
     camera.position.y = startCamPosition[1] * tileSize;
 
     scene = new THREE.Scene();
+	
+	sceneObjects = new Array(); //Contains all the Object3D containing a whole tile (full height)
+	visibleSceneObject = new Array(); //All the tiles currently drawn
+	
 
     console.log("Load scene");
     createScene();
@@ -78,39 +82,51 @@ function init() {
 }
 
 function createScene() {
+	//Create alle the THREE 3D objects but don't add them to the scene yet. They get added in the render loop dynamicly
+	
+	iArray = new Array();
     for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++) {
-        for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++) {
-            for (var k = 0; k < 8; k++) {
+
+		jArray = new Array();
+	    for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++) {
+
+			tileObject = new THREE.Object3D();
+			for (var k = 0; k < 8; k++) {
                 var block = level.map[i][j][k];
                 if (block != undefined) {
-                    CreateBlock(i, j, k, block);
+					tileObject.add(CreateBlock(i, j, k, block));
                 }
             }
+			jArray[j] = tileObject;
         }
+		iArray[i] = jArray;
     }
+	sceneObjects = iArray;
 }
 
 function CreateBlock(x, y, z, block) {
-
+	blockObject = new THREE.Object3D();
+	
     if (block.Left != undefined && block.Left.tileNumber != 0) {
-        CreatePolygon(x, y, z, block.Left, FaceType.Left, block);
+        blockObject.add(CreatePolygon(x, y, z, block.Left, FaceType.Left, block));
     }
 
     if (block.Right != undefined && block.Right.tileNumber != 0) {
-        CreatePolygon(x, y, z, block.Right, FaceType.Right, block);
+        blockObject.add(CreatePolygon(x, y, z, block.Right, FaceType.Right, block));
     }
 
     if (block.Top != undefined && block.Top.tileNumber != 0) {
-        CreatePolygon(x, y, z, block.Top, FaceType.Top, block);
+        blockObject.add(CreatePolygon(x, y, z, block.Top, FaceType.Top, block));
     }
 
     if (block.Bottom != undefined && block.Bottom.tileNumber != 0) {
-        CreatePolygon(x, y, z, block.Bottom, FaceType.Bottom, block);
+        blockObject.add(CreatePolygon(x, y, z, block.Bottom, FaceType.Bottom, block));
     }
 
     if (block.Lid != undefined && block.Lid.tileNumber != 0) {
-        CreatePolygon(x, y, z, block.Lid, FaceType.Lid, block);
+        blockObject.add(CreatePolygon(x, y, z, block.Lid, FaceType.Lid, block));
     }
+	return blockObject;
 }
 
 var tileCache = new Array();
@@ -248,7 +264,8 @@ function CreatePolygon(x, y, z, face, type, block) {
     edge.position.z = z;
     scene.overdraw = false;
 
-    scene.add(edge);
+    //scene.add(edge);
+	return edge;
 }
 /*
 Up = v3, v4
@@ -732,7 +749,27 @@ function animate() {
 }
 
 function render() {
-
+	camX = Math.round(camera.position.x/64);
+	camY = Math.round(camera.position.y/64);
+	
+	//TODO: This should not be hardcoded!
+	camW = 20;
+	camH = 14;
+	
+	
+	for(var i=0 ; i<visibleSceneObject.length ; i++){
+		scene.remove(visibleSceneObject[i]);		
+	}
+	visibleSceneObject = new Array();
+	
+	for(var x = camX-camW*0.5 ; x < camX+camW*0.5 ; x++){
+		for(var y = camY-camH*0.5 ; y < camY+camH*0.5 ; y++){
+			if(sceneObjects[x][-y].parent == undefined){
+				scene.add(sceneObjects[x][-y]);
+				visibleSceneObject.push(sceneObjects[x][-y]);
+			}
+		}
+	}
 	
 	renderer.render( scene, camera );
 
