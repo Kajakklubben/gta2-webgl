@@ -21,7 +21,8 @@ function isSlopeType(type, array) {
 }
 
 var camera, scene, renderer;
-
+var camFov = 50;
+var camHeight = 700;
 var cube, plane;
 
 var windowHalfX = window.innerWidth / 2;
@@ -65,13 +66,10 @@ function init() {
     document.addEventListener('touchstart', onDocumentTouchStart, false);
     document.addEventListener('touchmove', onDocumentTouchMove, false);
 
-<<<<<<< HEAD
-    window.addEventListener('resize', onWindowResize, false);
-=======
+
 	window.addEventListener( 'resize', onWindowResize, false );
 
 	return {renderer:renderer,scene:scene,camera:camera,stats:stats};
->>>>>>> merged and refactored render code
 }
 
 function createScene() {
@@ -588,17 +586,10 @@ function animate() {
 }
 
 function render() {
-<<<<<<< HEAD
-    physicsUpdate();
-
-    renderer.render(scene, camera);
-
-=======
 
 	
 	renderer.render( scene, camera );
-	
->>>>>>> merged and refactored render code
+
 }
 
 function RotateUV(target, value) {

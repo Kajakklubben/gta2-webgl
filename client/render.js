@@ -8,7 +8,7 @@
 		
 		this.dynamicObjects = [];
 		this.gameInstance = game;
-
+		this.followTarget = null;
 		
 		var context = this;
 		this.gameInstance.OnAddedPlayer = function(player) {context.OnAddedPlayer(player);};
@@ -30,33 +30,40 @@
 		//Being called from client object
 	GTA.client.Render.prototype.update = function()
 	{
+		for(var i in this.dynamicObjects)
+		{
+			this.dynamicObjects[i].Update();
+		}
 		
-		this.renderer.render( this.scene, this.camera );
+		if(this.followTarget != null)
+		{
+			var target = new GTA.model.Point(this.camera.position.x-this.followTarget.GetPosition().x,this.camera.position.y-this.followTarget.GetPosition().y);
+			this.camera.position.x -= target.x/2;
+			this.camera.position.y -= target.y/2;
 
-		//this.camera.position.y = Math.sin(Date.now()/1000)*50;
-		//this.camera.position.x = Math.cos(Date.now()/1000)*50;
+		}
 	}
 
 
 	GTA.client.Render.prototype.OnAddedPlayer = function (player) {
 
-		var playerRender = new GTA.render.PlayerRender();
+		var playerRender = new GTA.render.PlayerRender(player);
 		player.render = playerRender;
 
-		this.scene.add(playerRender.createMesh());
+		this.scene.add(playerRender.CreateMesh());
 		this.dynamicObjects.push(playerRender);
 	}
 	GTA.client.Render.prototype.OnRemovedPlayer = function (player) {
 		this.scene.remove(player.render.mesh);
-		dynamicObjects.splice(0,dynamicObjects.indexOf(player.render));
+		this.dynamicObjects.splice(0,this.dynamicObjects.indexOf(player.render));
 	}
 	//Currently not being used
 	GTA.client.Render.prototype.animate = function () {
 
-		console.log('render');
+		
 		requestAnimationFrame( function(){this.animate()} );
 
-		this.update();
+	
 		this.stats.update();
 
 

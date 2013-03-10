@@ -10,7 +10,7 @@
 		SERVER_SETTING:
 		{
 			
-			SOCKET_DOMAIN	: "192.168.1.142",
+			SOCKET_DOMAIN	: "localhost",
 			SOCKET_PORT		: 8081,
 
 		

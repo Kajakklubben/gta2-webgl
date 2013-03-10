@@ -37,7 +37,7 @@
 	}
 	GTA.game.Game.prototype.update = function()
 	{
-		if(this.loader == undefined || this.loader.loading)
+		if(this.loader != undefined && this.loader.loading)
 		{
 			return;
 		}

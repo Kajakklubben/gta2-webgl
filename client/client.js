@@ -14,25 +14,27 @@ var Test = Class(function() {
     input: new GTA.Input.Keyboard(),
     game: false,
     player: false,
-    render: false,
+    renderer: false,
     initGame: function()
     {
-        this.input.attachEvents(); //start listening on input
+       
         var context = this;
         this.game = new GTA.game.Game();
+
         this.game.OnLoadedData = function()
         {
             context.renderer = new GTA.client.Render(context.game);
             context.renderer.Init();
+            context.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
+
         }
         this.game.StartLoading();
 
-        this.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
 
     },
     started: function() {
-        this.log('Client started');
-        
+
+         this.input.attachEvents(); //start listening on input
         
 
     },
@@ -46,12 +48,16 @@ var Test = Class(function() {
 
     var newInput  = this.input.constructInputBitmask();
     
-    if(newInput != this.inputState)
-    {
-      this.inputState = newInput;
+        if(newInput != this.inputState)
+        {
+          this.inputState = newInput;
 
-      this.send(GTA.Constants.MESSAGE_TYPES.INPUT, [this.inputState]);
-    }
+          this.send(GTA.Constants.MESSAGE_TYPES.INPUT, [this.inputState]);
+        }
+        if(this.renderer)
+        {
+            this.renderer.update();
+        }
     },
 
     stopped: function() {
@@ -97,6 +103,7 @@ var Test = Class(function() {
             var newPlayer = this.game.addPlayer(this);
             newPlayer.fromJson(data[0]);
             this.player = newPlayer;
+            this.renderer.followTarget = newPlayer.render;
            
         }
 

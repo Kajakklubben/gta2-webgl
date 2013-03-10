@@ -6,11 +6,11 @@
 	GTA.model.PlayerState = function( client ) {
 
 		this.position = new GTA.model.Point();
-		this.position.x = 0;
-		this.position.y = 0;
+		this.position.x = 85*64;
+		this.position.y = -190*64;
+
 		this.rotation = new GTA.model.Point();
 		this.client = client;
-		this.render = false;
 		this.input = 0;
 		this.id = client.id;
 		this.keyboard = new GTA.Input.Keyboard(); //don't start on clients
@@ -18,13 +18,6 @@
 
 		return this;
 	};
-
-	GTA.model.PlayerState.prototype.createMesh = function()
-	{
-
-		this.render = new GTA.model.EntityRender();
-		return this.render.mesh;
-	}
 
 	GTA.model.PlayerState.prototype.setInput = function(bitmask)
 	{
@@ -35,33 +28,25 @@
 	GTA.model.PlayerState.prototype.update = function(deltatime)
 	{
 
-		if(this.render)
+		
+		if(this.keyboard.isUp())
 		{
-
-			this.render.mesh.position.x = this.position.x;
-			this.render.mesh.position.y = this.position.y;
-
+			this.position.y += deltatime*GTA.Constants.PLAYER.MOVESPEED;
 		}
-		else
+		if(this.keyboard.isDown())
 		{
-			if(this.keyboard.isUp())
-			{
-				this.position.y += deltatime*GTA.Constants.PLAYER.MOVESPEED;
-			}
-			if(this.keyboard.isDown())
-			{
-				this.position.y -= deltatime*GTA.Constants.PLAYER.MOVESPEED;
-			}
-			if(this.keyboard.isLeft())
-			{
-				this.position.x -= deltatime*GTA.Constants.PLAYER.MOVESPEED;
-			}
-			if(this.keyboard.isRight())
-			{
-				
-				this.position.x += deltatime*GTA.Constants.PLAYER.MOVESPEED;
-			}
+			this.position.y -= deltatime*GTA.Constants.PLAYER.MOVESPEED;
 		}
+		if(this.keyboard.isLeft())
+		{
+			this.position.x -= deltatime*GTA.Constants.PLAYER.MOVESPEED;
+		}
+		if(this.keyboard.isRight())
+		{
+			
+			this.position.x += deltatime*GTA.Constants.PLAYER.MOVESPEED;
+		}
+		
 	}
 
 	GTA.model.PlayerState.prototype.toJson = function()
