@@ -4,6 +4,11 @@ var tileSizeH = tileSize / 2;
 var tileSizeQ = tileSize / 4;
 var tileSizeE = tileSize / 8;
 
+var paritalBlockRatio = 8/3;
+var tileSizePartial = tileSize / paritalBlockRatio;
+var partialUvsMargin = (tileSize - tileSizePartial) / 2 / tileSize;
+var partialUvsSize = tileSizePartial/tileSize;
+		
 var container, stats;
 
 var upSlopeTypesTriangles = [41, 1];
@@ -16,10 +21,10 @@ var downSlopeTypes = [42, 3, 4];
 var leftSlopeTypes = [43, 5, 6];
 var rightSlopeTypes = [44, 7, 8, 33];
 
-function isSlopeType(type, array) {
+function isSlopeType(type, array) 
+{
     return $.inArray(type, array) != -1
 }
-
 
 var camera, scene, renderer;
 var camFov = 50;
@@ -55,7 +60,6 @@ function init() {
     renderer.setClearColorHex(0x000000, 1);
 
     container.appendChild(renderer.domElement);
-
 
     //default stats  component
     stats = new Stats();
@@ -238,8 +242,7 @@ function CreatePolygon(x, y, z, face, type, block) {
 			MirrorUV(edge.children[0].geometry, 'x');
         }
     }
-
-
+	
     edge.position.x = x;
     edge.position.y = -y;
     edge.position.z = z;
@@ -268,11 +271,13 @@ function ModifyToSlope(v1, v2, v3, v4, sv1, sv2, slopeAmount, start) {
 function CreateLid(start, slopeType) {
     var geometry;
 	var size = tileSize;
-
+	var partialUvs = false;
+	
 	////Partial Blocks
 	if(slopeType >= 53 && slopeType <= 61)
 	{
-		size = tileSize / (8/3);
+		size = tileSizePartial;
+		partialUvs = true;
 		
 		if(slopeType == 53)
 		{
@@ -313,7 +318,7 @@ function CreateLid(start, slopeType) {
 			//Bottom, right
 			start.y = -tileSizeH;
 		}
-		else if(slopeType == 60 || true)
+		else if(slopeType == 60)
 		{
 			//Bottom, right
 			start.x = -tileSizeH + size;
@@ -412,8 +417,27 @@ function CreateLid(start, slopeType) {
     else {
         geometry = CreateFace(v1, v2, v3, v4);
     }
-
 	
+	//Parital uvs
+	if(partialUvs)
+	{		
+		var uvs = geometry.faceVertexUvs[0][0];
+		
+		uvs[1].x = partialUvsMargin;
+		uvs[2].x = partialUvsMargin;
+		
+		uvs[0].x = partialUvsMargin + partialUvsSize;
+		uvs[3].x = partialUvsMargin + partialUvsSize;
+
+		uvs[2].y = partialUvsMargin;
+		uvs[3].y = partialUvsMargin;
+		
+		uvs[0].y = partialUvsMargin + partialUvsSize;
+		uvs[1].y = partialUvsMargin + partialUvsSize;
+		
+	    geometry.faceVertexUvs[0][0] = uvs;
+	}
+
     return geometry;
 }
 
@@ -432,7 +456,8 @@ function CreateEdge(start, span, slopeType, faceType) {
     var h = new Object();
     h.firstHeight = tileSize;
     h.secondHeight = tileSize;
-    
+    var partialUvs = false;
+	
     if (slopeType <= 2) { // Up
         debugger;
         alert("not implemented");
@@ -459,12 +484,69 @@ function CreateEdge(start, span, slopeType, faceType) {
     }
     else if (slopeType >= 41 && slopeType <= 44); // 45 degree slopes. No need to modify heights
     else if (slopeType >= 45 && slopeType <= 48); // Diagonals. No need to intepret heights.
-    else if (slopeType == 61); // Centre blocks. No height intepret;
+	else if(slopeType >= 53 && slopeType <= 61)
+	{
+		var size = tileSizePartial;
+		partialUvs = true;
+		span.x /= paritalBlockRatio;
+		span.y /= paritalBlockRatio;
+		
+		start.x /= paritalBlockRatio;
+		start.y /= paritalBlockRatio;
+		
+		if(slopeType == 53)
+		{
+			//Left, center
+			start.x += -tileSizeH + size/2;
+		}
+		else if(slopeType == 54)
+		{
+			//Right center
+			start.x += tileSizeH - size/2;
+		}
+		else if(slopeType == 55)
+		{
+			//Top center
+			start.y += tileSizeH - size/2;		
+		}
+		else if(slopeType == 56)
+		{
+			//Bottom center
+			start.y += -tileSizeH + size/2;	
+		}
+		else if(slopeType == 57)
+		{
+			//Top, left
+			start.x += -tileSizeH + size/2;
+			start.y += tileSizeH - size/2;
+		}
+		else if(slopeType == 58)
+		{
+			//Top, right
+			start.x += tileSizeH - size/2;
+			start.y += tileSizeH - size/2;
+		}
+		else if(slopeType == 59)
+		{
+			//Bottom, right
+			start.x += tileSizeH - size/2;
+			start.y += -tileSizeH + size/2;
+		}
+		else if(slopeType == 60)
+		{
+			//Bottom, right
+			start.x += -tileSizeH + size/2;
+			start.y += -tileSizeH + size/2;
+		}
+		else if(slopeType == 61)
+		{
+			//Center
+		}
+	}
     else if (slopeType != undefined && slopeType != 63) {
         alert("not implemented slopetype: " + slopeType);
         debugger;
     }
-
 
     var v1 = new THREE.Vector3(start.x, start.y, -tileSizeH);
     var v2 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSizeH);
@@ -511,11 +593,23 @@ function CreateEdge(start, span, slopeType, faceType) {
     }
     
     var uvs = geometry.faceVertexUvs[0][0];
-    
+	
+    //Uvs according to height
     uvs[0].y = h.secondHeight / tileSize;
     uvs[1].y = h.firstHeight / tileSize;
-
+	
+	//Parital uvs
+	if(partialUvs)
+	{		
+		uvs[1].x = partialUvsMargin;
+		uvs[2].x = partialUvsMargin;
+		
+		uvs[0].x = partialUvsMargin + partialUvsSize;
+		uvs[3].x = partialUvsMargin + partialUvsSize;
+	}
+	
     geometry.faceVertexUvs[0][0] = uvs;
+	
     return geometry;
 }
 
@@ -613,25 +707,18 @@ function onDocumentMouseOut(event) {
 
 function onDocumentTouchStart(event) {
 
-    if (event.touches.length === 1) {
-
+    if (event.touches.length === 1) 
+	{
         event.preventDefault();
-
-
-
     }
-
 }
 
 function onDocumentTouchMove(event) {
 
-    if (event.touches.length === 1) {
-
+    if (event.touches.length === 1)
+	{
         event.preventDefault();
-
-
     }
-
 }
 
 //
