@@ -9,10 +9,27 @@
 	GTA.game.Game = function() {
 		this.levelState = new GTA.model.LevelState();
 		this.lastTime= -1;
-		this.render = false;
 		return this;
 	};
 
+	//Public events
+	GTA.game.Game.prototype.OnLoadedData =  function(){}
+	GTA.game.Game.prototype.OnAddedPlayer =  function(player){}
+	GTA.game.Game.prototype.OnRemovedPlayer =  function(player){}
+
+	//functions
+
+	GTA.game.Game.prototype.StartLoading = function()
+	{
+		this.loader = new GTA.core.Loader();
+        var context = this;
+        this.loader.LoadData(function()
+        	{
+        		//done loading;
+        		context.loader.loading = false;
+        		context.OnLoadedData();
+        	});
+    }
 	GTA.game.Game.prototype.start = function()
 	{
 		var ptr = this; 
@@ -20,6 +37,10 @@
 	}
 	GTA.game.Game.prototype.update = function()
 	{
+		if(this.loader == undefined || this.loader.loading)
+		{
+			return;
+		}
 
 		var deltaTime = (Date.now()-this.lastTime) /1000;
 		for(var i in this.levelState.players)
@@ -27,12 +48,7 @@
 			this.levelState.players[i].update(deltaTime);
 		}
 
-		if(this.render)
-		{
-			
-			this.render.update();
-		}
-
+		
 		this.lastTime= Date.now();
 	}
 
@@ -41,6 +57,9 @@
 		var player = new GTA.model.PlayerState(client);
 		player.id = client.id;
 		this.levelState.players.push(player);
+
+		this.OnAddedPlayer(player);
+
 		return player;
 	}
 
@@ -50,10 +69,8 @@
 		{
 			if(this.levelState.players[p].id == id)
 			{
-				if(this.render)
-				{
-					this.render.scene.remove(this.levelState.players[p].render.mesh);
-				}
+				this.OnRemovedPlayer(p)
+				
 				this.levelState.players[p].destroy();
 
 				this.levelState.players.splice(p,1);
@@ -74,10 +91,8 @@
 			var client = new Object(); //we don't send the whole client.
 			client.id = json.players[i].id;
 			var newPlayer = this.addPlayer(client);
-			if(this.render)
-			{
-				this.render.scene.add(newPlayer.createMesh());
-			}
+			this.OnAddedPlayer(newPlayer);
+			
 		}
 		this.levelState.fromJson(json);
 	}
@@ -87,10 +102,6 @@
 		this.levelState.fromJson(json);
 	}
 
-	GTA.game.Game.prototype.attachRender = function(render)
-	{
-		this.render = render;
-	}
 
 
 

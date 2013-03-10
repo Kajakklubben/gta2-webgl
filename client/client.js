@@ -10,14 +10,31 @@ var Test = Class(function() {
 
 }, Maple.Client, {
 
-    input: new GTA.Input.Keyboard(),
-    game: new GTA.game.Game(),
-    player: false,
 
+    input: new GTA.Input.Keyboard(),
+    game: false,
+    player: false,
+    render: false,
+    initGame: function()
+    {
+        this.input.attachEvents(); //start listening on input
+        var context = this;
+        this.game = new GTA.game.Game();
+        this.game.OnLoadedData = function()
+        {
+            context.renderer = new GTA.client.Render(context.game);
+            context.renderer.Init();
+        }
+        this.game.StartLoading();
+
+        this.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
+
+    },
     started: function() {
         this.log('Client started');
-        this.input.attachEvents(); //start listening on input
-        this.game.attachRender(new GTA.client.Render(this.game)); //starts rendering on every animationRequest
+        
+        
+
     },
 
     update: function(t, tick) {
@@ -26,8 +43,6 @@ var Test = Class(function() {
     },
     inputState: 0,
     render: function(t, dt, u) {
-      this.game.update();
-
 
     var newInput  = this.input.constructInputBitmask();
     
@@ -73,7 +88,7 @@ var Test = Class(function() {
             console.log("added some player")
             var newPlayer = this.game.addPlayer(this);
             newPlayer.fromJson(data[0]);
-            this.game.render.scene.add(newPlayer.createMesh());
+           
 
         }
         if(type == GTA.Constants.MESSAGE_TYPES.ADDCLIENTPLAYER)
@@ -82,7 +97,7 @@ var Test = Class(function() {
             var newPlayer = this.game.addPlayer(this);
             newPlayer.fromJson(data[0]);
             this.player = newPlayer;
-            this.game.render.scene.add(newPlayer.createMesh());
+           
         }
 
         if(type == GTA.Constants.MESSAGE_TYPES.REMOVEPLAYER)
@@ -100,5 +115,4 @@ var Test = Class(function() {
 });
 
 var client = new Test();
-client.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
-
+client.initGame();

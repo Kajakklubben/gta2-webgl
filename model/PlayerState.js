@@ -8,6 +8,7 @@
 		this.position = new GTA.model.Point();
 		this.position.x = 0;
 		this.position.y = 0;
+		this.rotation = new GTA.model.Point();
 		this.client = client;
 		this.render = false;
 		this.input = 0;
