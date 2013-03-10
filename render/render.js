@@ -1,6 +1,24 @@
 
+var tileSize = 64;
+var tileSizeH = tileSize / 2;
+var tileSizeQ = tileSize / 4;
+var tileSizeE = tileSize / 8;
 
 var container, stats;
+
+var upSlopeTypesTriangles = [41, 1];
+var downSlopeTypesTriangles = [42, 3];
+var leftSlopeTypesTriangles = [43, 5];
+var rightSlopeTypesTriangles = [44, 7];
+
+var upSlopeTypes = [41, 1, 2];
+var downSlopeTypes = [42, 3, 4];
+var leftSlopeTypes = [43, 5, 6];
+var rightSlopeTypes = [44, 7, 8];
+
+function isSlopeType(type, array) {
+    return $.inArray(type, array) != -1
+}
 
 var camera, scene, renderer;
 
@@ -15,8 +33,8 @@ function init() {
     container = document.createElement('div');
     document.body.appendChild(container);
 
-    camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1500);
-    camera.position.z = 900;
+    camera = new THREE.PerspectiveCamera(camFov, window.innerWidth / window.innerHeight, 1, 1500);
+    camera.position.z = camHeight;
     camera.position.x = startCamPosition[0] * tileSize;
     camera.position.y = startCamPosition[1] * tileSize;
 
@@ -32,7 +50,7 @@ function init() {
     //renderer = new THREE.CanvasRenderer();
     renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColorHex(0xff0000, 1);
+    renderer.setClearColorHex(0x000000, 1);
 
     container.appendChild(renderer.domElement);
 
@@ -55,7 +73,6 @@ function createScene() {
         for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++) {
             for (var k = 0; k < 8; k++) {
                 var block = level.map[i][j][k];
-
                 if (block != undefined) {
                     CreateBlock(i, j, k, block);
                 }
@@ -63,39 +80,6 @@ function createScene() {
         }
     }
 }
-
-var tileSize = 64;
-var tileSizeH = tileSize / 2;
-var tileSizeQ = tileSize / 4;
-var tileSizeE = tileSize / 8;
-
-//Lid Geometry
-var lidGeometry = new THREE.PlaneGeometry(tileSize, tileSize);
-
-//Edge Geometry
-var edgeGeometry = new THREE.Geometry();
-var v1 = new THREE.Vector3(-tileSizeH, 0, -tileSizeH);
-var v2 = new THREE.Vector3(tileSizeH, 0, -tileSizeH);
-var v3 = new THREE.Vector3(tileSizeH, 0, tileSizeH);
-var v4 = new THREE.Vector3(-tileSizeH, 0, tileSizeH);
-
-edgeGeometry.vertices.push(v1);
-edgeGeometry.vertices.push(v2);
-edgeGeometry.vertices.push(v3);
-edgeGeometry.vertices.push(v4);
-
-edgeGeometry.faces.push(new THREE.Face4(3, 2, 1, 0));
-
-var faceuv = [
-	new THREE.Vector2(1, 1),
-	new THREE.Vector2(0, 1),
-	new THREE.Vector2(0, 0),
-	new THREE.Vector2(1, 0)
-
-];
-
-edgeGeometry.faceVertexUvs[0].push(faceuv);
-edgeGeometry.computeFaceNormals();
 
 function CreateBlock(x, y, z, block) {
 
@@ -187,17 +171,17 @@ function CreatePolygon(x, y, z, face, type, block) {
         wireMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, transparent: true });
         materialList.push(wireMaterial);
     }
+
     var edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, materialList);
-    //var edge = new THREE.Mesh(geometry, wireMaterial);
 
     var x = x * tileSize;
     var y = y * tileSize;
     var z = z * tileSize;
 
 
-    if (type == FaceType.Lid && (block.slopeType == 48 || block.slopeType == 47 || block.slopeType == 46 || block.slopeType == 45)) {
+    if (type == FaceType.Lid && (block.slopeType <= 48 && block.slopeType >= 45)) {
 
-        if (block.slopeType == 48) { // Bottom Right
+        /*if (block.slopeType == 48) { // Bottom Right
         }
         else if (block.slopeType == 47) {  // Bottom Left
             RotateUV(edge.children[0].geometry, 270);
@@ -208,19 +192,46 @@ function CreatePolygon(x, y, z, face, type, block) {
         }
         else if (block.slopeType == 45) {  // Top Left
             RotateUV(edge.children[0].geometry, 180);
-
         }
         if (face.flip == 1)
             MirrorUV(edge.children[0].geometry, "x");
 
-        RotateUV(edge.children[0].geometry, face.rotation);
+        RotateUV(edge.children[0].geometry, face.rotation);*/
 
         //console.log(block.slopeType + ":" + face.rotation + (face.flip ? " flipped" : "") + "," + face.tileNumber);
     } else {
+        /*if (type != FaceType.Lid) {
+            if (isSlopeType(block.slopeType, upSlopeTypesTriangles)) { // Up
+                if (type == FaceType.Right)
+                    RotateUV(edge.children[0].geometry, 180);
+                else if (type == FaceType.Left)
+                    RotateUV(edge.children[0].geometry, 90);
+            }
+            else if (isSlopeType(block.slopeType, downSlopeTypesTriangles)) { // Down
+                if (type == FaceType.Right)
+                    RotateUV(edge.children[0].geometry, 90);
+                else if (type == FaceType.Left)
+                    RotateUV(edge.children[0].geometry, 180);
+            }
+            else if (isSlopeType(block.slopeType, leftSlopeTypesTriangles)) { // Left
+                if (type == FaceType.Top) {
+                    //RotateUV(edge.children[0].geometry, -90);
+                }
+                else if (type == FaceType.Bottom)
+                    RotateUV(edge.children[0].geometry, 90);
+            }
+            else if (isSlopeType(block.slopeType, rightSlopeTypesTriangles)) {  // Right
+                if (type == FaceType.Top)
+                    RotateUV(edge.children[0].geometry, 90);
+                else if (type == FaceType.Bottom)
+                    RotateUV(edge.children[0].geometry, 180);
+            }
+        }*/
+
 
         RotateUV(edge.children[0].geometry, face.rotation);
 
-        if (face.flip == 1) {
+        if (face.flip) {
             if (type == FaceType.Lid) {
                 MirrorUV(edge.children[0].geometry, 'x');
             } else {
@@ -256,6 +267,8 @@ function ModifyToSlope(v1, v2, v3, v4, sv1, sv2, slopeAmount, start) {
 }
 
 function CreateLid(start, slopeType) {
+    var geometry;
+
     var v1 = new THREE.Vector3(start.x, start.y, tileSizeH);
     var v2 = new THREE.Vector3(start.x - tileSize, start.y, tileSizeH);
     var v3 = new THREE.Vector3(start.x - tileSize, start.y + tileSize, tileSizeH);
@@ -306,7 +319,6 @@ function CreateLid(start, slopeType) {
     {
         ModifyToSlope(v1, v2, v3, v4, v1, v4, tileSizeH, tileSizeH);
     }
-
     // Eight slopes
     else if (slopeType >= 9 && slopeType <= 16) { // Up
         var offset = slopeType - 9;
@@ -324,10 +336,6 @@ function CreateLid(start, slopeType) {
         var offset = slopeType - 33;
         ModifyToSlope(v1, v2, v3, v4, v1, v4, tileSizeE, tileSizeE * offset);
     }
-
-
-
-    var geometry;
 
     // Diagonals
     if (slopeType == 48) { // Bottom Right
@@ -350,49 +358,114 @@ function CreateLid(start, slopeType) {
 }
 
 function CreateEdge(start, span, slopeType, faceType) {
+    var firstHeight = tileSize;
+    var secondHeight = tileSize;
+    if (slopeType == 1)
+        alert("1");
+    /*
+    if (slopeType == 1) { // Down
+        debugger;
+        alert("not implemented");
+    }
+    else if (slopeType == 2) {
+        debugger;
+        alert("not implemented");
+    }
+
+    if (slopeType == 3) { // Down
+        firstHeight = tileSizeH;
+        secondHeight = tileSizeH;
+    }
+    else if (slopeType == 4) {
+        if (faceType == FaceType.Right) {
+            firstHeight = tileSize;
+            secondHeight = tileSizeH;
+        }
+        else if (faceType == FaceType.Left) {
+            firstHeight = tileSizeH;
+            secondHeight = tileSize;
+        }
+    }
+    else if (slopeType == 5) { // Left
+        secondHeight = tileSizeH;
+        firstHeight = tileSizeH;
+    }
+    else if (slopeType == 6) {
+        if (faceType == FaceType.Top) {
+            firstHeight = tileSizeH;
+            secondHeight = tileSize;
+        }
+        else if (faceType == FaceType.Bottom) {
+            firstHeight = tileSize;
+            secondHeight = tileSizeH;
+        }
+    }
+    else if (slopeType == 7) { // Right
+        firstHeight = tileSizeH;
+        secondHeight = tileSizeH;
+    }
+    else if (slopeType == 8) {
+        if (faceType == FaceType.Top) {
+            firstHeight = tileSize;
+            secondHeight = tileSizeH;
+        }
+        else if (faceType == FaceType.Bottom) {
+            firstHeight = tileSizeH;
+            secondHeight = tileSize;
+        }
+    }*/
+
+
     var v1 = new THREE.Vector3(start.x, start.y, -tileSizeH);
     var v2 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSizeH);
-    var v3 = new THREE.Vector3(start.x + span.x, start.y + span.y, tileSizeH);
-    var v4 = new THREE.Vector3(start.x, start.y, tileSizeH);
-
-
-    // Slopes
-    if (slopeType == 41) { // Up
-        if(faceType == FaceType.Right)
-            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(3, 1, 0));
-        else if(faceType == FaceType.Left)
+    var v3 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSizeH + firstHeight);
+    var v4 = new THREE.Vector3(start.x, start.y, -tileSizeH + secondHeight);
+    /*
+    // Triangular slope-sides (Start Slopes)
+    if (isSlopeType(slopeType, upSlopeTypesTriangles)) { // Up
+        if (faceType == FaceType.Right)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(1, 0, 3));
+        else if (faceType == FaceType.Left)
             geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(2, 1, 0));
         else
             geometry = CreateFace(v1, v2, v3, v4);
     }
-    else if (slopeType == 42) {  // Down
+    else if (isSlopeType(slopeType, downSlopeTypesTriangles)) {  // Down
         if (faceType == FaceType.Right)
             geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(2, 1, 0));
-        else if(faceType == FaceType.Left)
+        else if (faceType == FaceType.Left)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(1, 0, 3));
+        else
+            geometry = CreateFace(v1, v2, v3, v4);
+
+    }
+    else if (isSlopeType(slopeType, leftSlopeTypesTriangles)) { // Left
+        if (faceType == FaceType.Top) {
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(1, 0, 3));
+        }
+        else if (faceType == FaceType.Bottom)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(2, 1, 0));
+        else
+            geometry = CreateFace(v1, v2, v3, v4);
+    }
+    else if (isSlopeType(slopeType, rightSlopeTypesTriangles)) {  // Right
+        if (faceType == FaceType.Top)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(2, 1, 0));
+        else if (faceType == FaceType.Bottom)
             geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(1, 0, 3));
         else
             geometry = CreateFace(v1, v2, v3, v4);
     }
-    else if (slopeType == 43) { // Left
-        if (faceType == FaceType.Top) 
-            alert("in level");
-        else if(faceType == FaceType.Bottom)
-            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(0, 2, 1));
-        else
-            geometry = CreateFace(v1, v2, v3, v4);
-    }
-    else if (slopeType == 44) {  // Right
-        if (faceType == FaceType.Top)
-            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(2, 1, 0));
-        else if (faceType == FaceType.Bottom)
-            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(3, 1, 0));
-        else
-            geometry = CreateFace(v1, v2, v3, v4);
-}
-    else {
+    else */{
         geometry = CreateFace(v1, v2, v3, v4);
     }
+    /*
+    var uvs = geometry.faceVertexUvs[0][0];
+    
+    uvs[0].y = secondHeight / tileSize;
+    uvs[1].y = firstHeight / tileSize;
 
+    geometry.faceVertexUvs[0][0] = uvs;*/
     return geometry;
 }
 
@@ -409,13 +482,13 @@ function CreateFace(v1, v2, v3, v4, face) {
     g.vertices.push(v4);
 
     g.faces.push(face);
-
     var faceuv = [
         new THREE.Vector2(1, 1),
         new THREE.Vector2(0, 1),
         new THREE.Vector2(0, 0),
         new THREE.Vector2(1, 0)
     ];
+
 
     g.faceVertexUvs[0].push(faceuv);
     g.computeFaceNormals();
