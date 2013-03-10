@@ -14,7 +14,7 @@ var rightSlopeTypesTriangles = [44, 7];
 var upSlopeTypes = [41, 1, 2];
 var downSlopeTypes = [42, 3, 4];
 var leftSlopeTypes = [43, 5, 6];
-var rightSlopeTypes = [44, 7, 8];
+var rightSlopeTypes = [44, 7, 8, 33];
 
 function isSlopeType(type, array) {
     return $.inArray(type, array) != -1
@@ -354,70 +354,59 @@ function CreateLid(start, slopeType) {
     return geometry;
 }
 
+function modifyHeights(h, no, height, step) {
+    if (no == 1) {
+        h.secondHeight = height * step;
+        h.firstHeight = height * (step+1);
+    }
+    else if (no == 2) {
+        h.firstHeight = height * step;
+        h.secondHeight = height * (step + 1);
+    }
+}
+
 function CreateEdge(start, span, slopeType, faceType) {
-    var firstHeight = tileSize;
-    var secondHeight = tileSize;
+    var h = new Object();
+    h.firstHeight = tileSize;
+    h.secondHeight = tileSize;
     
-    if (slopeType == 1) { // Down
+    if (slopeType <= 2) { // Up
         debugger;
         alert("not implemented");
     }
-    else if (slopeType == 2) {
-        debugger;
-        alert("not implemented");
+    else if (slopeType <= 4) { // Down
+        var step = slopeType - 3;
+        var no = (faceType != FaceType.Left) ? (faceType != FaceType.Right) ? 0 : 1 : 2;
+        modifyHeights(h, no, tileSizeH, step);
     }
-    else if (slopeType == 3) { // Down
-        firstHeight = tileSizeH;
-        secondHeight = tileSizeH;
+    else if (slopeType <= 6) { // Left
+        var step = slopeType - 5;
+        var no = (faceType != FaceType.Bottom) ? (faceType != FaceType.Top) ? 0 : 2 : 1;
+        modifyHeights(h, no, tileSizeH, step);
     }
-    else if (slopeType == 4) {
-        if (faceType == FaceType.Right) {
-            firstHeight = tileSize;
-            secondHeight = tileSizeH;
-        }
-        else if (faceType == FaceType.Left) {
-            firstHeight = tileSizeH;
-            secondHeight = tileSize;
-        }
+    else if (slopeType <= 8) { // Right
+        var step = slopeType - 7;
+        var no = (faceType != FaceType.Bottom) ? (faceType != FaceType.Top) ? 0 : 1 : 2;
+        modifyHeights(h, no, tileSizeH, step);
     }
-    else if (slopeType == 5) { // Left
-        secondHeight = tileSizeH;
-        firstHeight = tileSizeH;
+    else if (slopeType >= 33 && slopeType <= 40) { // Right 7 degree
+        var step = slopeType - 33;
+        var no = (faceType != FaceType.Bottom) ? (faceType != FaceType.Top) ? 0 : 1 : 2;
+        modifyHeights(h, no, tileSizeE, step);
     }
-    else if (slopeType == 6) {
-        if (faceType == FaceType.Top) {
-            firstHeight = tileSizeH;
-            secondHeight = tileSize;
-        }
-        else if (faceType == FaceType.Bottom) {
-            firstHeight = tileSize;
-            secondHeight = tileSizeH;
-        }
-    }
-    else if (slopeType == 7) { // Right
-        firstHeight = tileSizeH;
-        secondHeight = tileSizeH;
-    }
-    else if (slopeType == 8) {
-        if (faceType == FaceType.Top) {
-            firstHeight = tileSize;
-            secondHeight = tileSizeH;
-        }
-        else if (faceType == FaceType.Bottom) {
-            firstHeight = tileSizeH;
-            secondHeight = tileSize;
-        }
-    }
+    else if (slopeType >= 41 && slopeType <= 44); // 45 degree slopes. No need to modify heights
+    else if (slopeType >= 45 && slopeType <= 48); // Diagonals. No need to intepret heights.
+    else if (slopeType == 61); // Centre blocks. No height intepret;
     else if (slopeType != undefined && slopeType != 63) {
-        debugger;
         alert("not implemented slopetype: " + slopeType);
+        debugger;
     }
 
 
     var v1 = new THREE.Vector3(start.x, start.y, -tileSizeH);
     var v2 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSizeH);
-    var v3 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSizeH + firstHeight);
-    var v4 = new THREE.Vector3(start.x, start.y, -tileSizeH + secondHeight);
+    var v3 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSizeH + h.firstHeight);
+    var v4 = new THREE.Vector3(start.x, start.y, -tileSizeH + h.secondHeight);
     
     // Triangular slope-sides (Start Slopes)
     if (isSlopeType(slopeType, upSlopeTypesTriangles)) { // Up
@@ -460,8 +449,8 @@ function CreateEdge(start, span, slopeType, faceType) {
     
     var uvs = geometry.faceVertexUvs[0][0];
     
-    uvs[0].y = secondHeight / tileSize;
-    uvs[1].y = firstHeight / tileSize;
+    uvs[0].y = h.secondHeight / tileSize;
+    uvs[1].y = h.firstHeight / tileSize;
 
     geometry.faceVertexUvs[0][0] = uvs;
     return geometry;
