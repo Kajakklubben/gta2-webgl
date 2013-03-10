@@ -178,10 +178,9 @@ function CreatePolygon(x, y, z, face, type, block) {
     var y = y * tileSize;
     var z = z * tileSize;
 
-
     if (type == FaceType.Lid && (block.slopeType <= 48 && block.slopeType >= 45)) {
 
-        /*if (block.slopeType == 48) { // Bottom Right
+        if (block.slopeType == 48) { // Bottom Right
         }
         else if (block.slopeType == 47) {  // Bottom Left
             RotateUV(edge.children[0].geometry, 270);
@@ -196,11 +195,9 @@ function CreatePolygon(x, y, z, face, type, block) {
         if (face.flip == 1)
             MirrorUV(edge.children[0].geometry, "x");
 
-        RotateUV(edge.children[0].geometry, face.rotation);*/
-
-        //console.log(block.slopeType + ":" + face.rotation + (face.flip ? " flipped" : "") + "," + face.tileNumber);
+        RotateUV(edge.children[0].geometry, face.rotation);
     } else {
-        /*if (type != FaceType.Lid) {
+        if (type != FaceType.Lid) {
             if (isSlopeType(block.slopeType, upSlopeTypesTriangles)) { // Up
                 if (type == FaceType.Right)
                     RotateUV(edge.children[0].geometry, 180);
@@ -226,7 +223,7 @@ function CreatePolygon(x, y, z, face, type, block) {
                 else if (type == FaceType.Bottom)
                     RotateUV(edge.children[0].geometry, 180);
             }
-        }*/
+        }
 
 
         RotateUV(edge.children[0].geometry, face.rotation);
@@ -319,7 +316,7 @@ function CreateLid(start, slopeType) {
     {
         ModifyToSlope(v1, v2, v3, v4, v1, v4, tileSizeH, tileSizeH);
     }
-    // Eight slopes
+        // Eight slopes
     else if (slopeType >= 9 && slopeType <= 16) { // Up
         var offset = slopeType - 9;
         ModifyToSlope(v1, v2, v3, v4, v3, v4, tileSizeE, tileSizeE * offset);
@@ -360,9 +357,7 @@ function CreateLid(start, slopeType) {
 function CreateEdge(start, span, slopeType, faceType) {
     var firstHeight = tileSize;
     var secondHeight = tileSize;
-    if (slopeType == 1)
-        alert("1");
-    /*
+    
     if (slopeType == 1) { // Down
         debugger;
         alert("not implemented");
@@ -371,8 +366,7 @@ function CreateEdge(start, span, slopeType, faceType) {
         debugger;
         alert("not implemented");
     }
-
-    if (slopeType == 3) { // Down
+    else if (slopeType == 3) { // Down
         firstHeight = tileSizeH;
         secondHeight = tileSizeH;
     }
@@ -413,14 +407,18 @@ function CreateEdge(start, span, slopeType, faceType) {
             firstHeight = tileSizeH;
             secondHeight = tileSize;
         }
-    }*/
+    }
+    else if (slopeType != undefined && slopeType != 63) {
+        debugger;
+        alert("not implemented slopetype: " + slopeType);
+    }
 
 
     var v1 = new THREE.Vector3(start.x, start.y, -tileSizeH);
     var v2 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSizeH);
     var v3 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSizeH + firstHeight);
     var v4 = new THREE.Vector3(start.x, start.y, -tileSizeH + secondHeight);
-    /*
+    
     // Triangular slope-sides (Start Slopes)
     if (isSlopeType(slopeType, upSlopeTypesTriangles)) { // Up
         if (faceType == FaceType.Right)
@@ -456,16 +454,16 @@ function CreateEdge(start, span, slopeType, faceType) {
         else
             geometry = CreateFace(v1, v2, v3, v4);
     }
-    else */{
+    else {
         geometry = CreateFace(v1, v2, v3, v4);
     }
-    /*
+    
     var uvs = geometry.faceVertexUvs[0][0];
     
     uvs[0].y = secondHeight / tileSize;
     uvs[1].y = firstHeight / tileSize;
 
-    geometry.faceVertexUvs[0][0] = uvs;*/
+    geometry.faceVertexUvs[0][0] = uvs;
     return geometry;
 }
 
