@@ -12,119 +12,111 @@ var windowHalfY = window.innerHeight / 2;
 var mouseDownX, mouseDownY;
 function init() {
 
-	container = document.createElement( 'div' );
-	document.body.appendChild( container );
+    container = document.createElement('div');
+    document.body.appendChild(container);
 
-	camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1500);
-	camera.position.z = 600;
-	camera.position.x = startCamPosition[0] * tileSize;
-	camera.position.y = startCamPosition[1] * tileSize;
+    camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 1, 1500);
+    camera.position.z = 900;
+    camera.position.x = startCamPosition[0] * tileSize;
+    camera.position.y = startCamPosition[1] * tileSize;
 
-	scene = new THREE.Scene();
-	
-	console.log("Load scene");
-	createScene();
+    scene = new THREE.Scene();
 
-	console.log("Loaded scene");
-	
-	// setup renderer
+    console.log("Load scene");
+    createScene();
 
-	//renderer = new THREE.CanvasRenderer();
-	renderer = new THREE.WebGLRenderer();
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	renderer.setClearColorHex(0xff0000, 1);
+    console.log("Loaded scene");
 
-	container.appendChild( renderer.domElement );
+    // setup renderer
+
+    //renderer = new THREE.CanvasRenderer();
+    renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColorHex(0xff0000, 1);
+
+    container.appendChild(renderer.domElement);
 
 
-	//default stats  component
-	stats = new Stats();
-	stats.domElement.style.position = 'absolute';
-	stats.domElement.style.top = '0px';
-	container.appendChild( stats.domElement );
+    //default stats  component
+    stats = new Stats();
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.top = '0px';
+    container.appendChild(stats.domElement);
 
-	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-	document.addEventListener( 'touchstart', onDocumentTouchStart, false );
-	document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+    document.addEventListener('mousedown', onDocumentMouseDown, false);
+    document.addEventListener('touchstart', onDocumentTouchStart, false);
+    document.addEventListener('touchmove', onDocumentTouchMove, false);
 
-	window.addEventListener( 'resize', onWindowResize, false );
+    window.addEventListener('resize', onWindowResize, false);
 }
 
-function createScene()
-{	
-    for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++)
-	{	
-        for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++)
-		{		
-			for (var k = 0; k < 8; k++)
-			{
-				var block = level.map[i][j][k];
-				
-				if(block != undefined)
-				{ 
-					CreateBlock(i, j, k, block);			
-				}
-			}
-		}
-	}
+function createScene() {
+    for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++) {
+        for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++) {
+            for (var k = 0; k < 8; k++) {
+                var block = level.map[i][j][k];
+
+                if (block != undefined) {
+                    CreateBlock(i, j, k, block);
+                }
+            }
+        }
+    }
 }
 
 var tileSize = 64;
+var tileSizeH = tileSize / 2;
+var tileSizeQ = tileSize / 4;
+var tileSizeE = tileSize / 8;
 
 //Lid Geometry
-var lidGeometry = new THREE.PlaneGeometry( tileSize, tileSize);
+var lidGeometry = new THREE.PlaneGeometry(tileSize, tileSize);
 
 //Edge Geometry
-var edgeGeometry = new THREE.Geometry(); 
-var v1 = new THREE.Vector3(-tileSize/2, 0, -tileSize/2);
-var v2 = new THREE.Vector3(tileSize/2, 0, -tileSize/2);
-var v3 = new THREE.Vector3(tileSize/2, 0, tileSize/2);
-var v4 = new THREE.Vector3(-tileSize/2, 0, tileSize/2);
+var edgeGeometry = new THREE.Geometry();
+var v1 = new THREE.Vector3(-tileSizeH, 0, -tileSizeH);
+var v2 = new THREE.Vector3(tileSizeH, 0, -tileSizeH);
+var v3 = new THREE.Vector3(tileSizeH, 0, tileSizeH);
+var v4 = new THREE.Vector3(-tileSizeH, 0, tileSizeH);
 
 edgeGeometry.vertices.push(v1);
 edgeGeometry.vertices.push(v2);
 edgeGeometry.vertices.push(v3);
 edgeGeometry.vertices.push(v4);
 
-edgeGeometry.faces.push( new THREE.Face4( 3, 2, 1, 0));
-	
+edgeGeometry.faces.push(new THREE.Face4(3, 2, 1, 0));
+
 var faceuv = [
-	new THREE.Vector2(1, 1),	
+	new THREE.Vector2(1, 1),
 	new THREE.Vector2(0, 1),
 	new THREE.Vector2(0, 0),
 	new THREE.Vector2(1, 0)
-	
+
 ];
 
-edgeGeometry.faceVertexUvs[0].push(faceuv); 
+edgeGeometry.faceVertexUvs[0].push(faceuv);
 edgeGeometry.computeFaceNormals();
 
-function CreateBlock(x, y, z, block)
-{
+function CreateBlock(x, y, z, block) {
 
-    if (block.Left != undefined && block.Left.tileNumber != 0)
-	{
-	    CreatePolygon(x, y, z, block.Left, FaceType.Left, block);
-	}
-	
-	if (block.Right != undefined && block.Right.tileNumber != 0)
-	{
-	    CreatePolygon(x, y, z, block.Right, FaceType.Right, block);
-	}
-	
-	if (block.Top != undefined && block.Top.tileNumber != 0)
-	{
-	    CreatePolygon(x, y, z, block.Top, FaceType.Top, block);
-	}
-	
-	if (block.Bottom != undefined && block.Bottom.tileNumber != 0)
-	{
-		CreatePolygon(x, y, z, block.Bottom, FaceType.Bottom, block);
-	}
-	
-	if(block.Lid != undefined && block.Lid.tileNumber != 0)
-	{
-	    CreatePolygon(x, y, z, block.Lid, FaceType.Lid, block);
+    if (block.Left != undefined && block.Left.tileNumber != 0) {
+        CreatePolygon(x, y, z, block.Left, FaceType.Left, block);
+    }
+
+    if (block.Right != undefined && block.Right.tileNumber != 0) {
+        CreatePolygon(x, y, z, block.Right, FaceType.Right, block);
+    }
+
+    if (block.Top != undefined && block.Top.tileNumber != 0) {
+        CreatePolygon(x, y, z, block.Top, FaceType.Top, block);
+    }
+
+    if (block.Bottom != undefined && block.Bottom.tileNumber != 0) {
+        CreatePolygon(x, y, z, block.Bottom, FaceType.Bottom, block);
+    }
+
+    if (block.Lid != undefined && block.Lid.tileNumber != 0) {
+        CreatePolygon(x, y, z, block.Lid, FaceType.Lid, block);
     }
 }
 
@@ -146,8 +138,7 @@ function getTile(tileNo) {
 }
 
 var cnt = 0;
-function CreatePolygon(x, y, z, face, type, block)
-{
+function CreatePolygon(x, y, z, face, type, block) {
     var material;
     if (face.tileNumber == undefined) {
         return;
@@ -158,320 +149,420 @@ function CreatePolygon(x, y, z, face, type, block)
     else {
         material = getTile(face.tileNumber);
     }
-	var geometry;
-	
-	if (type == FaceType.Lid) {
-	    geometry = CreateLid(new THREE.Vector2(tileSize / 2, -tileSize / 2), block.slopeType);
-	}
-	else if (block.slopeType == SlopeType.DiagonalFacingDownRight && (type == FaceType.Bottom || type == FaceType.Right)) { // down right
-		geometry = CreateEdge(new THREE.Vector2(tileSize/2, tileSize/2), new THREE.Vector2(-tileSize, -tileSize));
-	}
-	else if (block.slopeType == SlopeType.DiagonalFacingDownLeft && (type == FaceType.Bottom || type == FaceType.Left)) { // down left
-	    geometry = CreateEdge(new THREE.Vector2(tileSize / 2, -tileSize / 2), new THREE.Vector2(-tileSize, tileSize));
-	}
-	else if (block.slopeType == SlopeType.DiagonalFacingUpRight && (type == FaceType.Top || type == FaceType.Right)) {  // up right
-	    geometry = CreateEdge(new THREE.Vector2(-tileSize / 2, tileSize / 2), new THREE.Vector2(tileSize, -tileSize));
-	}
-	else if (block.slopeType == SlopeType.DiagonalFacingUpLeft && (type == FaceType.Top || type == FaceType.Left)) {  // up left
-	    geometry = CreateEdge(new THREE.Vector2(-tileSize / 2, -tileSize / 2), new THREE.Vector2(tileSize, tileSize));
-	}
-	else if (type == FaceType.Top)
-	{
-		geometry = CreateEdge(new THREE.Vector2(-tileSize/2, tileSize/2), new THREE.Vector2(tileSize, 0));
-	}
-	else if(type == FaceType.Bottom)
-	{
-		geometry = CreateEdge(new THREE.Vector2(tileSize/2, -tileSize/2), new THREE.Vector2(-tileSize, 0));
-	}
-	else if(type == FaceType.Left)
-	{
-	    geometry = CreateEdge(new THREE.Vector2(-tileSize / 2, -tileSize / 2), new THREE.Vector2(0, tileSize));
-	}
-	else if(type == FaceType.Right)
-	{
-		geometry = CreateEdge(new THREE.Vector2(tileSize/2, tileSize/2), new THREE.Vector2(0, -tileSize));
-	}
 
-	var materialList = [material];
-	if(showWireframe) {
-	    wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
-	    materialList.push(wireMaterial);
-	}
-	var edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, materialList);
-	
-	
-	var x = x * tileSize;
-	var y = y * tileSize;
-	var z = z * tileSize;
-		
-	RotateUV(edge.children[0].geometry, face.rotation);
-	
-	if (face.flip == 1) {
-	    if (type == FaceType.Lid) {
-	        MirrorUV(edge.children[0].geometry, 'x');
-	    } else {
-	        MirrorUV(edge.children[0].geometry, 'y');
-	    }
-	}
-		
-	edge.position.x = x;
-	edge.position.y = -y;
-	edge.position.z = z;
-	scene.overdraw = true;
 
-	scene.add(edge);	
+    var geometry;
+
+    if (type == FaceType.Lid) {
+
+        geometry = CreateLid(new THREE.Vector2(tileSizeH, -tileSizeH), block.slopeType);
+    }
+    else if (block.slopeType == SlopeType.DiagonalFacingDownRight && (type == FaceType.Bottom || type == FaceType.Right)) { // down right
+        geometry = CreateEdge(new THREE.Vector2(tileSizeH, tileSizeH), new THREE.Vector2(-tileSize, -tileSize));
+    }
+    else if (block.slopeType == SlopeType.DiagonalFacingDownLeft && (type == FaceType.Bottom || type == FaceType.Left)) { // down left
+        geometry = CreateEdge(new THREE.Vector2(tileSizeH, -tileSizeH), new THREE.Vector2(-tileSize, tileSize));
+    }
+    else if (block.slopeType == SlopeType.DiagonalFacingUpRight && (type == FaceType.Top || type == FaceType.Right)) {  // up right
+        geometry = CreateEdge(new THREE.Vector2(-tileSizeH, tileSizeH), new THREE.Vector2(tileSize, -tileSize));
+    }
+    else if (block.slopeType == SlopeType.DiagonalFacingUpLeft && (type == FaceType.Top || type == FaceType.Left)) {  // up left
+        geometry = CreateEdge(new THREE.Vector2(-tileSizeH, -tileSizeH), new THREE.Vector2(tileSize, tileSize));
+    }
+    else if (type == FaceType.Top) {
+        geometry = CreateEdge(new THREE.Vector2(-tileSizeH, tileSizeH), new THREE.Vector2(tileSize, 0), block.slopeType, type);
+    }
+    else if (type == FaceType.Bottom) {
+        geometry = CreateEdge(new THREE.Vector2(tileSizeH, -tileSizeH), new THREE.Vector2(-tileSize, 0), block.slopeType, type);
+    }
+    else if (type == FaceType.Left) {
+        geometry = CreateEdge(new THREE.Vector2(-tileSizeH, -tileSizeH), new THREE.Vector2(0, tileSize), block.slopeType, type);
+    }
+    else if (type == FaceType.Right) {
+        geometry = CreateEdge(new THREE.Vector2(tileSizeH, tileSizeH), new THREE.Vector2(0, -tileSize), block.slopeType, type);
+    }
+
+    var materialList = [material];
+    if (showWireframe) {
+        wireMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, transparent: true });
+        materialList.push(wireMaterial);
+    }
+    var edge = new THREE.SceneUtils.createMultiMaterialObject(geometry, materialList);
+    //var edge = new THREE.Mesh(geometry, wireMaterial);
+
+    var x = x * tileSize;
+    var y = y * tileSize;
+    var z = z * tileSize;
+
+
+    if (type == FaceType.Lid && (block.slopeType == 48 || block.slopeType == 47 || block.slopeType == 46 || block.slopeType == 45)) {
+
+        if (block.slopeType == 48) { // Bottom Right
+        }
+        else if (block.slopeType == 47) {  // Bottom Left
+            RotateUV(edge.children[0].geometry, 270);
+        }
+        else if (block.slopeType == 46) { // Top Right
+            //alert("test");
+            RotateUV(edge.children[0].geometry, 90);
+        }
+        else if (block.slopeType == 45) {  // Top Left
+            RotateUV(edge.children[0].geometry, 180);
+
+        }
+        if (face.flip == 1)
+            MirrorUV(edge.children[0].geometry, "x");
+
+        RotateUV(edge.children[0].geometry, face.rotation);
+
+        //console.log(block.slopeType + ":" + face.rotation + (face.flip ? " flipped" : "") + "," + face.tileNumber);
+    } else {
+
+        RotateUV(edge.children[0].geometry, face.rotation);
+
+        if (face.flip == 1) {
+            if (type == FaceType.Lid) {
+                MirrorUV(edge.children[0].geometry, 'x');
+            } else {
+                MirrorUV(edge.children[0].geometry, 'y');
+            }
+        }
+    }
+
+
+    edge.position.x = x;
+    edge.position.y = -y;
+    edge.position.z = z;
+    scene.overdraw = false;
+
+    scene.add(edge);
+}
+/*
+Up = v3, v4
+Down = v1, v2
+Left = v2, v3
+Right = v1, v4
+*/
+
+function ModifyToSlope(v1, v2, v3, v4, sv1, sv2, slopeAmount, start) {
+    // Move completely down
+    v1.z -= tileSize - start;
+    v2.z -= tileSize - start;
+    v3.z -= tileSize - start;
+    v4.z -= tileSize - start;
+
+    sv1.z += slopeAmount;
+    sv2.z += slopeAmount;
 }
 
+function CreateLid(start, slopeType) {
+    var v1 = new THREE.Vector3(start.x, start.y, tileSizeH);
+    var v2 = new THREE.Vector3(start.x - tileSize, start.y, tileSizeH);
+    var v3 = new THREE.Vector3(start.x - tileSize, start.y + tileSize, tileSizeH);
+    var v4 = new THREE.Vector3(start.x, start.y + tileSize, tileSizeH);
 
-function CreateLid(start, slopeType)
-{
-    var v1 = new THREE.Vector3(start.x, start.y, tileSize / 2);
-    var v2 = new THREE.Vector3(start.x - tileSize, start.y, tileSize / 2);
-    var v3 = new THREE.Vector3(start.x - tileSize, start.y + tileSize, tileSize / 2);
-    var v4 = new THREE.Vector3(start.x, start.y + tileSize, tileSize / 2);
-
-    if (slopeType == 7 || slopeType == 8) {
-        if (slopeType == 8) {
-            v1.z += tileSize / 2;
-            v2.z += tileSize / 2;
-            v3.z += tileSize / 2;
-            v4.z += tileSize / 2;
-        }
-        v1.z -= tileSize / 2;
-        v2.z -= tileSize;
-        v3.z -= tileSize;
-        v4.z -= tileSize / 2;
+    // Whole slopes
+    if (slopeType == 41) { // Down
+        ModifyToSlope(v1, v2, v3, v4, v3, v4, tileSize, 0);
+    }
+    else if (slopeType == 42) { // Up
+        ModifyToSlope(v1, v2, v3, v4, v1, v2, tileSize, 0);
+    }
+    else if (slopeType == 43) { // Left
+        ModifyToSlope(v1, v2, v3, v4, v2, v3, tileSize, 0);
+    }
+    else if (slopeType == 44) { // Right
+        ModifyToSlope(v1, v2, v3, v4, v1, v4, tileSize, 0);
     }
 
-    if (slopeType == 5 || slopeType == 6) {
-        if (slopeType == 6) {
-            v1.z += tileSize / 2;
-            v2.z += tileSize / 2;
-            v3.z += tileSize / 2;
-            v4.z += tileSize / 2;
-        }
-        v1.z -= tileSize;
-        v2.z -= tileSize / 2;
-        v3.z -= tileSize / 2;
-        v4.z -= tileSize;
+    // Half degree slopes
+    if (slopeType == 1) // Up
+    {
+        ModifyToSlope(v1, v2, v3, v4, v3, v4, tileSizeH, 0);
+    }
+    else if (slopeType == 2) {
+        ModifyToSlope(v1, v2, v3, v4, v3, v4, tileSizeH, tileSizeH);
+    }
+    else if (slopeType == 3) // Down
+    {
+        ModifyToSlope(v1, v2, v3, v4, v1, v2, tileSizeH, 0);
+    }
+    else if (slopeType == 4) {
+        ModifyToSlope(v1, v2, v3, v4, v1, v2, tileSizeH, tileSizeH);
+    }
+    else if (slopeType == 5)  // Left low
+    {
+        ModifyToSlope(v1, v2, v3, v4, v2, v3, tileSizeH, 0);
+    }
+    else if (slopeType == 6)  // Left high
+    {
+        ModifyToSlope(v1, v2, v3, v4, v2, v3, tileSizeH, tileSizeH);
+    }
+    else if (slopeType == 7)  // Right low
+    {
+        ModifyToSlope(v1, v2, v3, v4, v1, v4, tileSizeH, 0);
+    }
+    else if (slopeType == 8)   // Right high
+    {
+        ModifyToSlope(v1, v2, v3, v4, v1, v4, tileSizeH, tileSizeH);
     }
 
-    if (slopeType == 1 || slopeType == 2) {
-        if (slopeType == 2) {
-            v1.z += tileSize / 2;
-            v2.z += tileSize / 2;
-            v3.z += tileSize / 2;
-            v4.z += tileSize / 2;
-        }
-        v1.z -= tileSize;
-        v2.z -= tileSize;
-        v3.z -= tileSize / 2;
-        v4.z -= tileSize / 2;
+    // Eight slopes
+    else if (slopeType >= 9 && slopeType <= 16) { // Up
+        var offset = slopeType - 9;
+        ModifyToSlope(v1, v2, v3, v4, v3, v4, tileSizeE, tileSizeE * offset);
+    }
+    else if (slopeType >= 17 && slopeType <= 24) {  // Down
+        var offset = slopeType - 17;
+        ModifyToSlope(v1, v2, v3, v4, v1, v2, tileSizeE, tileSizeE * offset);
+    }
+    else if (slopeType >= 25 && slopeType <= 32) { // Left
+        var offset = slopeType - 25;
+        ModifyToSlope(v1, v2, v3, v4, v2, v3, tileSizeE, tileSizeE * offset);
+    }
+    else if (slopeType >= 33 && slopeType <= 40) { // Right
+        var offset = slopeType - 33;
+        ModifyToSlope(v1, v2, v3, v4, v1, v4, tileSizeE, tileSizeE * offset);
     }
 
-    if (slopeType == 3 || slopeType == 4) {
-        if (slopeType == 4) {
-            v1.z += tileSize / 2;
-            v2.z += tileSize / 2;
-            v3.z += tileSize / 2;
-            v4.z += tileSize / 2;
-        }
-        v1.z -= tileSize / 2;
-        v2.z -= tileSize / 2;
-        v3.z -= tileSize;
-        v4.z -= tileSize;
+
+
+    var geometry;
+
+    // Diagonals
+    if (slopeType == 48) { // Bottom Right
+        geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(3, 2, 1));
+    }
+    else if (slopeType == 47) {  // Bottom Left
+        geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(0, 3, 2));
+    }
+    else if (slopeType == 46) { // Top Right
+        geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(2, 1, 0));
+    }
+    else if (slopeType == 45) {  // Top Left
+        geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(1, 0, 3));
+    }
+    else {
+        geometry = CreateFace(v1, v2, v3, v4);
     }
 
-    var geometry = CreateFace(v1, v2, v3, v4);
     return geometry;
 }
 
-function CreateEdge(start, span)
-{
-	var v1 = new THREE.Vector3(start.x, start.y, -tileSize/2);
-	var v2 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSize/2);
-	var v3 = new THREE.Vector3(start.x + span.x, start.y + span.y, tileSize/2);
-	var v4 = new THREE.Vector3(start.x, start.y, tileSize/2);
+function CreateEdge(start, span, slopeType, faceType) {
+    var v1 = new THREE.Vector3(start.x, start.y, -tileSizeH);
+    var v2 = new THREE.Vector3(start.x + span.x, start.y + span.y, -tileSizeH);
+    var v3 = new THREE.Vector3(start.x + span.x, start.y + span.y, tileSizeH);
+    var v4 = new THREE.Vector3(start.x, start.y, tileSizeH);
 
-	var geometry = CreateFace(v1, v2, v3, v4);
-	return geometry;
+
+    // Slopes
+    if (slopeType == 41) { // Up
+        if(faceType == FaceType.Right)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(3, 1, 0));
+        else if(faceType == FaceType.Left)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(2, 1, 0));
+        else
+            geometry = CreateFace(v1, v2, v3, v4);
+    }
+    else if (slopeType == 42) {  // Down
+        if (faceType == FaceType.Right)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(2, 1, 0));
+        else if(faceType == FaceType.Left)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(1, 0, 3));
+        else
+            geometry = CreateFace(v1, v2, v3, v4);
+    }
+    else if (slopeType == 43) { // Left
+        if (faceType == FaceType.Top) 
+            alert("in level");
+        else if(faceType == FaceType.Bottom)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(0, 2, 1));
+        else
+            geometry = CreateFace(v1, v2, v3, v4);
+    }
+    else if (slopeType == 44) {  // Right
+        if (faceType == FaceType.Top)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(2, 1, 0));
+        else if (faceType == FaceType.Bottom)
+            geometry = CreateFace(v1, v2, v3, v4, new THREE.Face3(3, 1, 0));
+        else
+            geometry = CreateFace(v1, v2, v3, v4);
+}
+    else {
+        geometry = CreateFace(v1, v2, v3, v4);
+    }
+
+    return geometry;
 }
 
-function CreateFace(v1, v2, v3, v4)
-{
-	//Edge Geometry
-	var g = new THREE.Geometry(); 
-	
-	g.vertices.push(v1);
-	g.vertices.push(v2);
-	g.vertices.push(v3);
-	g.vertices.push(v4);
-	
-	g.faces.push( new THREE.Face4( 3, 2, 1, 0));
-		
-	var faceuv = [
-		new THREE.Vector2(1, 1),	
-		new THREE.Vector2(0, 1),
-		new THREE.Vector2(0, 0),
-		new THREE.Vector2(1, 0)	
-	];
-	
-	g.faceVertexUvs[0].push(faceuv); 
-	g.computeFaceNormals();
-	
-	return g;
+function CreateFace(v1, v2, v3, v4, face) {
+    if (!face)
+        face = new THREE.Face4(3, 2, 1, 0);
+
+    //Edge Geometry
+    var g = new THREE.Geometry();
+
+    g.vertices.push(v1);
+    g.vertices.push(v2);
+    g.vertices.push(v3);
+    g.vertices.push(v4);
+
+    g.faces.push(face);
+
+    var faceuv = [
+        new THREE.Vector2(1, 1),
+        new THREE.Vector2(0, 1),
+        new THREE.Vector2(0, 0),
+        new THREE.Vector2(1, 0)
+    ];
+
+    g.faceVertexUvs[0].push(faceuv);
+    g.computeFaceNormals();
+
+    return g;
 }
 
-function Rotate(target, x, y, z)
-{
-	if(x != 0)
-		target.rotation.x += (x / 360) * (Math.PI*2);
-	
-	if(y != 0)
-		target.rotation.y += (y / 360) * (Math.PI*2);
-	
-	if(z != 0)
-		target.rotation.z += (z / 360) * (Math.PI*2);
+function Rotate(target, x, y, z) {
+    if (x != 0)
+        target.rotation.x += (x / 360) * (Math.PI * 2);
+
+    if (y != 0)
+        target.rotation.y += (y / 360) * (Math.PI * 2);
+
+    if (z != 0)
+        target.rotation.z += (z / 360) * (Math.PI * 2);
 }
 
 function onWindowResize() {
+    windowHalfX = window.innerWidth / 2;
+    windowHalfY = window.innerHeight / 2;
 
-	windowHalfX = window.innerWidth / 2;
-	windowHalfY = window.innerHeight / 2;
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
 
-	camera.aspect = window.innerWidth / window.innerHeight;
-	camera.updateProjectionMatrix();
-
-	renderer.setSize( window.innerWidth, window.innerHeight );
-
+    renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
 //
 
-function onDocumentMouseDown( event ) {
+function onDocumentMouseDown(event) {
 
-	event.preventDefault();
+    event.preventDefault();
 
-	document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-	document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-	document.addEventListener( 'mouseout', onDocumentMouseOut, false );
+    document.addEventListener('mousemove', onDocumentMouseMove, false);
+    document.addEventListener('mouseup', onDocumentMouseUp, false);
+    document.addEventListener('mouseout', onDocumentMouseOut, false);
 
-	mouseDownX = event.clientX;
-	mouseDownY = event.clientY;
+    mouseDownX = event.clientX;
+    mouseDownY = event.clientY;
 }
 
-function onDocumentMouseMove( event ) {
+function onDocumentMouseMove(event) {
 
-	diffX = event.clientX - mouseDownX;
-	diffY = event.clientY - mouseDownY;
-	
-	mouseDownX = event.clientX;
-	mouseDownY = event.clientY;
-	
+    diffX = event.clientX - mouseDownX;
+    diffY = event.clientY - mouseDownY;
 
-	camera.position.y += diffY*3;
-	camera.position.x -= diffX*3;
+    mouseDownX = event.clientX;
+    mouseDownY = event.clientY;
 
-}
 
-function onDocumentMouseUp( event ) {
-
-	document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
-	document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
-	document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+    camera.position.y += diffY * 3;
+    camera.position.x -= diffX * 3;
 
 }
 
-function onDocumentMouseOut( event ) {
+function onDocumentMouseUp(event) {
 
-	document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
-	document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
-	document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
-
-}
-
-function onDocumentTouchStart( event ) {
-
-	if ( event.touches.length === 1 ) {
-
-		event.preventDefault();
-
-
-
-	}
+    document.removeEventListener('mousemove', onDocumentMouseMove, false);
+    document.removeEventListener('mouseup', onDocumentMouseUp, false);
+    document.removeEventListener('mouseout', onDocumentMouseOut, false);
 
 }
 
-function onDocumentTouchMove( event ) {
+function onDocumentMouseOut(event) {
 
-	if ( event.touches.length === 1 ) {
+    document.removeEventListener('mousemove', onDocumentMouseMove, false);
+    document.removeEventListener('mouseup', onDocumentMouseUp, false);
+    document.removeEventListener('mouseout', onDocumentMouseOut, false);
 
-		event.preventDefault();
+}
+
+function onDocumentTouchStart(event) {
+
+    if (event.touches.length === 1) {
+
+        event.preventDefault();
 
 
-	}
+
+    }
+
+}
+
+function onDocumentTouchMove(event) {
+
+    if (event.touches.length === 1) {
+
+        event.preventDefault();
+
+
+    }
 
 }
 
 //
 function animate() {
 
-	requestAnimationFrame( animate );
+    requestAnimationFrame(animate);
 
-	render();
-	stats.update();
+    render();
+    stats.update();
 
 }
 
 function render() {
-	physicsUpdate();
-	
-	renderer.render( scene, camera );
-	
+    physicsUpdate();
+
+    renderer.render(scene, camera);
+
 }
 
-function RotateUV(target, value)
-{
-	if(value == 0) return;
+function RotateUV(target, value) {
+    if (value == 0) return;
 
-	var uvs = target.faceVertexUvs[0][0];
-	
-	if(value == 90)
-	{
-		uvs.push(uvs.shift());
-	}
-	else if(value == 180 || value == -180)
-	{
-		uvs.push(uvs.shift());
-		uvs.push(uvs.shift());
-	}
-	else if(value == 270 || -90)
-	{
-		uvs.unshift(uvs.pop());
-	}
-	
-	target.faceVertexUvs[0][0] = uvs;
-	target.uvsNeedUpdate = true;
+    var uvs = target.faceVertexUvs[0][0];
+
+    if (value == 90) {
+        uvs.push(uvs.shift());
+    }
+    else if (value == 180 || value == -180) {
+        uvs.push(uvs.shift());
+        uvs.push(uvs.shift());
+    }
+    else if (value == 270 || value == -90) {
+        uvs.unshift(uvs.pop());
+    }
+
+    target.faceVertexUvs[0][0] = uvs;
+    target.uvsNeedUpdate = true;
 }
 
-function MirrorUV(target, value)
-{
-	var uvs = target.faceVertexUvs[0][0];
-			
-	if(value == 'y')
-	{
-		//Y mirror
-		uvs.reverse();
-	}
-	else
-	{
-		//x mirror
-		uvs.reverse();
-		var f = uvs.shift();
-		uvs.push(f);
-		var f = uvs.shift();
-		uvs.push(f);
-	}
-	
-	target.uvsNeedUpdate = true;
+function MirrorUV(target, value) {
+    var uvs = target.faceVertexUvs[0][0];
+
+    if (value == 'y') {
+        //Y mirror
+        uvs.reverse();
+    }
+    else {
+        //x mirror
+        uvs.reverse();
+        var f = uvs.shift();
+        uvs.push(f);
+        var f = uvs.shift();
+        uvs.push(f);
+    }
+
+    target.uvsNeedUpdate = true;
 }
