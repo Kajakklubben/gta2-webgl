@@ -141,8 +141,8 @@ function CreatePolygon(x, y, z, face, type, block) {
 
     var geometry;
 
-    if (type == FaceType.Lid) {
-
+    if (type == FaceType.Lid) 
+	{
         geometry = CreateLid(new THREE.Vector2(tileSizeH, -tileSizeH), block.slopeType);
     }
     else if (block.slopeType == SlopeType.DiagonalFacingDownRight && (type == FaceType.Bottom || type == FaceType.Right)) { // down right
@@ -232,12 +232,9 @@ function CreatePolygon(x, y, z, face, type, block) {
 
         RotateUV(edge.children[0].geometry, face.rotation);
 
-        if (face.flip) {
-            if (type == FaceType.Lid) {
-                MirrorUV(edge.children[0].geometry, 'x');
-            } else {
-                MirrorUV(edge.children[0].geometry, 'y');
-            }
+        if (face.flip) 
+		{
+			MirrorUV(edge.children[0].geometry, 'x');
         }
     }
 
@@ -269,11 +266,70 @@ function ModifyToSlope(v1, v2, v3, v4, sv1, sv2, slopeAmount, start) {
 
 function CreateLid(start, slopeType) {
     var geometry;
+	var size = tileSize;
 
+	////Partial Blocks
+	if(slopeType >= 53 && slopeType <= 61)
+	{
+		size = tileSize / (8/3);
+		
+		if(slopeType == 53)
+		{
+			//Left, center
+			start.x = -tileSizeH + size;
+			start.y = -size / 2;
+		}
+		else if(slopeType == 54)
+		{
+			//Right center
+			start.y = -size / 2;
+		}
+		else if(slopeType == 55)
+		{
+			//Top center
+			start.x = size / 2;
+			start.y = tileSizeH - size;		
+		}
+		else if(slopeType == 56)
+		{
+			//Bottom center
+			start.x = size / 2;
+			start.y = -tileSizeH;
+		}
+		else if(slopeType == 57)
+		{
+			//Top, left
+			start.x = -tileSizeH + size;
+			start.y = tileSizeH - size;	
+		}
+		else if(slopeType == 58)
+		{
+			//Top, right
+			start.y = tileSizeH - size;	
+		}
+		else if(slopeType == 59)
+		{
+			//Bottom, right
+			start.y = -tileSizeH;
+		}
+		else if(slopeType == 60 || true)
+		{
+			//Bottom, right
+			start.x = -tileSizeH + size;
+			start.y = -tileSizeH;
+		}
+		else if(slopeType == 61)
+		{
+			//Center
+			start.x = size / 2;
+			start.y = -size / 2;
+		}
+	}
+	
     var v1 = new THREE.Vector3(start.x, start.y, tileSizeH);
-    var v2 = new THREE.Vector3(start.x - tileSize, start.y, tileSizeH);
-    var v3 = new THREE.Vector3(start.x - tileSize, start.y + tileSize, tileSizeH);
-    var v4 = new THREE.Vector3(start.x, start.y + tileSize, tileSizeH);
+    var v2 = new THREE.Vector3(start.x - size, start.y, tileSizeH);
+    var v3 = new THREE.Vector3(start.x - size, start.y + size, tileSizeH);
+    var v4 = new THREE.Vector3(start.x, start.y + size, tileSizeH);
 
     // Whole slopes
     if (slopeType == 41) { // Down
@@ -320,7 +376,8 @@ function CreateLid(start, slopeType) {
     {
         ModifyToSlope(v1, v2, v3, v4, v1, v4, tileSizeH, tileSizeH);
     }
-        // Eight slopes
+	
+    // Eight slopes
     else if (slopeType >= 9 && slopeType <= 16) { // Up
         var offset = slopeType - 9;
         ModifyToSlope(v1, v2, v3, v4, v3, v4, tileSizeE, tileSizeE * offset);
@@ -355,6 +412,7 @@ function CreateLid(start, slopeType) {
         geometry = CreateFace(v1, v2, v3, v4);
     }
 
+	
     return geometry;
 }
 
