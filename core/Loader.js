@@ -11,13 +11,13 @@
 	{
 	    var ctx = this;
 	    this.loading = true;
-		getBinaryData("http://localhost:8000/MP1-comp.gmp", LoadComplete);
+		getBinaryData("http://localhost:8000/MP1-comp.gmp", MapLoadComplete);
 			
-		function LoadComplete(data, err)
+		function MapLoadComplete(data, err)
 		{
 			var mapData = data.responseText;
 			ctx.level = new ReadFromData(mapData);
-				
+			
 			getBinaryData("http://localhost:8000/bil.sty", StyleLoadComplete);
 		}
 			
