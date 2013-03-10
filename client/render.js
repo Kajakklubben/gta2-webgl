@@ -38,8 +38,8 @@
 		if(this.followTarget != null)
 		{
 			var target = new GTA.model.Point(this.camera.position.x-this.followTarget.GetPosition().x,this.camera.position.y-this.followTarget.GetPosition().y);
-			this.camera.position.x -= target.x/2;
-			this.camera.position.y -= target.y/2;
+			//this.camera.position.x -= target.x/2;
+			//this.camera.position.y -= target.y/2;
 
 		}
 	}
