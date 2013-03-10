@@ -20,6 +20,7 @@ function isSlopeType(type, array) {
     return $.inArray(type, array) != -1
 }
 
+
 var camera, scene, renderer;
 var camFov = 50;
 var camHeight = 700;

@@ -1,4 +1,5 @@
-
+var level;
+var style;
 
 
 (function(){
