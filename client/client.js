@@ -29,7 +29,9 @@ var Test = Class(function() {
 
             context.mapCollision = new GTA.core.CollisionMap();
             context.mapCollision.InterpretMapData(level.map);  //level.map is some global variable the fox told me
-            // context.mapCollision.SetupDebugRender(context.renderer.scene); //Enable this to debug collision map
+          	
+			if(drawCollisionMapDebug)
+			  context.mapCollision.SetupDebugRender(context.renderer.scene); //Enable this to debug collision map
 
             context.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
 

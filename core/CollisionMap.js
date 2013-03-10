@@ -78,7 +78,7 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 
 		        			kArray[k].push(fixDef);
 						}
-						t
+						
 						if(block.Right != undefined && block.Right.wall != 0)
 						{
 							p1 = new b2Vec2(32, -32);
