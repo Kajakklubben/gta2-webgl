@@ -15,7 +15,6 @@ var Test = Class(function() {
     game: false,
     player: false,
     renderer: false,
-    mapCollision: false,
     initGame: function()
     {
        
@@ -27,11 +26,9 @@ var Test = Class(function() {
             context.renderer = new GTA.client.Render(context.game);
             context.renderer.Init();
 
-            context.mapCollision = new GTA.core.CollisionMap();
-            context.mapCollision.InterpretMapData(level.map);  //level.map is some global variable the fox told me
           	
 			if(drawCollisionMapDebug)
-			  context.mapCollision.SetupDebugRender(context.renderer.scene); //Enable this to debug collision map
+			  context.game.loader.mapCollision.SetupDebugRender(context.renderer.scene); //Enable this to debug collision map
 
             context.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
 

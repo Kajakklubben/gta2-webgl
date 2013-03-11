@@ -149,7 +149,7 @@ function ReadTiles(reader, start, size, ppal, palx, uniqueTileNumbers) {
     {
         if (uniqueTileNumbers.length == 0 || $.inArray(id, uniqueTileNumbers) != -1) {
 		    
-			if ( localStorage.getItem('tile'+id)) 
+			if ( localStorage.getItem('tile'+id) && useLocalCachedStyleTiles) 
 			{
 	            var image = new Image();
 	            image.src = localStorage.getItem('tile'+id);

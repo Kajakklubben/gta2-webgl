@@ -21,7 +21,10 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 	GTA.namespace("GTA.core");
 	//constructor
 	GTA.core.CollisionMap = function(  ) {
+
+		// 3D Array containing b2FixtureDef array describing each tile
 		this.collisionData = false;
+				
 		return this;
 	}
 
@@ -37,7 +40,6 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 	       	for (var j = 0; j < 256; j++)
 			{	
 
-				//Iterate all blocks in z coordinate and update box2d category
 				kArray = new Array();
 				for (var k = 0; k < 8; k++)
 				{
@@ -49,8 +51,8 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 					if(block != undefined)
 					{ 	
 						
-						if(block.slopeType >= 45 && block.slopeType <= 48)
-						{
+						//Diagonals
+						if(block.slopeType >= 45 && block.slopeType <= 48){
 							if(block.slopeType == 45 || block.slopeType == 48){
 								p1 = new b2Vec2(-32, 32);
 								p2 = new b2Vec2(32, -32);
@@ -62,11 +64,10 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 	   						var fixDef = new b2FixtureDef;
 							fixDef.shape = new b2PolygonShape;
 		        			fixDef.shape.SetAsEdge(p1,p2);
-
 		        			kArray[k].push(fixDef);
-							
-						} 
+						}
 
+						//Sides
 						if(block.Left != undefined && block.Left.wall != 0)
 						{
 							p1 = new b2Vec2(-32, -32);
@@ -112,17 +113,10 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 
 		        			kArray[k].push(fixDef);
 		           		}		
-		           		
-
 					}
-					
-					
-
-					
 				}
 				
 				jArray[j] = kArray;
-
 
 			}
 			iArray[i] = jArray;
@@ -131,10 +125,10 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 		this.collisionData = iArray;
 	}
 
+
+
 	GTA.core.CollisionMap.prototype.SetupDebugRender = function(scene)
 	{
-		console.log(scene);
-
 		for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++)
 		{	
 	        for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++)
@@ -143,7 +137,6 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 				{	
 					for(var l=0 ; l<this.collisionData[i][j][k].length ; l++){
 			
-						//geometry = new THREE.CubeGeometry( tileSize+10, tileSize+10, 32 );
 						vertices = this.collisionData[i][j][k][l].shape.GetVertices();
 						
 						var geometry = new THREE.Geometry();
@@ -168,7 +161,5 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 				}
 			}
 		}
-
-	
 	}
 })();

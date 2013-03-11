@@ -15,6 +15,7 @@ var drawLevelArea = [170,       // minY
                         200,      // maxY
                         90];     // maxX
 var drawCollisionMapDebug = false;
+var useLocalCachedStyleTiles = true;
 
 </script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
@@ -60,11 +61,37 @@ var drawCollisionMapDebug = false;
 <script src="/render/render.js"></script>
 
 
+<style>
+#loadingMessages {
+	position: absolute; 
+	top: 10%;
+	width: 300px; 
+	text-align: left; 
+	left:100px; 
+	background-color:rgba(255, 255, 255, 0.7);
+	padding:10px;
+	padding-top:0px;
+	opacity:40%;
+	
+    border: 1px solid #c4c8cc;
+     -moz-border-radius: 15px;
+     -webkit-border-radius: 15px;
+}
+</style>
+
    
     </head>
 
     <body>
+		<div id="loadingScreen" style="position:absolute; width:100%; height:100%;">
+		    <div id="loadingMessages" style=" "></div>
+		    <!-- <div id="progressbar" style="width: 250px; border: 1px solid #bbb; height:20px; margin:0 auto; margin-top:150px">
+		        <div id="progressbarContent" style="position:relative; height:100%; background:#ccc; width:0%"></div> -->
+		</div>
+		
         <script type="text/javascript" charset="utf-8" src="client/client.js"></script>
+		
+ 
     </body>
 
 </html>
