@@ -80,7 +80,6 @@ var Test = Class(function() {
    if(type == GTA.Constants.MESSAGE_TYPES.SYNC)
       {
        
-          console.log(tick + '  -  '+Date.now());
           this.lasttick = tick;
           future = this.input.getFuture(tick);
           //revert all movement by future
