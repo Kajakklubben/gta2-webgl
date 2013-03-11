@@ -16,11 +16,6 @@ var downSlopeTypesTriangles = [42, 3];
 var leftSlopeTypesTriangles = [43, 5];
 var rightSlopeTypesTriangles = [44, 7];
 
-var upSlopeTypes = [41, 1, 2];
-var downSlopeTypes = [42, 3, 4];
-var leftSlopeTypes = [43, 5, 6];
-var rightSlopeTypes = [44, 7, 8, 33];
-
 function isSlopeType(type, array) 
 {
     return $.inArray(type, array) != -1
@@ -41,6 +36,7 @@ function init() {
     document.body.appendChild(container);
 
     camera = new THREE.PerspectiveCamera(camFov, window.innerWidth / window.innerHeight, 1, 1500);
+
     camera.position.z = camHeight;
     camera.position.x = startCamPosition[0] * tileSize;
     camera.position.y = startCamPosition[1] * tileSize;
@@ -143,7 +139,6 @@ function getTile(tileNo) {
     tileCache[tileNo] = material;
 
     return material;
-
 }
 
 var cnt = 0;
@@ -263,6 +258,7 @@ function CreatePolygon(x, y, z, face, type, block) {
     edge.position.y = -y;
     edge.position.z = z;
     scene.overdraw = false;
+    edge.children[0].frustumCulled = false;
 
     //scene.add(edge);
 	return edge;
@@ -476,8 +472,9 @@ function CreateEdge(start, span, slopeType, faceType) {
     var partialUvs = false;
 	
     if (slopeType <= 2) { // Up
-        debugger;
-        alert("not implemented");
+        var step = slopeType - 1;
+        var no = (faceType != FaceType.Left) ? (faceType != FaceType.Right) ? 0 : 2 : 1;
+        modifyHeights(h, no, tileSizeH, step);
     }
     else if (slopeType <= 4) { // Down
         var step = slopeType - 3;
@@ -490,11 +487,13 @@ function CreateEdge(start, span, slopeType, faceType) {
         modifyHeights(h, no, tileSizeH, step);
     }
     else if (slopeType <= 8) { // Right
+        console.log(slopeType);
         var step = slopeType - 7;
         var no = (faceType != FaceType.Bottom) ? (faceType != FaceType.Top) ? 0 : 1 : 2;
         modifyHeights(h, no, tileSizeH, step);
     }
     else if (slopeType >= 33 && slopeType <= 40) { // Right 7 degree
+
         var step = slopeType - 33;
         var no = (faceType != FaceType.Bottom) ? (faceType != FaceType.Top) ? 0 : 1 : 2;
         modifyHeights(h, no, tileSizeE, step);
@@ -625,6 +624,10 @@ function CreateEdge(start, span, slopeType, faceType) {
 		uvs[3].x = partialUvsMargin + partialUvsSize;
 	}
 	
+
+    console.log(uvs[0].y);
+    console.log(uvs[1].y);
+
     geometry.faceVertexUvs[0][0] = uvs;
 	
     return geometry;
