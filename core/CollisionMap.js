@@ -129,9 +129,6 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 		}
 
 		this.collisionData = iArray;
-
-		console.log(this.collisionData);
-
 	}
 
 	GTA.core.CollisionMap.prototype.SetupDebugRender = function(scene)

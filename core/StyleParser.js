@@ -148,22 +148,33 @@ function ReadTiles(reader, start, size, ppal, palx, uniqueTileNumbers) {
     for (var id = 0; id < tilesCount; id++)
     {
         if (uniqueTileNumbers.length == 0 || $.inArray(id, uniqueTileNumbers) != -1) {
-            //console.log("Parsing tile " + id);
-            var pallete = palx[id];
-            var canvas = createCanvas(64, 64);
-            var context = canvas.getContext("2d");
+		    
+			if ( localStorage.getItem('tile'+id)) 
+			{
+	            var image = new Image();
+	            image.src = localStorage.getItem('tile'+id);
+			}
+			else 
+			{
+	            var pallete = palx[id];
+	            var canvas = createCanvas(64, 64);
+	            var context = canvas.getContext("2d");
         
-            for (var y = 0; y < 64; ++y) {
-                for (var x = 0; x < 64; ++x) {
-                    var tileColor = reader.getUint8(start + (y + Math.floor(id/4) * 64) * 256 + (x + (id % 4) * 64));
-                    var palID = (Math.floor(pallete / 64)) * 256 * 64 + (pallete % 64) + tileColor * 64;
-                    var baseColor = ppal[palID];
-                    drawPixel(context, x, y, baseColor); 
-                }
-            }
-            var image = new Image();
-            image.src = canvas.toDataURL("image/png");      
-            tiles.push(image);
+	            for (var y = 0; y < 64; ++y) {
+	                for (var x = 0; x < 64; ++x) {
+	                    var tileColor = reader.getUint8(start + (y + Math.floor(id/4) * 64) * 256 + (x + (id % 4) * 64));
+	                    var palID = (Math.floor(pallete / 64)) * 256 * 64 + (pallete % 64) + tileColor * 64;
+	                    var baseColor = ppal[palID];
+	                    drawPixel(context, x, y, baseColor); 
+	                }
+	            }
+	            var image = new Image();
+	            image.src = canvas.toDataURL("image/png");      
+			
+				localStorage.setItem('tile'+id,image.src);
+			} 
+            
+			tiles.push(image);
             loaded++;
         } else {
             //Skipping tile since it's not part of the map
