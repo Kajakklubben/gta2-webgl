@@ -30,6 +30,8 @@ var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
 var mouseDownX, mouseDownY;
+
+
 function init() {
 
     container = document.createElement('div');
@@ -44,7 +46,7 @@ function init() {
     scene = new THREE.Scene();
 	
 	sceneObjects = new Array(); //Contains all the Object3D containing a whole tile (full height)
-	visibleSceneObject = new Array(); //All the tiles currently drawn
+	visibleSceneObjects = new Array(); //All the tiles currently drawn
 	
 
     console.log("Load scene");
@@ -751,6 +753,8 @@ function animate() {
 
 }
 
+
+
 function render() {
 	camX = Math.round(camera.position.x/64);
 	camY = Math.round(camera.position.y/64);
@@ -760,10 +764,20 @@ function render() {
 	camH = 14;
 	
 	
-	for(var i=0 ; i<visibleSceneObject.length ; i++){
-		scene.remove(visibleSceneObject[i]);		
+
+//	oldVisibleSceneObjects = visibleSceneObjects;
+	
+	for(var i=visibleSceneObjects.length-1 ; i>=0 ; i--){
+		if(visibleSceneObjects[i].x < camX-camW*0.5 || visibleSceneObjects[i].x >= camX+camW*0.5 || visibleSceneObjects[i].y < camY-camH*0.5 || visibleSceneObjects[i].y >= camY+camH*0.5){
+//			console.log("remove "+visibleSceneObjects[i].x+ " , "+visibleSceneObjects[i].y );
+			scene.remove(visibleSceneObjects[i].object3d);		
+				
+			visibleSceneObjects.splice(i,1);
+//				i--;
+
+		}	
 	}
-	visibleSceneObject = new Array();
+	//visibleSceneObjects = new Array();
 	
 	for(var x = camX-camW*0.5 ; x < camX+camW*0.5 ; x++){
 
@@ -774,8 +788,15 @@ function render() {
 				if(sceneObjectY != undefined){
 
 					if(sceneObjectY.parent == undefined){
-						scene.add(sceneObjectY);
-						visibleSceneObject.push(sceneObjectY);
+						visibleSceneObject = new Object();
+						visibleSceneObject.object3d = sceneObjectY;
+						visibleSceneObject.x = x;
+						visibleSceneObject.y = y;
+
+						scene.add(visibleSceneObject.object3d);
+					//	console.log("add "+x+ " , "+y);
+
+						visibleSceneObjects.push(visibleSceneObject);
 					}
 				}
 			}
