@@ -18,8 +18,23 @@
 	{
 		this.messageStartTime = new Date().getTime();
 		
-		this.lastDiv = $("<br><div style='float:left;'>"+msg+"</div>");
+		if(this.additionalMessages){
+			this.ShowAdditionalLoadingMessage("&nbsp;");
+		}
+		
+		
+		this.lastDiv = $("<div style='float:left;'>"+msg+"</div>");
+		this.loadingDiv.append("<br>");
+		
+		if(this.additionalMessages){
+			this.loadingDiv.append("<br>");
+		}
+		
+		
 		this.loadingDiv.append(this.lastDiv);
+
+		this.additionalMessages = false;
+
 	}
 
 	GTA.core.Loader.prototype.ShowMessageDone= function()
@@ -31,9 +46,11 @@
 		this.loadingDiv.append("<div style='float:right; color:green; font-weight:norma; margin-right:0px;'><b>Done</b> "+seconds.toFixed(1)+"sec</div>");
 	}
 
-	GTA.core.Loader.prototype.ShowAdditionalMessage= function(msg)
+	GTA.core.Loader.prototype.ShowAdditionalLoadingMessage = function(msg)
 	{
-		this.lastDiv.append("<br><span style='font-style:italic; margin-left:20px'>msg</i>");
+		this.additionalMessages = true;		
+		this.lastDiv.append("<br><span style='font-style:italic; margin-left:20px'>"+msg+"</i>");
+		
 	}
 
 
@@ -41,6 +58,14 @@
 
 	GTA.core.Loader.prototype.LoadData = function(OnCompleted)
 	{
+		this.ShowMessage("Reading settings");				
+		this.ShowAdditionalLoadingMessage("Draw Level Area Origin: "+drawLevelArea[1]+","+drawLevelArea[0]);						
+		this.ShowAdditionalLoadingMessage("Draw Level Area Size: "+(drawLevelArea[3]-drawLevelArea[1])+"x"+(drawLevelArea[2]-drawLevelArea[0]));						
+		this.ShowAdditionalLoadingMessage("Start Cam Position: "+startCamPosition[0]+","+startCamPosition[1]);						
+		this.ShowAdditionalLoadingMessage("Load Textures: "+loadTextures);						
+		this.ShowAdditionalLoadingMessage("Use Local Cached Style Tiles: "+useLocalCachedStyleTiles);						
+		
+
 		this.ShowMessage("Loading Map data");
 		
 	    var ctx = this;
@@ -52,7 +77,10 @@
 			ctx.ShowMessageDone(); //Loading map data
 			
 			var mapData = data.responseText;
-			ctx.level = new ReadFromData(mapData);
+			
+			ctx.level = new GTA.core.MapParser();
+			ctx.level.LoadingContext = ctx;
+			ctx.level.ReadFromData(mapData);
 			
 			ctx.ShowMessage("Loading Style data");
 			
@@ -68,7 +96,12 @@
 
 			setTimeout(function(){
 				if (loadTextures) {
-				    ctx.style = ParseStyle(styleData, getTileNumbers(ctx.level));
+					styleParser = new GTA.core.StyleParser();
+					styleParser.LoadingContext = ctx;
+					
+				    ctx.style = styleParser.ParseStyle(styleData, getTileNumbers(ctx.level));
+				} else {
+					this.ShowAdditionalLoadingMessage("Loading without textures.")
 				}
 			
 				level = ctx.level;
@@ -100,7 +133,7 @@
 					
 				setTimeout(function(){
 					ctx.loadingDiv.fadeOut(200);
-				}, 1500);
+				}, 2500);
 			},10);
 		}
 		
