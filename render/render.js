@@ -258,7 +258,7 @@ function CreatePolygon(x, y, z, face, type, block) {
     edge.position.y = -y;
     edge.position.z = z;
     scene.overdraw = false;
-    edge.children[0].frustumCulled = false;
+	// edge.children[0].frustumCulled = false; //Slows down alot! - Havørnen
 
     //scene.add(edge);
 	return edge;
