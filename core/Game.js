@@ -33,16 +33,19 @@
 	GTA.game.Game.prototype.start = function()
 	{
 		var ptr = this; 
-		setInterval(function() {ptr.update()},1000/30);
+		setInterval(function() {ptr.update(false)},1000/30);
 	}
-	GTA.game.Game.prototype.update = function()
+	
+	GTA.game.Game.prototype.update = function(deltaTime)
 	{
 		if(this.loader != undefined && this.loader.loading)
 		{
 			return;
 		}
-
-		var deltaTime = (Date.now()-this.lastTime) /1000;
+		if(!deltaTime)
+		{
+			deltaTime = (Date.now()-this.lastTime) /1000;
+		}
 		for(var i in this.levelState.players)
 		{
 			this.levelState.players[i].update(deltaTime);

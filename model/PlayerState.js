@@ -80,6 +80,27 @@
 		}
 	}
 
+
+	GTA.model.PlayerState.prototype.fastForward = function(inputStates)
+	{
+		return;
+		var oldState = this.keyboard.constructInputBitmask();
+		inputStates.reverse();
+		for(var i in inputStates)
+		{
+			this.keyboard.setInput(inputStates[i]);
+
+			this.update();
+
+		}
+
+		this.keyboard.setInput(oldState);
+	}
+	GTA.model.PlayerState.prototype.revert = function(inputStates)
+	{
+
+	}
+
 	//Get as delta compressed string
 
 })();

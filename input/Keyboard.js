@@ -5,12 +5,46 @@
 	 */
 	GTA.Input.Keyboard = function() {
 	   this.keys = {'tab': false, 'shift': false, 'space': false, 'up': false, 'down': false, 'left': false, "right": false }
+	   
 	};
 
 	GTA.Input.Keyboard.prototype = {
 		keyCodes: { '16': 'shift', '32': 'space', '37': 'left', '38': 'up', '39': 'right', '40': 'down', '9': 'tab'},
 		keyPressed: 0,
+		states: [],
+		addState: function(tick, state)
+		{
+			states.push({tick:tick,state:state});
+		},
+		//Returns all nonprocessed inputs, and remove the processed ones
+		getFuture: function(tick)
+		{
+			var future = [];
+			var toDel = [];
+			var foundPresent = false;
+			for(var i in this.states)
+			{
+				if(states[i].tick == tick)
+				{
+					toDel.push(this.states[i]);
+					foundPresent = true;
 
+				}
+				else if(foundPresent)
+				{
+					future.push(this.states[i]);
+				}
+				else if(tick>this.states[i].tick)
+				{
+					toDel.push(this.states[i]);
+				}
+			}
+			for(var i in toDel)
+			{
+				this.states.splice(staes.indexOf(toDel[i]));
+			}
+			return future;			
+		},
 		dealloc: function() {
 			//document.removeEventListener('keydown', function(e) { that.keyDown(e); }, false);
 			//document.removeEventListener('keyup', function(e) { that.keyUp(e); }, false);
@@ -107,5 +141,7 @@
 		isSpace: function() { return this.keys['space']; },
 		isShift: function() { return this.keys['shift']; },
 		isTab: function() { return this.keys['tab']; }
+
+
 	};
 })();

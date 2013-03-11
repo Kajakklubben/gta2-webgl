@@ -49,6 +49,7 @@ var Test = Class(function() {
         
     },
     inputState: 0,
+    inputStates: [],
     render: function(t, dt, u) {
 
     var newInput  = this.input.constructInputBitmask();
@@ -63,6 +64,8 @@ var Test = Class(function() {
         {
             this.renderer.update();
         }
+
+        this.game.update(false);
     },
 
     stopped: function() {
@@ -77,8 +80,15 @@ var Test = Class(function() {
    if(type == GTA.Constants.MESSAGE_TYPES.SYNC)
       {
        
-          this.game.fromJson(data[0]);
+          console.log(tick + '  -  '+Date.now());
           this.lasttick = tick;
+          future = this.input.getFuture(tick);
+          //revert all movement by future
+          this.player.revert(future);
+          //set current position
+          this.game.fromJson(data[0]);
+          //apply future movement
+          //this.player.play(future);
       }
        
     },
