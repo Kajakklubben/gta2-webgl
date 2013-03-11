@@ -14,12 +14,16 @@ var drawLevelArea = [170,       // minY
                         70,      // minX
                         200,      // maxY
                         90];     // maxX
+var drawCollisionMapDebug = false;
+
 </script>
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 
          <script src="/three/build/three.min.js"></script>
 
         <script src="/three/examples/js/libs/stats.min.js"></script>
+        
+        <script src="box2d/Box2dWeb-2.1.a.3.min.js" type="application/javascript"></script>
 
         <script type="text/javascript" charset="utf-8" src="/maple/lib/bison.js"></script>
         <script type="text/javascript" charset="utf-8" src="/maple/lib/Class.js"></script>
@@ -30,6 +34,7 @@ var drawLevelArea = [170,       // minY
         <script type="text/javascript" charset="utf-8" src="/core/Game.js"></script>
         <script type="text/javascript" charset="utf-8" src="/core/Loader.js"></script>
         <script type="text/javascript" charset="utf-8" src="/core/StyleParser.js"></script>
+        <script type="text/javascript" charset="utf-8" src="/core/CollisionMap.js"></script>
         <script type="text/javascript" charset="utf-8" src="/client/render.js"></script>
         <script type="text/javascript" charset="utf-8" src="/client/renderers/PlayerRender.js"></script>
 
@@ -50,9 +55,7 @@ var drawLevelArea = [170,       // minY
 <script src="/render/constants.js" type="application/javascript"></script>
 <script src="/render/jdataview.js" type="application/javascript"></script>
 <script src="/render/mapParser.js" type="application/javascript"></script>
-<script src="/three/build/three.min.js"></script>
 
-<script src="box2d/Box2dWeb-2.1.a.3.min.js" type="application/javascript"></script>
 
 <script src="/render/render.js"></script>
 
