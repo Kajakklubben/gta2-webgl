@@ -766,10 +766,18 @@ function render() {
 	visibleSceneObject = new Array();
 	
 	for(var x = camX-camW*0.5 ; x < camX+camW*0.5 ; x++){
-		for(var y = camY-camH*0.5 ; y < camY+camH*0.5 ; y++){
-			if(sceneObjects[x][-y].parent == undefined){
-				scene.add(sceneObjects[x][-y]);
-				visibleSceneObject.push(sceneObjects[x][-y]);
+
+		var sceneObjectX = sceneObjects[x];
+		if(sceneObjectX != undefined){
+			for(var y = camY-camH*0.5 ; y < camY+camH*0.5 ; y++){
+				var sceneObjectY = sceneObjectX[-y];
+				if(sceneObjectY != undefined){
+
+					if(sceneObjectY.parent == undefined){
+						scene.add(sceneObjectY);
+						visibleSceneObject.push(sceneObjectY);
+					}
+				}
 			}
 		}
 	}
