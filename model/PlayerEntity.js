@@ -3,7 +3,7 @@
 (function(){
 	GTA.namespace("GTA.model");
 	//constructor
-	GTA.model.PlayerState = function( client ) {
+	GTA.model.PlayerEntity = function( client ) {
 
 		this.position = new GTA.model.Point();
 		this.position.x = 85*64;
@@ -19,13 +19,13 @@
 		return this;
 	};
 
-	GTA.model.PlayerState.prototype.setInput = function(bitmask)
+	GTA.model.PlayerEntity.prototype.setInput = function(bitmask)
 	{
 
 		this.keyboard.deconstructInputBitmask(bitmask);
 	}
 
-	GTA.model.PlayerState.prototype.update = function(deltatime)
+	GTA.model.PlayerEntity.prototype.update = function(deltatime)
 	{
 
 		
@@ -49,7 +49,7 @@
 		
 	}
 
-	GTA.model.PlayerState.prototype.toJson = function()
+	GTA.model.PlayerEntity.prototype.toJson = function()
 	{
 		///Fuck floating point precisions. 
 		var precision = 2;
@@ -59,7 +59,7 @@
 		return {id:this.id,position:{x:x,y:y}};
 	}
 
-	GTA.model.PlayerState.prototype.fromJson = function(json)
+	GTA.model.PlayerEntity.prototype.fromJson = function(json)
 	{
 		///Fuck floating point precisions. 
 		var precision = 2;
@@ -70,7 +70,7 @@
 		this.position.y = y;
 	}
 
-	GTA.model.PlayerState.prototype.destroy = function()
+	GTA.model.PlayerEntity.prototype.destroy = function()
 	{
 		if(this.render)
 		{
@@ -81,7 +81,7 @@
 	}
 
 
-	GTA.model.PlayerState.prototype.fastForward = function(inputStates)
+	GTA.model.PlayerEntity.prototype.fastForward = function(inputStates)
 	{
 		return;
 		var oldState = this.keyboard.constructInputBitmask();
@@ -96,7 +96,7 @@
 
 		this.keyboard.setInput(oldState);
 	}
-	GTA.model.PlayerState.prototype.revert = function(inputStates)
+	GTA.model.PlayerEntity.prototype.revert = function(inputStates)
 	{
 
 	}

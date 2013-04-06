@@ -4,7 +4,7 @@ require('../core/Game');
 require('../model/Constants');
 require('../model/LevelState');
 require('../model/EntityState');
-require('../model/PlayerState');
+require('../model/PlayerEntity');
 require('../model/Point');
 require('../input/Keyboard');
 require('./ClientServer.js');

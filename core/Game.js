@@ -57,7 +57,7 @@
 
 	GTA.game.Game.prototype.addPlayer = function(client)
 	{
-		var player = new GTA.model.PlayerState(client);
+		var player = new GTA.model.PlayerEntity(client);
 		player.id = client.id;
 		this.levelState.players.push(player);
 
