@@ -20,7 +20,7 @@ function rotateAroundObjectAxis(object, axis, radians) {
 	GTA.render.PlayerRender.prototype.CreateMesh = function()
 	{
 
-		this.geometry = new THREE.CubeGeometry( 10, 5, 12 );
+		this.geometry = new THREE.CubeGeometry( 10, 5, 64 );
 
 		this.material = new THREE.MeshBasicMaterial( { color: 0xfff444 } );
 

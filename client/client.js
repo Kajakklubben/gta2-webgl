@@ -28,7 +28,7 @@ var Test = Class(function() {
 
           	
 			if(drawCollisionMapDebug)
-			  context.game.loader.mapCollision.SetupDebugRender(context.renderer.scene); //Enable this to debug collision map
+			  context.game.loader.collisionMap.SetupDebugRender(context.renderer.scene); //Enable this to debug collision map
 
             context.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
 

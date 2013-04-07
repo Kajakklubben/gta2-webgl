@@ -133,7 +133,6 @@ function CreateBlock(x, y, z, block) {
 var tileCache = new Array();
 
 function getTile(tileNo) {
-	debugger;
     var cache = tileCache[tileNo];
     if (cache != undefined)
         return cache;
