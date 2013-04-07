@@ -1,5 +1,3 @@
-var level;
-var style;
 
 
 (function(){
@@ -19,9 +17,9 @@ var style;
 		console.log("created render");
 		return this;
 	};
-	GTA.client.Render.prototype.Init = function()
+	GTA.client.Render.prototype.Init = function(mapData, styleData)
 	{
-		var old = init();
+		var old = init(mapData, styleData);
 		this.scene = old.scene;
 		this.renderer = old.renderer
 		this.camera = old.camera;
@@ -32,7 +30,7 @@ var style;
 	GTA.client.Render.prototype.update = function()
 	{
 		for(var i in this.dynamicObjects)
-		{
+		{   
 			this.dynamicObjects[i].Update();
 		}
 		

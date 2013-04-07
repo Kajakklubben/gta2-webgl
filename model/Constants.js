@@ -42,7 +42,9 @@
 
 		PLAYER:
 		{
-			MOVESPEED 		: 100
+			MOVESPEED 		: 100,
+			ROTATIONSPEED	: 0.12
+			
 		}
 
 	}

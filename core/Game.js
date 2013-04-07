@@ -19,11 +19,11 @@
 
 	//functions
 
-	GTA.game.Game.prototype.StartLoading = function()
+	GTA.game.Game.prototype.StartLoading = function(loadStyle)
 	{
 		this.loader = new GTA.core.Loader();
         var context = this;
-        this.loader.LoadData(function()
+        this.loader.LoadData(loadStyle,function()
         	{
         		//done loading;
         		context.loader.loading = false;
@@ -59,6 +59,8 @@
 	{
 		var player = new GTA.model.PlayerEntity(client);
 		player.id = client.id;
+		player.collisionMap = this.loader.collisionMap;
+		
 		this.levelState.players.push(player);
 
 		this.OnAddedPlayer(player);

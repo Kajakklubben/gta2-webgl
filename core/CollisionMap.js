@@ -1,23 +1,28 @@
-//Get the objects of Box2d Library
-var b2Vec2 = Box2D.Common.Math.b2Vec2
-,  	b2AABB = Box2D.Collision.b2AABB
-,	b2BodyDef = Box2D.Dynamics.b2BodyDef
-,	b2Body = Box2D.Dynamics.b2Body
-,	b2FixtureDef = Box2D.Dynamics.b2FixtureDef
-,	b2Fixture = Box2D.Dynamics.b2Fixture
-,	b2World = Box2D.Dynamics.b2World
-,	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
-,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
-,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
-,  	b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
-,  	b2Shape = Box2D.Collision.Shapes.b2Shape
-,	b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef
-,	b2Joint = Box2D.Dynamics.Joints.b2Joint
-,	b2PrismaticJointDef = Box2D.Dynamics.Joints.b2PrismaticJointDef
-;
+if(typeof Box2D == 'undefined'){
+	var Box2D = require("../box2d/Box2DServer.js").Box2D;
+}
+
 
 (function(){
-
+	
+	
+	//Get the objects of Box2d Library
+	var b2Vec2 = Box2D.Common.Math.b2Vec2
+	,  	b2AABB = Box2D.Collision.b2AABB
+	,	b2BodyDef = Box2D.Dynamics.b2BodyDef
+	,	b2Body = Box2D.Dynamics.b2Body
+	,	b2FixtureDef = Box2D.Dynamics.b2FixtureDef
+	,	b2Fixture = Box2D.Dynamics.b2Fixture
+	,	b2World = Box2D.Dynamics.b2World
+	,	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
+	,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
+	,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
+	,  	b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
+	,  	b2Shape = Box2D.Collision.Shapes.b2Shape
+	,	b2RevoluteJointDef = Box2D.Dynamics.Joints.b2RevoluteJointDef
+	,	b2Joint = Box2D.Dynamics.Joints.b2Joint
+	,	b2PrismaticJointDef = Box2D.Dynamics.Joints.b2PrismaticJointDef
+	;
 	GTA.namespace("GTA.core");
 	//constructor
 	GTA.core.CollisionMap = function(  ) {
@@ -27,6 +32,7 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 				
 		return this;
 	}
+
 
 
 	GTA.core.CollisionMap.prototype.InterpretMapData = function(mapData)
@@ -46,7 +52,7 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 					
 					kArray[k] = new Array();
 
-					var block = level.map[i][j][k];
+					var block = mapData[i][j][k];
 					
 					if(block != undefined)
 					{ 	
@@ -125,6 +131,9 @@ var b2Vec2 = Box2D.Common.Math.b2Vec2
 		this.collisionData = iArray;
 	}
 
+	GTA.core.CollisionMap.prototype.FindFloorBelow = function(z){
+		return 5;
+	}
 
 
 	GTA.core.CollisionMap.prototype.SetupDebugRender = function(scene)

@@ -30,10 +30,13 @@ var windowHalfX = window.innerWidth / 2;
 var windowHalfY = window.innerHeight / 2;
 
 var mouseDownX, mouseDownY;
+var level;
+var style;
 
-
-function init() {
-
+function init(mapData, styleData) {
+	level = mapData;
+	style = styleData;
+	
     container = document.createElement('div');
     document.body.appendChild(container);
 
@@ -130,10 +133,10 @@ function CreateBlock(x, y, z, block) {
 var tileCache = new Array();
 
 function getTile(tileNo) {
+	debugger;
     var cache = tileCache[tileNo];
     if (cache != undefined)
         return cache;
-
     var texture = new THREE.Texture(style.tiles[tileNo]);
     texture.needsUpdate = true;
     var material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
@@ -626,9 +629,6 @@ function CreateEdge(start, span, slopeType, faceType) {
 		uvs[3].x = partialUvsMargin + partialUvsSize;
 	}
 	
-
-    console.log(uvs[0].y);
-    console.log(uvs[1].y);
 
     geometry.faceVertexUvs[0][0] = uvs;
 	

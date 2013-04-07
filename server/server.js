@@ -1,6 +1,16 @@
+
 var Maple = require('../maple/Maple');
 require('../core/GTA');
+
+
+GLOBAL.jDataView = require('../render/jdataview');
+require('../core/MapParser');
+
+
+require('../core/CollisionMap');
+
 require('../core/Game');
+require('../core/Loader');
 require('../model/Constants');
 require('../model/LevelState');
 require('../model/EntityState');
@@ -8,7 +18,6 @@ require('../model/PlayerEntity');
 require('../model/Point');
 require('../input/Keyboard');
 require('./ClientServer.js');
-
 
 // Test -----------------------------------------------------------------------
 var TestServer = Maple.Class(function(clientClass) {
@@ -28,6 +37,7 @@ var TestServer = Maple.Class(function(clientClass) {
 
     started: function() {
         this.log('Started');
+		this.game.StartLoading();
         this.game.start();
     },
 

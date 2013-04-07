@@ -1,3 +1,5 @@
+
+
 (function(){
 	GTA.namespace("GTA.core");
 	//constructor
@@ -9,10 +11,10 @@
 		return this;
 	}
 	
-	GTA.core.MapParser.prototype.ReadFromData = function(data)
+	GTA.core.MapParser.prototype.ReadFromData = function(data, littleEndian)
 	{
-		var reader = new jDataView(data);
-	
+		var reader = new jDataView(data,0,data.length,littleEndian); //Little endian required by server
+		
 		var start = reader.getString(4);
 		if(start != "GBMP")
 			throw "File format for map file not correct";
@@ -23,6 +25,7 @@
 	
 		while(reader.tell() < reader.byteLength)
 		{		
+			//console.log(reader.tell())
 			var chunkType = reader.getString(4);
 			var chunkSize = reader.getUint32();
 
@@ -33,8 +36,8 @@
 					this.map = ReadDMAP(reader);
 					break;			
 				default:
-					Skip(reader, chunkSize);
 					console.log("Skipping '" + chunkType + "' (" + chunkSize+")");
+					Skip(reader, chunkSize);
 					break
 			}
 		}

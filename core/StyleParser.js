@@ -14,9 +14,8 @@
 		var ctx = this;
 		
 	    var style = new Object();
-
-	    var reader = new jDataView(data);
-
+		var reader = new jDataView(data,0,data.length,true);
+		
 	    var start = reader.getString(4);
     
 	    if(start != "GBST")
@@ -24,7 +23,7 @@
     
 	    var version = reader.getUint16();   
 
-	    console.log("Map version: "+version);
+	    console.log("Style Map version: "+version);
     
 	    while(reader.tell() < reader.byteLength)
 	    {

@@ -24,7 +24,7 @@ var Test = Class(function() {
         this.game.OnLoadedData = function()
         {
             context.renderer = new GTA.client.Render(context.game);
-            context.renderer.Init();
+		    context.renderer.Init(context.game.loader.level, context.game.loader.style);
 
           	
 			if(drawCollisionMapDebug)
@@ -33,7 +33,7 @@ var Test = Class(function() {
             context.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
 
         }
-        this.game.StartLoading();
+        this.game.StartLoading(true); 
 
 
     },
