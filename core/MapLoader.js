@@ -1,3 +1,8 @@
+//
+// Gets initialized by Core.Game
+//
+
+
 (function(){
 	GTA.namespace("GTA.Core");
 	//constructor

@@ -1,3 +1,6 @@
+//
+// Gets initialized by Client.Render
+//
 
 var rotObjectMatrix;
 function rotateAroundObjectAxis(object, axis, radians) {

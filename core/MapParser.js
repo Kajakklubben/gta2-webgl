@@ -1,4 +1,6 @@
-
+//
+// Gets initialized by Core.MapLoader
+//
 
 (function(){
 	GTA.namespace("GTA.Core");

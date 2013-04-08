@@ -1,3 +1,7 @@
+//
+// Gets initiliazed by Core.MapLoader
+//
+
 if(typeof Box2D == 'undefined'){ 
 	//Node.js implementation
 	var Box2D = require("../box2d/Box2DServer.js").Box2D;

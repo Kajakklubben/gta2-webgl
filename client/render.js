@@ -1,4 +1,6 @@
-
+//
+// Gets initiliazed by Client
+//
 
 (function(){
 	GTA.namespace("GTA.Client");
