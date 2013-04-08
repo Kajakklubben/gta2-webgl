@@ -174,9 +174,9 @@ if(typeof Box2D == 'undefined'){
 					} else if(block.slopeType == 5){ //Left Low  
 						return i - (relativePosition.x)*0.5-0.5;
 					} else if(block.slopeType == 4){ //Down High 
-						return i - (-relativePosition.y)*0.5;
+						return i - (1-relativePosition.y)*0.5;
 					} else if(block.slopeType == 3){ //Down Low  
-						return i - (-relativePosition.y)*0.5-0.5;
+						return i - (1-relativePosition.y)*0.5-0.5;
 					} else if(block.slopeType == 2){ //Up High 
 						return i - (relativePosition.y)*0.5;
 					} else if(block.slopeType == 1){ //Up Low 
@@ -185,7 +185,7 @@ if(typeof Box2D == 'undefined'){
 					
 					//Diagonals
 					else if(block.slopeType == 45){ //facing up left
-						if( (relativePosition.x) + (relativePosition.y) <= 1){
+						if( (relativePosition.x) + (relativePosition.y) >= 1){
 							return i;
 						} else {
 							return i-1;
@@ -206,7 +206,7 @@ if(typeof Box2D == 'undefined'){
 						}
 					}
 					else if(block.slopeType == 47){ //facing down right
-						if( (relativePosition.x) + (relativePosition.y) >= 1){
+						if( (relativePosition.x) + (relativePosition.y) <= 1){
 							return i;
 						} else {
 							return i-1;
