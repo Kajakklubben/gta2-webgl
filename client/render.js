@@ -56,7 +56,7 @@
 
 	GTA.Client.Render.prototype.OnAddedPlayer = function (player) {
 
-		var playerRender = new GTA.render.PlayerRender(player);
+		var playerRender = new GTA.Render.PlayerRender(player);
 		player.render = playerRender;
 
 		this.scene.add(playerRender.CreateMesh());

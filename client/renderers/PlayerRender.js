@@ -9,15 +9,15 @@ function rotateAroundObjectAxis(object, axis, radians) {
 
 
 (function(){
-	GTA.namespace("GTA.render");
+	GTA.namespace("GTA.Render");
 	//constructor
-	GTA.render.PlayerRender = function( player ) {
+	GTA.Render.PlayerRender = function( player ) {
 
 		this.player = player;
 		return this;
 	};
 
-	GTA.render.PlayerRender.prototype.CreateMesh = function()
+	GTA.Render.PlayerRender.prototype.CreateMesh = function()
 	{
 
 		this.geometry = new THREE.CubeGeometry( 10, 5, 64 );
@@ -27,7 +27,7 @@ function rotateAroundObjectAxis(object, axis, radians) {
 		this.mesh = new THREE.Mesh( this.geometry, this.material );
 		return this.mesh;
 	}
-	GTA.render.PlayerRender.prototype.Update = function()
+	GTA.Render.PlayerRender.prototype.Update = function()
 	{
 		this.mesh.position.x = this.player.position.x;
 		this.mesh.position.y = this.player.position.y;
@@ -37,12 +37,12 @@ function rotateAroundObjectAxis(object, axis, radians) {
 	}
 
 
-	GTA.render.PlayerRender.prototype.GetPosition = function()
+	GTA.Render.PlayerRender.prototype.GetPosition = function()
 	{
 		return this.player.position;
 	}
 
-	GTA.render.PlayerRender.prototype.GetRotation = function()
+	GTA.Render.PlayerRender.prototype.GetRotation = function()
 	{
 		return this.player.rotation;
 	}
