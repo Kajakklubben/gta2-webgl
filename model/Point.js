@@ -8,7 +8,7 @@
  **/
 (function() {
 
-	GTA.namespace("GTA.model");
+	GTA.namespace("GTA.Model");
 
     /**
      *
@@ -19,13 +19,13 @@
      *
      * @constructor
      */
-	GTA.model.Point = function(xpos, ypos) {
+	GTA.Model.Point = function(xpos, ypos) {
 		this.x = xpos || 0;
 		this.y = ypos || 0;
 		return this;
 	};
 
-	GTA.model.Point.prototype = {
+	GTA.Model.Point.prototype = {
 		x:	0,
 		y: 	0,
 
@@ -42,11 +42,11 @@
 			return this;
 		},
         /**
-         * Create a new GTA.model.Point equal to this one.
-         * @return {GTA.model.Point}
+         * Create a new GTA.Model.Point equal to this one.
+         * @return {GTA.Model.Point}
          */
         clone : function() {
-            var p = new GTA.model.Point();
+            var p = new GTA.Model.Point();
             p.set( this.x, this.y );
             return p;
         },
@@ -65,7 +65,7 @@
         },
         /**
          * Translate this point to another point.
-         * @param aPoint {GTA.model.Point}
+         * @param aPoint {GTA.Model.Point}
          * @return this
          */
 		translatePoint: function(aPoint) {
@@ -75,7 +75,7 @@
 		},
         /**
          * Substract a point from this one.
-         * @param aPoint {GTA.model.Point}
+         * @param aPoint {GTA.Model.Point}
          * @return this
          */
 		subtract: function(aPoint) {
@@ -87,11 +87,11 @@
 		/**
          * Substract a point from this one
 		 * Returns a new point with the difference
-         * @param aPoint {GTA.model.Point}
-		 * @return {GTA.model.Point}
+         * @param aPoint {GTA.Model.Point}
+		 * @return {GTA.Model.Point}
          */
 		subtractClone: function(aPoint) {
-			return new GTA.model.Point(this.x - aPoint.x, this.y - aPoint.y)
+			return new GTA.Model.Point(this.x - aPoint.x, this.y - aPoint.y)
 		},
 
         /**
@@ -190,7 +190,7 @@
 		},
         /**
          * Get the distance between two points.
-         * @param point {GTA.model.Point}
+         * @param point {GTA.Model.Point}
          * @return {number}
          */
 		getDistance: function(point) {
@@ -200,7 +200,7 @@
 		},
         /**
          * Get the squared distance between two points.
-         * @param point {GTA.model.Point}
+         * @param point {GTA.Model.Point}
          * @return {number}
          */
 		getDistanceSquared: function(point) {
@@ -213,11 +213,11 @@
          * @return {string}
          */
 		toString: function() {
-			return "(GTA.model.Point)" +
+			return "(GTA.Model.Point)" +
                     " x:'" + String(Math.round(Math.floor(this.x*10))/10) +
                     " y:" + String(Math.round(Math.floor(this.y*10))/10);
 		}
 	};
 
-	GTA.model.Point.prototype.ZERO = new GTA.model.Point(0,0);
+	GTA.Model.Point.prototype.ZERO = new GTA.Model.Point(0,0);
 })();

@@ -1,7 +1,7 @@
 (function(){
-	GTA.namespace("GTA.core");
+	GTA.namespace("GTA.Core");
 	//constructor
-	GTA.core.Loader = function(  ) {
+	GTA.Core.MapLoader = function(  ) {
 		
 		this.collisionMap = false;
 		this.level = false;
@@ -9,85 +9,25 @@
 		
 	    this.loading = false;
 			
-		if(typeof jQuery != 'undefined')
-			this.loadingDiv = $("#loadingMessages");
-
 		return this;
 	}
 	
-	
-	//--------------------------------------------------
-		
-	GTA.core.Loader.prototype.ShowMessage = function(msg)
-	{
-		this.messageStartTime = new Date().getTime();
-		
-		if(typeof jQuery == 'undefined'){
-			console.log(msg);
-		}
-		else {
-		
-			if(this.additionalMessages){
-				this.ShowAdditionalLoadingMessage("&nbsp;");
-			}
-		
-		
-			this.lastDiv = $("<div style='float:left;'>"+msg+"</div>");
-			this.loadingDiv.append("<br>");
-		
-			if(this.additionalMessages){
-				this.loadingDiv.append("<br>");
-			}
-		
-		
-			this.loadingDiv.append(this.lastDiv);
-
-			this.additionalMessages = false;
-		}
-	}
-
-	GTA.core.Loader.prototype.ShowMessageDone= function()
-	{
-		var end = new Date().getTime();
-		var time = end - this.messageStartTime;
-		var seconds = time/1000.0;
-		
-		if(typeof jQuery == 'undefined'){
-			console.log("Done");
-		}
-		else {
-			this.loadingDiv.append("<div style='float:right; color:green; font-weight:norma; margin-right:0px;'><b>Done</b> "+seconds.toFixed(1)+"sec</div>");
-		}
-	}
-
-	GTA.core.Loader.prototype.ShowAdditionalLoadingMessage = function(msg)
-	{
-		this.additionalMessages = true;		
-		if(typeof jQuery == 'undefined'){
-			console.log(msg);
-		}
-		else {
-			this.lastDiv.append("<br><span style='font-style:italic; margin-left:20px'>"+msg+"</i>");
-		}
-		
-	}
-
 
 	//--------------------------------------------------
 
-	GTA.core.Loader.prototype.LoadData = function(loadStyle, OnCompleted)
+	GTA.Core.MapLoader.prototype.LoadData = function(loadStyle, OnCompleted)
 	{
-		this.ShowMessage("Reading settings");				
+		statusview.ShowMessage("Reading settings");				
 		
 		if(typeof drawLevelArea != 'undefined'){
-			this.ShowAdditionalLoadingMessage("Draw Level Area Origin: "+drawLevelArea[1]+","+drawLevelArea[0]);						
-			this.ShowAdditionalLoadingMessage("Draw Level Area Size: "+(drawLevelArea[3]-drawLevelArea[1])+"x"+(drawLevelArea[2]-drawLevelArea[0]));						
-			this.ShowAdditionalLoadingMessage("Start Cam Position: "+startCamPosition[0]+","+startCamPosition[1]);						
-			this.ShowAdditionalLoadingMessage("Load Textures: "+loadTextures);						
-			this.ShowAdditionalLoadingMessage("Use Local Cached Style Tiles: "+useLocalCachedStyleTiles);						
+			statusview.ShowAdditionalLoadingMessage("Draw Level Area Origin: "+drawLevelArea[1]+","+drawLevelArea[0]);						
+			statusview.ShowAdditionalLoadingMessage("Draw Level Area Size: "+(drawLevelArea[3]-drawLevelArea[1])+"x"+(drawLevelArea[2]-drawLevelArea[0]));						
+			statusview.ShowAdditionalLoadingMessage("Start Cam Position: "+startCamPosition[0]+","+startCamPosition[1]);						
+			statusview.ShowAdditionalLoadingMessage("Load Textures: "+loadTextures);						
+			statusview.ShowAdditionalLoadingMessage("Use Local Cached Style Tiles: "+useLocalCachedStyleTiles);						
 		}
 
-		this.ShowMessage("Loading Map data");
+		statusview.ShowMessage("Loading Map data");
 		
 	    var ctx = this;
 	    this.loading = true;
@@ -95,23 +35,22 @@
 			
 		function MapLoadComplete(data, err, littleEndian)
 		{	
-			ctx.ShowMessageDone(); //Loading map data
+			statusview.ShowMessageDone(); //Loading map data
 			
 			var mapData = data;
 			
-			ctx.level = new GTA.core.MapParser();
-			ctx.level.LoadingContext = ctx;
+			ctx.level = new GTA.Core.MapParser();
 			ctx.level.ReadFromData(mapData, littleEndian);
 			
-			ctx.ShowMessage("Creating Collision Map");				
+			statusview.ShowMessage("Creating Collision Map");				
 			
-			ctx.collisionMap = new GTA.core.CollisionMap();
+			ctx.collisionMap = new GTA.Core.CollisionMap();
             ctx.collisionMap.InterpretMapData(ctx.level.map);  //level.map is some global variable the fox told me
 		
-			ctx.ShowMessageDone(); //Loading map data
+			statusview.ShowMessageDone(); //Loading map data
 		
 			if(loadStyle){
-				ctx.ShowMessage("Loading Style data");
+				statusview.ShowMessage("Loading Style data");
 			
 				getBinaryData("http://localhost:8000/","bil.sty", StyleLoadComplete);
 			} else {
@@ -122,26 +61,25 @@
 		}
 			
 		function StyleLoadComplete(data, err, littleEndian) {
-			ctx.ShowMessageDone(); //Loading style data
+			statusview.ShowMessageDone(); //Loading style data
 			
 			var styleData = data;
 
-			ctx.ShowMessage("Parsing Style data");
+			statusview.ShowMessage("Parsing Style data");
 
 			setTimeout(function(){
 				if (loadTextures) {
-					styleParser = new GTA.core.StyleParser();
-					styleParser.LoadingContext = ctx;
+					styleParser = new GTA.Core.StyleParser();
 					
 				    ctx.style = styleParser.ParseStyle(styleData, getTileNumbers(ctx.level));
 				} else {
-					this.ShowAdditionalLoadingMessage("Loading without textures.")
+					statusview.ShowAdditionalLoadingMessage("Loading without textures.")
 				}
 			
 				level = ctx.level;
 				style = ctx.style;
 				
-				ctx.ShowMessageDone(); // Parsing style data
+				statusview.ShowMessageDone(); // Parsing style data
 				
 				StyleParseComplete();
 			},10);
@@ -150,19 +88,19 @@
 		function StyleParseComplete() {
             
 			
-			ctx.ShowMessageDone(); // Interpretting Collision Map
+			statusview.ShowMessageDone(); // Interpretting Collision Map
 
 			
-			ctx.ShowMessage("Loading OpenGL Scene...");				
+			statusview.ShowMessage("Loading OpenGL Scene...");				
 
 			setTimeout(function(){
 				//Let the world know we are done.
 				OnCompleted();
 					
-				ctx.ShowMessageDone(); // 
+				statusview.ShowMessageDone(); // 
 					
 				setTimeout(function(){
-					ctx.loadingDiv.fadeOut(200);
+					statusview.HideView();
 				}, 2500);
 			},10);
 		}

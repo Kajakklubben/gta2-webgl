@@ -1,17 +1,14 @@
 
 
 (function(){
-	GTA.namespace("GTA.core");
+	GTA.namespace("GTA.Core");
 	//constructor
-	GTA.core.MapParser = function(  ) {
-		
-		//Used for showing loading messages
-		this.LoadingContext = false;
+	GTA.Core.MapParser = function(  ) {
 		
 		return this;
 	}
 	
-	GTA.core.MapParser.prototype.ReadFromData = function(data, littleEndian)
+	GTA.Core.MapParser.prototype.ReadFromData = function(data, littleEndian)
 	{
 		var reader = new jDataView(data,0,data.length,littleEndian); //Little endian required by server
 		

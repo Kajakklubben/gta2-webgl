@@ -26,12 +26,12 @@ if(typeof Box2D == 'undefined'){
 	,	b2RayCastOutput = Box2D.Collision.b2RayCastOutput
 	;
 	
-	GTA.namespace("GTA.core");
+	GTA.namespace("GTA.Core");
 	
 	//
 	//constructor
 	//
-	GTA.core.CollisionMap = function() {
+	GTA.Core.CollisionMap = function() {
 
 		// 3D Array containing b2FixtureDef array describing each tile
 		this.collisionData = false;
@@ -47,7 +47,7 @@ if(typeof Box2D == 'undefined'){
 	//
 	//Find any collisions on the path from the position
 	//
-	GTA.core.CollisionMap.prototype.FindPathCollision = function(position, path){
+	GTA.Core.CollisionMap.prototype.FindPathCollision = function(position, path){
 		z = Math.round(position.z);
 		
 		srcX = Math.round(position.x/64);
@@ -157,7 +157,7 @@ if(typeof Box2D == 'undefined'){
 	//
 	//Calculates the floor height for the block, or returns undefined if no floor
 	//
-	GTA.core.CollisionMap.prototype.BlockFloorLevel = function(block, i, relativePosition){
+	GTA.Core.CollisionMap.prototype.BlockFloorLevel = function(block, i, relativePosition){
 		if(block != undefined){
 	 	   if (block.Lid != undefined && block.Lid.tileNumber != undefined && block.Lid.tileNumber != 0) {
 			   
@@ -232,7 +232,7 @@ if(typeof Box2D == 'undefined'){
 	//
 	//Finds the floor that is either below the position, or if none, the nearest one above
 	//
-	GTA.core.CollisionMap.prototype.FindFloorBelow = function(position){
+	GTA.Core.CollisionMap.prototype.FindFloorBelow = function(position){
 		relativePosition = position.clone();
 
 		relativePosition.x -= Math.round(position.x/64) * 64;
@@ -268,7 +268,7 @@ if(typeof Box2D == 'undefined'){
 	//
 	// Calculates all the collision shapes based on the raw mapData
 	//
-	GTA.core.CollisionMap.prototype.InterpretMapData = function(mapData)
+	GTA.Core.CollisionMap.prototype.InterpretMapData = function(mapData)
 	{
 		this.level = mapData;
 		
@@ -405,7 +405,7 @@ if(typeof Box2D == 'undefined'){
 	//
 	// Red boxes showing the collision map for debug
 	//
-	GTA.core.CollisionMap.prototype.SetupDebugRender = function(scene)
+	GTA.Core.CollisionMap.prototype.SetupDebugRender = function(scene)
 	{
 		for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++)
 		{	

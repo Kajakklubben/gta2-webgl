@@ -3,42 +3,46 @@
 
 
 (function(){
-	GTA.namespace("GTA.game");
+	GTA.namespace("GTA.Core");
 	//constructor
 
-	GTA.game.Game = function() {
-		this.levelState = new GTA.model.LevelState();
-		this.lastTime= -1;
+	GTA.Core.Game = function() {
+		
+		this.maploader = new GTA.Core.MapLoader();
+		
+		this.levelState = new GTA.Model.LevelState();
+
+		this.lastTime = -1;
+
 		return this;
 	};
 
 	//Public events
-	GTA.game.Game.prototype.OnLoadedData =  function(){}
-	GTA.game.Game.prototype.OnAddedPlayer =  function(player){}
-	GTA.game.Game.prototype.OnRemovedPlayer =  function(player){}
+	GTA.Core.Game.prototype.OnLoadedData =  function(){}
+	GTA.Core.Game.prototype.OnAddedPlayer =  function(player){}
+	GTA.Core.Game.prototype.OnRemovedPlayer =  function(player){}
 
 	//functions
 
-	GTA.game.Game.prototype.StartLoading = function(loadStyle)
+	GTA.Core.Game.prototype.StartLoading = function(loadStyle)
 	{
-		this.loader = new GTA.core.Loader();
         var context = this;
-        this.loader.LoadData(loadStyle,function()
+        this.maploader.LoadData(loadStyle,function()
         	{
         		//done loading;
-        		context.loader.loading = false;
+        		context.maploader.loading = false;
         		context.OnLoadedData();
         	});
     }
-	GTA.game.Game.prototype.start = function()
+	GTA.Core.Game.prototype.start = function()
 	{
 		var ptr = this; 
 		setInterval(function() {ptr.update(false)},1000/30);
 	}
 	
-	GTA.game.Game.prototype.update = function(deltaTime)
+	GTA.Core.Game.prototype.update = function(deltaTime)
 	{
-		if(this.loader != undefined && this.loader.loading)
+		if(this.maploader != undefined && this.maploader.loading)
 		{
 			return;
 		}
@@ -55,11 +59,11 @@
 		this.lastTime= Date.now();
 	}
 
-	GTA.game.Game.prototype.addPlayer = function(client)
+	GTA.Core.Game.prototype.addPlayer = function(client)
 	{
-		var player = new GTA.model.PlayerEntity(client);
+		var player = new GTA.Model.PlayerEntity(client);
 		player.id = client.id;
-		player.collisionMap = this.loader.collisionMap;
+		player.collisionMap = this.maploader.collisionMap;
 		
 		this.levelState.players.push(player);
 
@@ -68,7 +72,7 @@
 		return player;
 	}
 
-	GTA.game.Game.prototype.removePlayer = function(id)
+	GTA.Core.Game.prototype.removePlayer = function(id)
 	{
 		for(var p in this.levelState.players)
 		{
@@ -83,12 +87,12 @@
 		}
 	}
 
-	GTA.game.Game.prototype.toJson = function()
+	GTA.Core.Game.prototype.toJson = function()
 	{
 		return this.levelState.toJson();
 	}
 	
-	GTA.game.Game.prototype.initFromJson = function(json)
+	GTA.Core.Game.prototype.initFromJson = function(json)
 	{
 		for(var i in json.players)
 		{
@@ -102,7 +106,7 @@
 		this.levelState.fromJson(json);
 	}
 
-	GTA.game.Game.prototype.fromJson = function(json)
+	GTA.Core.Game.prototype.fromJson = function(json)
 	{
 		this.levelState.fromJson(json);
 	}

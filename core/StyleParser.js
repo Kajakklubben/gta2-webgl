@@ -1,15 +1,12 @@
 (function(){
-	GTA.namespace("GTA.core");
+	GTA.namespace("GTA.Core");
 	//constructor
-	GTA.core.StyleParser = function(  ) {
-		
-		//Used for showing loading messages
-		this.LoadingContext = false;
+	GTA.Core.StyleParser = function(  ) {
 		
 		return this;
 	}
 	
-	GTA.core.StyleParser.prototype.ParseStyle = function(data, tileNumbers)
+	GTA.Core.StyleParser.prototype.ParseStyle = function(data, tileNumbers)
 	{
 		var ctx = this;
 		
@@ -191,12 +188,10 @@
 		        }
 		    }
     
-			if(ctx.LoadingContext){
-				ctx.LoadingContext.ShowAdditionalLoadingMessage("Local Cached Tiles: "+cacheLoaded);
-				ctx.LoadingContext.ShowAdditionalLoadingMessage("Generated Tiles: "+newLoaded);
-				ctx.LoadingContext.ShowAdditionalLoadingMessage("Skipped Tiles: "+skipped);
-			}
-		    console.log("Loaded " + newLoaded + "tiles, skipped "+skipped);
+			statusview.ShowAdditionalLoadingMessage("Local Cached Tiles: "+cacheLoaded);
+			statusview.ShowAdditionalLoadingMessage("Generated Tiles: "+newLoaded);
+			statusview.ShowAdditionalLoadingMessage("Skipped Tiles: "+skipped);
+//			console.log("Loaded " + newLoaded + "tiles, skipped "+skipped);
     
 		    return tiles;
 		}

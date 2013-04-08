@@ -1,21 +1,21 @@
 
 
 (function(){
-	GTA.namespace("GTA.model");
+	GTA.namespace("GTA.Model");
 	//constructor
-	GTA.model.EntityState = function(  ) {
+	GTA.Model.EntityState = function(  ) {
 
-		this.position = new GTA.model.Point();
+		this.position = new GTA.Model.Point();
 
 		return this;
 	};
 
-	GTA.model.EntityState.prototype.toJson = function()
+	GTA.Model.EntityState.prototype.toJson = function()
 	{
 		return {position:this.position};
 	}
 	
-	GTA.model.EntityState.prototype.fromJson = function(json)
+	GTA.Model.EntityState.prototype.fromJson = function(json)
 	{
 		this.position = json.position;
 	}

@@ -1,30 +1,28 @@
+var statusview = new GTA.Client.StatusView();
 
-
-
-
-
-//Special local player that can do more
-
-var Test = Class(function() {
+var Client = Class(function() {
     Maple.Client(this, 30, 60);
 
 }, Maple.Client, {
-
-
+	
+    game: false, 		//Core.Game
+    renderer: false,	//Client.Render
+    player: false,		//Model.PlayerEntity
     input: new GTA.Input.Keyboard(),
-    game: false,
-    player: false,
-    renderer: false,
-    initGame: function()
+
+	//
+	// Initializer
+	//
+    initClient: function()
     {
        
         var context = this;
-        this.game = new GTA.game.Game();
+        this.game = new GTA.Core.Game();
 
         this.game.OnLoadedData = function()
         {
-            context.renderer = new GTA.client.Render(context.game);
-		    context.renderer.Init(context.game.loader.level, context.game.loader.style);
+            context.renderer = new GTA.Client.Render(context.game);
+		    context.renderer.Init(context.game.maploader.level, context.game.maploader.style);
 
           	
 			if(drawCollisionMapDebug)
@@ -37,22 +35,22 @@ var Test = Class(function() {
 
 
     },
+   
     started: function() {
-
          this.input.attachEvents(); //start listening on input
-        
-
     },
 
     update: function(t, tick) {
-      
         
     },
-    inputState: 0,
+    
+	inputState: 0,
     inputStates: [],
+   
+   
     render: function(t, dt, u) {
 
-    var newInput  = this.input.constructInputBitmask();
+    	var newInput  = this.input.constructInputBitmask();
     
         if(newInput != this.inputState)
         {
@@ -75,20 +73,21 @@ var Test = Class(function() {
     connected: function() {
         this.log('Connection established');
     },
+
     lasttick: 0,
+
     message: function(type, tick, data) {
-   if(type == GTA.Constants.MESSAGE_TYPES.SYNC)
-      {
-       
-          this.lasttick = tick;
-          future = this.input.getFuture(tick);
-          //revert all movement by future
-          this.player.revert(future);
-          //set current position
-          this.game.fromJson(data[0]);
-          //apply future movement
-          //this.player.play(future);
-      }
+   		if(type == GTA.Constants.MESSAGE_TYPES.SYNC)
+      	{
+			this.lasttick = tick;
+			future = this.input.getFuture(tick);
+			//revert all movement by future
+			this.player.revert(future);
+			//set current position
+			this.game.fromJson(data[0]);
+			//apply future movement
+			//this.player.play(future);
+      	}
        
     },
 
@@ -135,5 +134,5 @@ var Test = Class(function() {
 
 });
 
-var client = new Test();
-client.initGame();
+var client = new Client();
+client.initClient();

@@ -1,14 +1,14 @@
 (function() {
-	GTA.namespace("GTA.model");
+	GTA.namespace("GTA.Model");
 	//constructor
-	GTA.model.PlayerEntity = function(client) {
+	GTA.Model.PlayerEntity = function(client) {
 
-		this.position = new GTA.model.Point();
+		this.position = new GTA.Model.Point();
 		this.position.x = 85 * 64;
 		this.position.y = -190 * 64;
 		this.position.z = 0;
 		
-		this.velocity = new GTA.model.Point();
+		this.velocity = new GTA.Model.Point();
 
 		this.rotation = 0.0;
 		this.client = client;
@@ -21,25 +21,25 @@
 		return this;
 	};
 
-	GTA.model.PlayerEntity.prototype.setInput = function(bitmask) {
+	GTA.Model.PlayerEntity.prototype.setInput = function(bitmask) {
 
 		this.keyboard.deconstructInputBitmask(bitmask);
 	}
 
-	GTA.model.PlayerEntity.prototype.update = function(deltatime) {
+	GTA.Model.PlayerEntity.prototype.update = function(deltatime) {
 		
 		dir = false;
 		
 		if (this.keyboard.isUp()) {
-			dir = new GTA.model.Point(0, deltatime * GTA.Constants.PLAYER.MOVESPEED,0);
+			dir = new GTA.Model.Point(0, deltatime * GTA.Constants.PLAYER.MOVESPEED,0);
 			if(this.keyboard.isShift()){
-				dir = new GTA.model.Point(0, deltatime * GTA.Constants.PLAYER.MOVESPEED*3,0);
+				dir = new GTA.Model.Point(0, deltatime * GTA.Constants.PLAYER.MOVESPEED*3,0);
 				
 			}
 			dir.rotate(this.rotation);
 		}
 		if (this.keyboard.isDown()) {
-			dir = new GTA.model.Point(0, -deltatime * GTA.Constants.PLAYER.MOVESPEED,0);
+			dir = new GTA.Model.Point(0, -deltatime * GTA.Constants.PLAYER.MOVESPEED,0);
 			dir.rotate(this.rotation);
 		}
 		if (this.keyboard.isLeft()) {
@@ -79,7 +79,7 @@
 		
 	}
 
-	GTA.model.PlayerEntity.prototype.toJson = function() {
+	GTA.Model.PlayerEntity.prototype.toJson = function() {
 		///Fuck floating point precisions. 
 		var precision = 2;
 		var x = Math.round(this.position.x * Math.pow(10, precision));
@@ -99,7 +99,7 @@
 		};
 	}
 
-	GTA.model.PlayerEntity.prototype.fromJson = function(json) {
+	GTA.Model.PlayerEntity.prototype.fromJson = function(json) {
 		///Fuck floating point precisions. 
 		var precision = 2;
 		var x = json.position.x / Math.pow(10, precision);
@@ -116,7 +116,7 @@
 				
 	}
 
-	GTA.model.PlayerEntity.prototype.destroy = function() {
+	GTA.Model.PlayerEntity.prototype.destroy = function() {
 		if (this.render) {
 			this.render.destroy();
 			this.render = false;
@@ -125,7 +125,7 @@
 	}
 
 
-	GTA.model.PlayerEntity.prototype.fastForward = function(inputStates) {
+	GTA.Model.PlayerEntity.prototype.fastForward = function(inputStates) {
 		return;
 		var oldState = this.keyboard.constructInputBitmask();
 		inputStates.reverse();
@@ -138,7 +138,7 @@
 
 		this.keyboard.setInput(oldState);
 	}
-	GTA.model.PlayerEntity.prototype.revert = function(inputStates) {
+	GTA.Model.PlayerEntity.prototype.revert = function(inputStates) {
 
 	}
 

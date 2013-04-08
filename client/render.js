@@ -1,13 +1,18 @@
 
 
 (function(){
-	GTA.namespace("GTA.client");
+	GTA.namespace("GTA.Client");
 	//constructor
-	GTA.client.Render = function(game) {
+	GTA.Client.Render = function(game) {
 		
 		this.dynamicObjects = [];
 		this.gameInstance = game;
-		this.followTarget = null;
+		this.followTarget = false;
+		
+		this.scene = false;
+		this.renderer = false;
+		this.camera = false;
+		this.stats = false;
 		
 		var context = this;
 		this.gameInstance.OnAddedPlayer = function(player) {context.OnAddedPlayer(player);};
@@ -17,7 +22,9 @@
 		console.log("created render");
 		return this;
 	};
-	GTA.client.Render.prototype.Init = function(mapData, styleData)
+	
+	
+	GTA.Client.Render.prototype.Init = function(mapData, styleData)
 	{
 		var old = init(mapData, styleData);
 		this.scene = old.scene;
@@ -26,8 +33,9 @@
 		this.stats = old.stats;
 		this.animate();
 	}
-		//Being called from client object
-	GTA.client.Render.prototype.update = function()
+
+	//Being called from client object
+	GTA.Client.Render.prototype.update = function()
 	{
 		for(var i in this.dynamicObjects)
 		{   
@@ -36,7 +44,7 @@
 		
 		if(this.followTarget != null)
 		{
-			var target = new GTA.model.Point(this.camera.position.x-this.followTarget.GetPosition().x,this.camera.position.y-this.followTarget.GetPosition().y);
+			var target = new GTA.Model.Point(this.camera.position.x-this.followTarget.GetPosition().x,this.camera.position.y-this.followTarget.GetPosition().y);
 			var targetZ = (this.camera.position.z-400)-this.followTarget.GetPosition().z*64;
 			
 			this.camera.position.x -= target.x/2;
@@ -46,7 +54,7 @@
 	}
 
 
-	GTA.client.Render.prototype.OnAddedPlayer = function (player) {
+	GTA.Client.Render.prototype.OnAddedPlayer = function (player) {
 
 		var playerRender = new GTA.render.PlayerRender(player);
 		player.render = playerRender;
@@ -54,12 +62,14 @@
 		this.scene.add(playerRender.CreateMesh());
 		this.dynamicObjects.push(playerRender);
 	}
-	GTA.client.Render.prototype.OnRemovedPlayer = function (player) {
+	
+	GTA.Client.Render.prototype.OnRemovedPlayer = function (player) {
 		this.scene.remove(player.render.mesh);
 		this.dynamicObjects.splice(0,this.dynamicObjects.indexOf(player.render));
 	}
+
 	//Currently not being used
-	GTA.client.Render.prototype.animate = function () {
+	GTA.Client.Render.prototype.animate = function () {
 
 		
 		requestAnimationFrame( function(){this.animate()} );
@@ -69,7 +79,8 @@
 
 
 	}
-	GTA.client.Render.prototype.onWindowResize = function() {
+	
+	GTA.Client.Render.prototype.onWindowResize = function() {
 
 		this.windowHalfX = window.innerWidth / 2;
 		this.windowHalfY = window.innerHeight / 2;

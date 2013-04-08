@@ -2,9 +2,9 @@
 // It should have a delta function for compression
 
 (function(){
-	GTA.namespace("GTA.model");
+	GTA.namespace("GTA.Model");
 	//constructor
-	GTA.model.LevelState = function(  ) {
+	GTA.Model.LevelState = function(  ) {
 
 		// Ask each entity to create it's EntityDescriptionString
 		this.staticObjects = [];
@@ -14,7 +14,7 @@
 		return this;
 	};
 
-	GTA.model.LevelState.prototype.toJson = function()
+	GTA.Model.LevelState.prototype.toJson = function()
 	{
 		var json = {players:[]};
 		for(var i in this.players)
@@ -26,7 +26,7 @@
 	
 	
 
-	GTA.model.LevelState.prototype.fromJson = function(json)
+	GTA.Model.LevelState.prototype.fromJson = function(json)
 	{
 		for(var i in this.players)
 		{

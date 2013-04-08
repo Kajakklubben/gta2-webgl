@@ -4,13 +4,13 @@ require('../core/GTA');
 
 
 GLOBAL.jDataView = require('../render/jdataview');
+require('../core/MapLoader');
 require('../core/MapParser');
 
 
 require('../core/CollisionMap');
 
 require('../core/Game');
-require('../core/Loader');
 require('../model/Constants');
 require('../model/LevelState');
 require('../model/EntityState');
@@ -18,6 +18,10 @@ require('../model/PlayerEntity');
 require('../model/Point');
 require('../input/Keyboard');
 require('./ClientServer.js');
+
+require('../server/StatusView');
+GLOBAL.statusview = new GTA.Server.StatusView();
+
 
 // Test -----------------------------------------------------------------------
 var TestServer = Maple.Class(function(clientClass) {
@@ -33,7 +37,7 @@ var TestServer = Maple.Class(function(clientClass) {
 
 }, Maple.Server, {
 
-    game: new GTA.game.Game(),
+    game: new GTA.Core.Game(),
 
     started: function() {
         this.log('Started');

@@ -33,7 +33,7 @@ function rotateAroundObjectAxis(object, axis, radians) {
 		this.mesh.position.y = this.player.position.y;
 		this.mesh.position.z = this.player.position.z*64;
 		
-		 this.mesh.rotation = new THREE.Vector3(0,0,this.player.rotation);
+		this.mesh.rotation = new THREE.Vector3(0,0,this.player.rotation);
 	}
 
 
