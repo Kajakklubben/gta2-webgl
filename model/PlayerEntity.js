@@ -32,6 +32,10 @@
 		
 		if (this.keyboard.isUp()) {
 			dir = new GTA.model.Point(0, deltatime * GTA.Constants.PLAYER.MOVESPEED,0);
+			if(this.keyboard.isShift()){
+				dir = new GTA.model.Point(0, deltatime * GTA.Constants.PLAYER.MOVESPEED*3,0);
+				
+			}
 			dir.rotate(this.rotation);
 		}
 		if (this.keyboard.isDown()) {
@@ -60,8 +64,8 @@
 			if(collision == false){
 				this.position.translatePoint(dir);
 			} else if (collision < 1 && collision > 0.2){
-				dir.multiply(collision*0.9);
-				this.position.translatePoint(dir);
+				//dir.multiply(collision*0.9);
+				//this.position.translatePoint(dir);
 			}
 		}
 	

@@ -108,7 +108,7 @@
 			ctx.collisionMap = new GTA.core.CollisionMap();
             ctx.collisionMap.InterpretMapData(ctx.level.map);  //level.map is some global variable the fox told me
 		
-			ctx.ShowMessage("Done");
+			ctx.ShowMessageDone(); //Loading map data
 		
 			if(loadStyle){
 				ctx.ShowMessage("Loading Style data");
@@ -116,7 +116,6 @@
 				getBinaryData("http://localhost:8000/","bil.sty", StyleLoadComplete);
 			} else {
 				
-				ctx.ShowMessage("Done");
 				OnCompleted();
 				
 			}

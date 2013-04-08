@@ -7,6 +7,7 @@ if(typeof Box2D == 'undefined'){
 (function(){
 	//Get the objects of Box2d Library
 	var b2Vec2 = Box2D.Common.Math.b2Vec2
+	,  	b2Transform = Box2D.Common.Math.b2Transform
 	,  	b2AABB = Box2D.Collision.b2AABB
 	,	b2BodyDef = Box2D.Dynamics.b2BodyDef
 	,	b2Body = Box2D.Dynamics.b2Body
@@ -55,36 +56,47 @@ if(typeof Box2D == 'undefined'){
 		dstX = Math.round((position.x+path.x)/64);
 		dstY = Math.round(-(position.y+path.y)/64);
 		
-		srcBlock = this.collisionData[srcX][srcY][z];
+		testBlocks = new Array();
+		testPositions = new Array();
+		
+		srcBlock = this.collisionData[srcX][srcY][z];		
 		
 		//Diagonal raycast (on src tile)
-		for(i=0; i< srcBlock.length; i++){
-			if(srcBlock[i].diagonal != undefined){
-				// console.log("Check diagonal")
-				relativePosition = position.clone();
-				relativePosition.x -= srcX * 64;
-				
-				relativePosition.y *= -1;
-				relativePosition.y -= srcY * 64;
-				
-				
-			    input = new b2RayCastInput();
-			        input.p1 = new b2Vec2(relativePosition.x,relativePosition.y);
-			        input.p2 = new b2Vec2(relativePosition.x+path.x,relativePosition.y-path.y);
-			        input.maxFraction = 1;
-  
-  
-			   	output = new b2RayCastOutput();	
-				srcBlock[i].RayCast(output, input);
-				
-				// console.log(output);	
-
-				if(output.fraction != undefined){
-					return output.fraction;
+		if(srcBlock != undefined){
+			for(i=0; i<srcBlock.length; i++){
+				if(srcBlock[i].diagonal != undefined){
+					testPositions.push(new b2Vec2(srcX*64,srcY*64))
+					testBlocks.push(srcBlock[i]);
 				}
-				
-			}
+			} 
 		}
+		
+
+		//Add all neighbor tiles
+		block = this.collisionData[srcX+1][srcY][z];
+		for(i=0; i< block.length; i++){
+			testPositions.push(new b2Vec2((srcX+1)*64,(srcY)*64))
+			testBlocks.push(block[i]);
+		}
+		
+		block = this.collisionData[srcX-1][srcY][z];
+		for(i=0; i< block.length; i++){
+			testPositions.push(new b2Vec2((srcX-1)*64,(srcY)*64))
+			testBlocks.push(block[i]);
+		}
+		
+		block = this.collisionData[srcX][srcY+1][z];
+		for(i=0; i< block.length; i++){
+			testPositions.push(new b2Vec2((srcX)*64,(srcY+1)*64))
+			testBlocks.push(block[i]);
+		}
+		
+		block = this.collisionData[srcX][srcY-1][z];
+		for(i=0; i< block.length; i++){
+			testPositions.push(new b2Vec2((srcX)*64,(srcY-1)*64))
+			testBlocks.push(block[i]);
+		}
+		
 		
 		//raycast on dst tile
 		if(srcX != dstX || srcY != dstY){
@@ -92,61 +104,117 @@ if(typeof Box2D == 'undefined'){
 			dstBlock = this.collisionData[dstX][dstY][z];
 			
 			for(i=0; i< dstBlock.length; i++){
-				relativePosition = position.clone();
-				relativePosition.x -= dstX * 64;
-				
-				relativePosition.y *= -1;
-				relativePosition.y -= dstY * 64;
-				
-				
-			    input = new b2RayCastInput();
-			        input.p1 = new b2Vec2(relativePosition.x,relativePosition.y);
-			        input.p2 = new b2Vec2(relativePosition.x+path.x,relativePosition.y-path.y);
-			        input.maxFraction = 1;
-  
-  
-			   output = new b2RayCastOutput();	
-				dstBlock[i].RayCast(output, input);
-				
-				// console.log(output);	
-
-				if(output.fraction != undefined){
-					return output.fraction;
-				}
-				
+				testPositions.push(new b2Vec2(dstX*64,dstY*64))
+				testBlocks.push(dstBlock[i]);
 			}
-
 		}
+		
+		if(srcX != dstX && srcY != dstY){
+			dstBlock1 = this.collisionData[dstX][srcY][z];
+			dstBlock2 = this.collisionData[srcX][dstY][z];
+			
+			for(i=0; i< dstBlock1.length; i++){
+				testPositions.push(new b2Vec2(dstX*64,srcY*64))
+				testBlocks.push(dstBlock1[i]);
+			}
+			for(i=0; i< dstBlock2.length; i++){
+				testPositions.push(new b2Vec2(srcX*64,dstY*64))
+				testBlocks.push(dstBlock2[i]);
+			}
+		}
+		
+		
+		//Test blocks for collision
+		relativePosition = position.clone();
+		relativePosition.translatePoint(path);
+		relativePosition.y *= -1;
+		
+		
+		for( i=0 ; i<testBlocks.length ; i++ ){
+			shape = new b2CircleShape(10);
+
+			transform1 = new b2Transform();
+			transform1.position = new b2Vec2(relativePosition.x,relativePosition.y);
+		
+			transform2 = new b2Transform();
+			transform2.position = testPositions[i];
+
+			
+			collision = b2Shape.TestOverlap(shape, transform1, testBlocks[i].GetShape(), transform2 );
+			
+		
+			if(collision)
+				return true;
+		}
+		
+		
 				
 		return false;
 	}
 	
+	
+	
 	//
 	//Calculates the floor height for the block, or returns undefined if no floor
 	//
-	GTA.core.CollisionMap.prototype.BlockFloorLevel = function(block, i){
+	GTA.core.CollisionMap.prototype.BlockFloorLevel = function(block, i, relativePosition){
 		if(block != undefined){
 	 	   if (block.Lid != undefined && block.Lid.tileNumber != undefined && block.Lid.tileNumber != 0) {
 			   
 			   	// If the block is a slope we here find the height at the position
 				if(block.slopeType != undefined){
+
+					//Slopes:
 					if(block.slopeType == 8){ //Right High (Tested!)
 						return i - (1-relativePosition.x)*0.5;
-					} else if(block.slopeType == 7){ //Right Low (Tested!)
+					} else if(block.slopeType == 7){ //Right Low 
 						return i - (1-relativePosition.x)*0.5-0.5;
-					} else if(block.slopeType == 6){ //Left High (untested)
+					} else if(block.slopeType == 6){ //Left High 
 						return i - (relativePosition.x)*0.5;
-					} else if(block.slopeType == 5){ //Left Low  (untested)
+					} else if(block.slopeType == 5){ //Left Low  
 						return i - (relativePosition.x)*0.5-0.5;
-					} else if(block.slopeType == 4){ //Down High  (untested)
+					} else if(block.slopeType == 4){ //Down High 
+						return i - (-relativePosition.y)*0.5;
+					} else if(block.slopeType == 3){ //Down Low  
+						return i - (-relativePosition.y)*0.5-0.5;
+					} else if(block.slopeType == 2){ //Up High 
 						return i - (relativePosition.y)*0.5;
-					} else if(block.slopeType == 3){ //Down Low  (untested)
+					} else if(block.slopeType == 1){ //Up Low 
 						return i - (relativePosition.y)*0.5-0.5;
-					} else if(block.slopeType == 2){ //Up High  (untested)
-						return i - (1-relativePosition.y)*0.5;
-					} else if(block.slopeType == 1){ //Up Low  (untested)
-						return i - (1-relativePosition.y)*0.5-0.5;
-					} else {
+					}
+					
+					//Diagonals
+					else if(block.slopeType == 45){ //facing up left
+						if( (relativePosition.x) + (relativePosition.y) <= 1){
+							return i;
+						} else {
+							return i-1;
+						}
+					}
+					else if(block.slopeType == 46){ //facing up right
+						if( (1-relativePosition.x) + (relativePosition.y) >= 1){
+							return i;
+						} else {
+							return i-1;
+						}
+					}
+					else if(block.slopeType == 47){ //Facing down left
+						if( (relativePosition.x) + (1-relativePosition.y) >= 1){
+							return i;
+						} else {
+							return i-1;
+						}
+					}
+					else if(block.slopeType == 47){ //facing down right
+						if( (relativePosition.x) + (relativePosition.y) >= 1){
+							return i;
+						} else {
+							return i-1;
+						}
+					}
+					
+					 else {
+						console.log(block.slopeType);
 						return i;
 					}
 					
@@ -166,19 +234,20 @@ if(typeof Box2D == 'undefined'){
 	//
 	GTA.core.CollisionMap.prototype.FindFloorBelow = function(position){
 		relativePosition = position.clone();
+
 		relativePosition.x -= Math.round(position.x/64) * 64;
 		relativePosition.x += 32;
 		relativePosition.x /= 64;
 		
-		relativePosition.y *= -1;
 		relativePosition.y -= Math.round(position.y/64) * 64;
+		relativePosition.y *= -1;
 		relativePosition.y += 32;
 		relativePosition.y /= 64;
 				
 		for(i=Math.round(position.z); i>=0; i--){
 			var block = this.level[Math.round(position.x/64)][Math.round(-position.y/64)][i];
 
-			floorLevel = this.BlockFloorLevel(block, i);
+			floorLevel = this.BlockFloorLevel(block, i,relativePosition);
 			if(floorLevel != undefined)
 				return floorLevel;
 			
@@ -187,7 +256,7 @@ if(typeof Box2D == 'undefined'){
 		for(i=Math.round(position.z); i<8; i++){
 			var block = this.level[Math.round(position.x/64)][Math.round(-position.y/64)][i];
 			
-			floorLevel = this.BlockFloorLevel(block, i);
+			floorLevel = this.BlockFloorLevel(block, i,relativePosition);
 			if(floorLevel != undefined)
 				return floorLevel;
 			
@@ -240,7 +309,9 @@ if(typeof Box2D == 'undefined'){
 		        			fixDef.shape.SetAsEdge(p1,p2);
 
 							var bodyDef = new b2BodyDef;
-							 bodyDef.type = b2Body.b2_staticBody;
+							bodyDef.type = b2Body.b2_staticBody;
+							bodyDef.position = new b2Vec2(i*64, j*64);
+
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							fixture.diagonal = true;
 							
@@ -259,6 +330,8 @@ if(typeof Box2D == 'undefined'){
 
 							var bodyDef = new b2BodyDef;
 							 bodyDef.type = b2Body.b2_staticBody;
+ 							bodyDef.position = new b2Vec2(i*64, j*64);
+
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							
 		        			kArray[k].push(fixture);
@@ -275,6 +348,8 @@ if(typeof Box2D == 'undefined'){
 
 							var bodyDef = new b2BodyDef;
 							 bodyDef.type = b2Body.b2_staticBody;
+ 							bodyDef.position = new b2Vec2(i*64, j*64);
+
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							
 		        			kArray[k].push(fixture);
@@ -289,7 +364,9 @@ if(typeof Box2D == 'undefined'){
 		        			fixDef.shape.SetAsEdge(p1,p2);
 
 							var bodyDef = new b2BodyDef;
-							 bodyDef.type = b2Body.b2_staticBody;
+							bodyDef.type = b2Body.b2_staticBody;
+							bodyDef.position = new b2Vec2(i*64, j*64);
+							
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							
 		        			kArray[k].push(fixture);
@@ -304,7 +381,9 @@ if(typeof Box2D == 'undefined'){
 		        			fixDef.shape.SetAsEdge(p1,p2);
 
 							var bodyDef = new b2BodyDef;
-							 bodyDef.type = b2Body.b2_staticBody;
+							bodyDef.type = b2Body.b2_staticBody;
+							bodyDef.position = new b2Vec2(i*64, j*64);
+							 
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							
 		        			kArray[k].push(fixture);
