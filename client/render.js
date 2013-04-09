@@ -19,7 +19,8 @@
 		var context = this;
 		this.gameInstance.OnAddedPlayer = function(player) {context.OnAddedPlayer(player);};
 		this.gameInstance.OnRemovedPlayer = function(player) {context.OnRemovedPlayer(player);};
-		//window.addEventListener('resize', function(){this.onWindowResize.bind(this);}, false );
+
+		window.addEventListener('resize', function(){context.onWindowResize();}, false );
 		
 		console.log("created render");
 		return this;
@@ -27,12 +28,44 @@
 	
 	
 	GTA.Client.Render.prototype.Init = function(mapData, styleData)
-	{
-		var old = init(mapData, styleData);
-		this.scene = old.scene;
-		this.renderer = old.renderer
-		this.camera = old.camera;
-		this.stats = old.stats;
+	{	
+	    container = document.createElement('div');
+	    document.body.appendChild(container);
+		
+		
+	    this.renderer = new THREE.WebGLRenderer();
+	    this.renderer.setSize(window.innerWidth, window.innerHeight);
+	    this.renderer.setClearColorHex(0x000000, 1);
+
+	    container.appendChild(this.renderer.domElement);
+		
+		
+	    //default stats  component
+	    this.stats = new Stats();
+	    this.stats.domElement.style.position = 'absolute';
+	    this.stats.domElement.style.top = '0px';
+	    container.appendChild(this.stats.domElement);
+	
+	
+		//Scene
+	    this.scene = new THREE.Scene();	
+	    this.scene.overdraw = true;
+		
+		
+		//Camera
+		var camFov = 50;	
+	    this.camera = new THREE.PerspectiveCamera(camFov, window.innerWidth / window.innerHeight, 1, 1500);
+		
+	    this.camera.position.z = camHeight;
+	    this.camera.position.x = GTA.Constants.CLIENT_SETTING.START_CAM_POSITION[0] * tileSize;
+	    this.camera.position.y = GTA.Constants.CLIENT_SETTING.START_CAM_POSITION[1] * tileSize;
+		
+		//Map
+		this.mapRender = new GTA.Render.MapRender();
+		this.mapRender.scene = this.scene;
+		this.mapRender.camera = this.camera;
+		this.mapRender.CreateMesh(mapData, styleData);
+		
 		this.animate();
 	}
 
@@ -44,7 +77,7 @@
 			this.dynamicObjects[i].Update();
 		}
 		
-		if(this.followTarget != null)
+		if(this.followTarget != false)
 		{
 			var target = new GTA.Model.Point(this.camera.position.x-this.followTarget.GetPosition().x,this.camera.position.y-this.followTarget.GetPosition().y);
 			var targetZ = (this.camera.position.z-400)-this.followTarget.GetPosition().z*64;
@@ -73,9 +106,12 @@
 	//Currently not being used
 	GTA.Client.Render.prototype.animate = function () {
 
-		
-		requestAnimationFrame( function(){this.animate()} );
+		var ctx = this;
+		requestAnimationFrame( function(){ctx.animate()} );
 
+		this.mapRender.render();
+
+		this.renderer.render( this.mapRender.scene, this.mapRender.camera );
 	
 		this.stats.update();
 
@@ -83,7 +119,6 @@
 	}
 	
 	GTA.Client.Render.prototype.onWindowResize = function() {
-
 		this.windowHalfX = window.innerWidth / 2;
 		this.windowHalfY = window.innerHeight / 2;
 

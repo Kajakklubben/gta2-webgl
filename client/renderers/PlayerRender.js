@@ -2,15 +2,6 @@
 // Gets initialized by Client.Render
 //
 
-var rotObjectMatrix;
-function rotateAroundObjectAxis(object, axis, radians) {
-    rotObjectMatrix = new THREE.Matrix4();
-    rotObjectMatrix.makeRotationAxis(axis.normalize(), radians);
-   // object.matrix.multiplySelf(rotObjectMatrix);      // post-multiply
-    object.rotation.getRotationFromMatrix(object.matrix, object.scale);
-}
-
-
 (function(){
 	GTA.namespace("GTA.Render");
 	//constructor
