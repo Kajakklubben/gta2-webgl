@@ -50,13 +50,13 @@
 		//Scene
 	    this.scene = new THREE.Scene();	
 	    this.scene.overdraw = true;
-		
+
 		
 		//Camera
 		var camFov = 50;	
 	    this.camera = new THREE.PerspectiveCamera(camFov, window.innerWidth / window.innerHeight, 1, 1500);
 		
-	    this.camera.position.z = camHeight;
+	    this.camera.position.z = 200;
 	    this.camera.position.x = GTA.Constants.CLIENT_SETTING.START_CAM_POSITION[0] * tileSize;
 	    this.camera.position.y = GTA.Constants.CLIENT_SETTING.START_CAM_POSITION[1] * tileSize;
 		
@@ -80,7 +80,7 @@
 		if(this.followTarget != false)
 		{
 			var target = new GTA.Model.Point(this.camera.position.x-this.followTarget.GetPosition().x,this.camera.position.y-this.followTarget.GetPosition().y);
-			var targetZ = (this.camera.position.z-400)-this.followTarget.GetPosition().z*64;
+			var targetZ = (this.camera.position.z-GTA.Constants.RENDER_SETTING.CAM_STANDARD_HEIGHT)-this.followTarget.GetPosition().z*64;
 			
 			this.camera.position.x -= target.x/2;
 			this.camera.position.y -= target.y/2;

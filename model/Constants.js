@@ -35,6 +35,10 @@
 		
 		},
 
+		RENDER_SETTING: 
+		{
+			CAM_STANDARD_HEIGHT : 400,
+		},
 
 		// The client sends this bitmask to the server
 		// See (Keyboard.js)
