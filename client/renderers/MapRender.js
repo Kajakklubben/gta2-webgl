@@ -505,13 +505,11 @@ var rightSlopeTypesTriangles = [44, 7];
 	        this.modifyHeights(h, no, tileSizeH, step);
 	    }
 	    else if (slopeType <= 8) { // Right
-	        console.log(slopeType);
 	        var step = slopeType - 7;
 	        var no = (faceType != FaceType.Bottom) ? (faceType != FaceType.Top) ? 0 : 1 : 2;
 	        this.modifyHeights(h, no, tileSizeH, step);
 	    }
 	    else if (slopeType >= 33 && slopeType <= 40) { // Right 7 degree
-
 	        var step = slopeType - 33;
 	        var no = (faceType != FaceType.Bottom) ? (faceType != FaceType.Top) ? 0 : 1 : 2;
 	        this.modifyHeights(h, no, tileSizeE, step);

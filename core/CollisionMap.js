@@ -2,6 +2,8 @@
 // Gets initiliazed by Core.MapLoader
 //
 
+
+
 if(typeof Box2D == 'undefined'){ 
 	//Node.js implementation
 	var Box2D = require("../libs/box2d/Box2DServer.js").Box2D;
@@ -9,6 +11,10 @@ if(typeof Box2D == 'undefined'){
 
 
 (function(){
+	
+	var scaleFactor = 10;
+	
+	
 	//Get the objects of Box2d Library
 	var b2Vec2 = Box2D.Common.Math.b2Vec2
 	,  	b2Transform = Box2D.Common.Math.b2Transform
@@ -269,6 +275,17 @@ if(typeof Box2D == 'undefined'){
 	}
 	
 	
+	
+	GTA.Core.CollisionMap.prototype.CreateCollisionBody = function(i,j){
+		var bodyDef = new b2BodyDef;
+		bodyDef.type = b2Body.b2_staticBody;
+		bodyDef.position = new b2Vec2(i*64/scaleFactor, j*64/scaleFactor);
+		bodyDef.awake = false;
+		
+		return bodyDef;
+		
+	}
+	
 	//
 	// Calculates all the collision shapes based on the raw mapData
 	//
@@ -290,7 +307,9 @@ if(typeof Box2D == 'undefined'){
 				{
 					
 					kArray[k] = new Array();
-
+					
+					category = 1<<k;
+					
 					var block = mapData[i][j][k];
 					
 					if(block != undefined)
@@ -299,22 +318,21 @@ if(typeof Box2D == 'undefined'){
 						//Diagonals
 						if(block.slopeType >= 45 && block.slopeType <= 48){
 							if(block.slopeType == 45 || block.slopeType == 48){
-								p1 = new b2Vec2(-32, 32);
-								p2 = new b2Vec2(32, -32);
+								p1 = new b2Vec2(-32/scaleFactor, 32/scaleFactor);
+								p2 = new b2Vec2(32/scaleFactor, -32/scaleFactor);
 							}
 							if(block.slopeType == 46 || block.slopeType == 47 ){
-								p1 = new b2Vec2(-32, -32);
-								p2 = new b2Vec2(32, 32);
+								p1 = new b2Vec2(-32/scaleFactor, -32/scaleFactor);
+								p2 = new b2Vec2(32/scaleFactor, 32/scaleFactor);
 							}
 
 							
 	   						var fixDef = new b2FixtureDef;
 							fixDef.shape = new b2PolygonShape;
 		        			fixDef.shape.SetAsEdge(p1,p2);
+							fixDef.filter.categoryBits = category;
 
-							var bodyDef = new b2BodyDef;
-							bodyDef.type = b2Body.b2_staticBody;
-							bodyDef.position = new b2Vec2(i*64, j*64);
+							var bodyDef = this.CreateCollisionBody(i,j);
 
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							fixture.diagonal = true;
@@ -325,16 +343,15 @@ if(typeof Box2D == 'undefined'){
 						//Sides
 						if(block.Left != undefined && block.Left.wall != 0)
 						{
-							p1 = new b2Vec2(-32, -32);
-							p2 = new b2Vec2(-32, 32);
+							p1 = new b2Vec2(-32/scaleFactor, -32/scaleFactor);
+							p2 = new b2Vec2(-32/scaleFactor, 32/scaleFactor);
 
 	   						var fixDef = new b2FixtureDef;
 							fixDef.shape = new b2PolygonShape;
 		        			fixDef.shape.SetAsEdge(p1,p2);
+							fixDef.filter.categoryBits = category;
 
-							var bodyDef = new b2BodyDef;
-							 bodyDef.type = b2Body.b2_staticBody;
- 							bodyDef.position = new b2Vec2(i*64, j*64);
+							var bodyDef = this.CreateCollisionBody(i,j);
 
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							
@@ -343,16 +360,15 @@ if(typeof Box2D == 'undefined'){
 						
 						if(block.Right != undefined && block.Right.wall != 0)
 						{
-							p1 = new b2Vec2(32, -32);
-							p2 = new b2Vec2(32, 32);
+							p1 = new b2Vec2(32/scaleFactor, -32/scaleFactor);
+							p2 = new b2Vec2(32/scaleFactor, 32/scaleFactor);
 
 	   						var fixDef = new b2FixtureDef;
 							fixDef.shape = new b2PolygonShape;
 		        			fixDef.shape.SetAsEdge(p1,p2);
+							fixDef.filter.categoryBits = category;
 
-							var bodyDef = new b2BodyDef;
-							 bodyDef.type = b2Body.b2_staticBody;
- 							bodyDef.position = new b2Vec2(i*64, j*64);
+							var bodyDef = this.CreateCollisionBody(i,j);
 
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							
@@ -360,16 +376,15 @@ if(typeof Box2D == 'undefined'){
 						}	
 						if(block.Top != undefined && block.Top.wall != 0)
 						{
-							p1 = new b2Vec2(-32, -32);
-							p2 = new b2Vec2(32, -32);
+							p1 = new b2Vec2(-32/scaleFactor, -32/scaleFactor);
+							p2 = new b2Vec2(32/scaleFactor, -32/scaleFactor);
 
 	   						var fixDef = new b2FixtureDef;
 							fixDef.shape = new b2PolygonShape;
 		        			fixDef.shape.SetAsEdge(p1,p2);
+							fixDef.filter.categoryBits = category;
 
-							var bodyDef = new b2BodyDef;
-							bodyDef.type = b2Body.b2_staticBody;
-							bodyDef.position = new b2Vec2(i*64, j*64);
+							var bodyDef = this.CreateCollisionBody(i,j);
 							
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							
@@ -377,16 +392,15 @@ if(typeof Box2D == 'undefined'){
 						}
 						if(block.Bottom != undefined && block.Bottom.wall != 0)
 						{
-							p1 = new b2Vec2(-32, 32);
-							p2 = new b2Vec2(32, 32);
+							p1 = new b2Vec2(-32/scaleFactor, 32/scaleFactor);
+							p2 = new b2Vec2(32/scaleFactor, 32/scaleFactor);
 
 	   						var fixDef = new b2FixtureDef;
 							fixDef.shape = new b2PolygonShape;
 		        			fixDef.shape.SetAsEdge(p1,p2);
+							fixDef.filter.categoryBits = category;
 
-							var bodyDef = new b2BodyDef;
-							bodyDef.type = b2Body.b2_staticBody;
-							bodyDef.position = new b2Vec2(i*64, j*64);
+							var bodyDef = this.CreateCollisionBody(i,j);
 							 
 							fixture = this.world.CreateBody(bodyDef).CreateFixture(fixDef);
 							

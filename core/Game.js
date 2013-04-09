@@ -61,9 +61,8 @@
 
 	GTA.Core.Game.prototype.addPlayer = function(client)
 	{
-		var player = new GTA.Model.PlayerEntity(client);
+		var player = new GTA.Model.PlayerEntity(client, this.maploader.collisionMap);
 		player.id = client.id;
-		player.collisionMap = this.maploader.collisionMap;
 		
 		this.levelState.players.push(player);
 
