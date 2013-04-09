@@ -111,24 +111,39 @@ var rightSlopeTypesTriangles = [44, 7];
 		blockObject = new THREE.Object3D();
 
 	    if (block.Left != undefined && block.Left.tileNumber != 0) {
-	        blockObject.add(this.CreatePolygon(x, y, z, block.Left, FaceType.Left, block));
+			blockPolygon = this.CreatePolygon(x, y, z, block.Left, FaceType.Left, block);
+			if(blockPolygon != false){
+	        	blockObject.add(blockPolygon);
+			}
 	    }
 
 	    if (block.Right != undefined && block.Right.tileNumber != 0) {
-	        blockObject.add(this.CreatePolygon(x, y, z, block.Right, FaceType.Right, block));
+			blockPolygon = this.CreatePolygon(x, y, z, block.Right, FaceType.Right, block);
+			if(blockPolygon != false){
+	        	blockObject.add(blockPolygon);
+			}
 	    }
 
 	    if (block.Top != undefined && block.Top.tileNumber != 0) {
-	        blockObject.add(this.CreatePolygon(x, y, z, block.Top, FaceType.Top, block));
-	    }
+			blockPolygon = this.CreatePolygon(x, y, z, block.Top, FaceType.Top, block);
+			if(blockPolygon != false){	        
+				blockObject.add(blockPolygon);
+			}	
+		}
 
 	    if (block.Bottom != undefined && block.Bottom.tileNumber != 0) {
-	        blockObject.add(this.CreatePolygon(x, y, z, block.Bottom, FaceType.Bottom, block));
-	    }
+			blockPolygon = this.CreatePolygon(x, y, z, block.Bottom, FaceType.Bottom, block);
+			if(blockPolygon != false){	       
+				 blockObject.add(blockPolygon);
+			}	
+		}
 
 	    if (block.Lid != undefined && block.Lid.tileNumber != 0) {
-	        blockObject.add(this.CreatePolygon(x, y, z, block.Lid, FaceType.Lid, block));
-	    }
+			blockPolygon = this.CreatePolygon(x, y, z, block.Lid, FaceType.Lid, block);
+			if(blockPolygon != false){	        
+				blockObject.add(blockPolygon);
+			}	
+		}
 		return blockObject;
 	}
 
@@ -136,8 +151,9 @@ var rightSlopeTypesTriangles = [44, 7];
 	GTA.Render.MapRender.prototype.CreatePolygon = function(x, y, z, face, type, block) {
 	    var material;
 	    if (face.tileNumber == undefined) {
-	        return;
-	        // material = new THREE.MeshBasicMaterial({ color: 0xFF00FF });
+			
+	         return false;
+	         material = new THREE.MeshBasicMaterial({ color: 0xFF00FF });
 	    }
 	    else {
 	        material = this.getTile(face.tileNumber);
@@ -246,7 +262,8 @@ var rightSlopeTypesTriangles = [44, 7];
 	    edge.position.x = x;
 	    edge.position.y = -y;
 	    edge.position.z = z;
-		// edge.children[0].frustumCulled = false; //Slows down alot! - Havørnen
+		
+		edge.children[0].frustumCulled = false; //Slows down some, should only be on alpha tiles! - Havørnen
 
 	    //scene.add(edge);
 		return edge;
