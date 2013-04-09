@@ -411,9 +411,9 @@ if(typeof Box2D == 'undefined'){
 	//
 	GTA.Core.CollisionMap.prototype.SetupDebugRender = function(scene)
 	{
-		for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++)
+		for (var i = GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[1]; i < GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[3]; i++)
 		{	
-	        for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++)
+	        for (var j = GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[0]; j < GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[2]; j++)
 			{	
 				for (var k = 2; k < 8; k++)
 				{	

@@ -24,12 +24,12 @@
 	{
 		statusview.ShowMessage("Reading settings");				
 		
-		if(typeof drawLevelArea != 'undefined'){
-			statusview.ShowAdditionalLoadingMessage("Draw Level Area Origin: "+drawLevelArea[1]+","+drawLevelArea[0]);						
-			statusview.ShowAdditionalLoadingMessage("Draw Level Area Size: "+(drawLevelArea[3]-drawLevelArea[1])+"x"+(drawLevelArea[2]-drawLevelArea[0]));						
-			statusview.ShowAdditionalLoadingMessage("Start Cam Position: "+startCamPosition[0]+","+startCamPosition[1]);						
-			statusview.ShowAdditionalLoadingMessage("Load Textures: "+loadTextures);						
-			statusview.ShowAdditionalLoadingMessage("Use Local Cached Style Tiles: "+useLocalCachedStyleTiles);						
+		if(typeof GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA != 'undefined'){
+			statusview.ShowAdditionalLoadingMessage("Load Level Area Origin: "+GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[1]+","+GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[0]);						
+			statusview.ShowAdditionalLoadingMessage("Load Level Area Size: "+(GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[3]-GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[1])+"x"+(GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[2]-GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[0]));						
+			statusview.ShowAdditionalLoadingMessage("Start Cam Position: "+GTA.Constants.CLIENT_SETTING.START_CAM_POSITION[0]+","+GTA.Constants.CLIENT_SETTING.START_CAM_POSITION[1]);						
+			statusview.ShowAdditionalLoadingMessage("Load Textures: "+GTA.Constants.CLIENT_SETTING.LOAD_TEXTURES);						
+			statusview.ShowAdditionalLoadingMessage("Use Local Cached Style Tiles: "+GTA.Constants.CLIENT_SETTING.USE_LOCAL_CACHED_STYLE_TILES);						
 		}
 
 		statusview.ShowMessage("Loading Map data");
@@ -73,7 +73,7 @@
 			statusview.ShowMessage("Parsing Style data");
 
 			setTimeout(function(){
-				if (loadTextures) {
+				if (GTA.Constants.CLIENT_SETTING.LOAD_TEXTURES) {
 					styleParser = new GTA.Core.StyleParser();
 					
 				    ctx.style = styleParser.ParseStyle(styleData, getTileNumbers(ctx.level));
@@ -115,8 +115,8 @@
 		    var uniqueTileNumbers = [];
 		    if (level) {
 		        var temp = {};
-		        for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++) {
-		            for (var ii = drawLevelArea[0]; ii < drawLevelArea[2]; ii++) {
+		        for (var i = GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[1]; i < GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[3]; i++) {
+		            for (var ii = GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[0]; ii < GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[2]; ii++) {
 		                for (var iii = 0; iii < level.map[i][ii].length; iii++) {
 		                    if (level.map[i][ii][iii] != undefined) {
 		                        temp[level.map[i][ii][iii].Top.tileNumber] = true;

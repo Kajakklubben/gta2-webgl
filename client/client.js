@@ -25,7 +25,7 @@ var Client = Class(function() {
 		    context.renderer.Init(context.game.maploader.level, context.game.maploader.style);
 
           	
-			if(drawCollisionMapDebug)
+			if(GTA.Constants.DEBUG_SETTING.DRAW_COLLISION_MAP)
 			  context.game.loader.collisionMap.SetupDebugRender(context.renderer.scene); //Enable this to debug collision map
 
             context.connect(GTA.Constants.SERVER_SETTING.SOCKET_DOMAIN, GTA.Constants.SERVER_SETTING.SOCKET_PORT);
@@ -96,7 +96,7 @@ var Client = Class(function() {
 
        if(type == GTA.Constants.MESSAGE_TYPES.STARTSYNC)
         {
-            console.log("init from json:"+JSON.stringify(data));
+           console.log("init from json:"+JSON.stringify(data));
            this.game.initFromJson(data[0]);
             
 

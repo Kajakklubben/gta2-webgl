@@ -149,7 +149,7 @@
 		    {
 		        if (uniqueTileNumbers.length == 0 || $.inArray(id, uniqueTileNumbers) != -1) {
 		    
-					if ( localStorage.getItem('tile'+id) && useLocalCachedStyleTiles) 
+					if ( localStorage.getItem('tile'+id) && GTA.Constants.CLIENT_SETTING.USE_LOCAL_CACHED_STYLE_TILES) 
 					{
 			            var image = new Image();
 			            image.src = localStorage.getItem('tile'+id);

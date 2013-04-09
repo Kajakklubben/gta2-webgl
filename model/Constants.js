@@ -4,7 +4,26 @@
 		DEBUG_SETTING:
 		{
 			SERVER_DEBUG : true,
-			CLIENT_DEBUG : true
+			CLIENT_DEBUG : true,
+			
+			DRAW_COLLISION_MAP : false,
+			
+		},
+		
+		CLIENT_SETTING:
+		{
+			START_CAM_POSITION : [85, -190],
+			LOAD_TEXTURES 	: true,
+			SHOW_WIREFRAME 	: false,
+			
+			LOAD_LEVEL_AREA : 		[0,       // minY
+			                        0,      // minX
+			                        256,      // maxY
+			                        256],     // maxX
+									
+			USE_LOCAL_CACHED_STYLE_TILES : true,
+									
+			
 		},
 
 		SERVER_SETTING:

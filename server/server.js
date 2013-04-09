@@ -3,7 +3,7 @@ var Maple = require('../maple/Maple');
 require('../core/GTA');
 
 
-GLOBAL.jDataView = require('../render/jdataview');
+GLOBAL.jDataView = require('../libs/jdataview');
 require('../core/MapLoader');
 require('../core/MapParser');
 

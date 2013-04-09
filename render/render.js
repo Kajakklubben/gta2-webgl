@@ -43,8 +43,8 @@ function init(mapData, styleData) {
     camera = new THREE.PerspectiveCamera(camFov, window.innerWidth / window.innerHeight, 1, 1500);
 
     camera.position.z = camHeight;
-    camera.position.x = startCamPosition[0] * tileSize;
-    camera.position.y = startCamPosition[1] * tileSize;
+    camera.position.x = GTA.Constants.CLIENT_SETTING.START_CAM_POSITION[0] * tileSize;
+    camera.position.y = GTA.Constants.CLIENT_SETTING.START_CAM_POSITION[1] * tileSize;
 
     scene = new THREE.Scene();
 	
@@ -86,10 +86,10 @@ function createScene() {
 	//Create alle the THREE 3D objects but don't add them to the scene yet. They get added in the render loop dynamicly
 	
 	iArray = new Array();
-    for (var i = drawLevelArea[1]; i < drawLevelArea[3]; i++) {
+    for (var i = GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[1]; i < GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[3]; i++) {
 
 		jArray = new Array();
-	    for (var j = drawLevelArea[0]; j < drawLevelArea[2]; j++) {
+	    for (var j = GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[0]; j < GTA.Constants.CLIENT_SETTING.LOAD_LEVEL_AREA[2]; j++) {
 
 			tileObject = new THREE.Object3D();
 			for (var k = 0; k < 8; k++) {
@@ -191,7 +191,7 @@ function CreatePolygon(x, y, z, face, type, block) {
     }
 
     var materialList = [material];
-    if (showWireframe) {
+    if (GTA.Constants.CLIENT_SETTING.SHOW_WIREFRAME) {
         wireMaterial = new THREE.MeshBasicMaterial({ color: 0x000000, wireframe: true, transparent: true });
         materialList.push(wireMaterial);
     }
