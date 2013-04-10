@@ -16,6 +16,8 @@
 		this.camera = false;
 		this.stats = false;
 		
+		this.styleData = false;
+		
 		var context = this;
 		this.gameInstance.OnAddedPlayer = function(player) {context.OnAddedPlayer(player);};
 		this.gameInstance.OnRemovedPlayer = function(player) {context.OnRemovedPlayer(player);};
@@ -29,6 +31,8 @@
 	
 	GTA.Client.Render.prototype.Init = function(mapData, styleData)
 	{	
+		this.styleData = styleData;
+		
 	    container = document.createElement('div');
 	    document.body.appendChild(container);
 		
@@ -92,6 +96,8 @@
 	GTA.Client.Render.prototype.OnAddedPlayer = function (player) {
 
 		var playerRender = new GTA.Render.PlayerRender(player);
+		playerRender.style = this.styleData;
+
 		player.render = playerRender;
 
 		this.scene.add(playerRender.CreateMesh());

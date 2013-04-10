@@ -65,7 +65,7 @@
 
 		PLAYER:
 		{
-			MOVESPEED 		: 100,
+			MOVESPEED 		: 140,
 			ROTATIONSPEED	: 0.12
 			
 		}

@@ -8,26 +8,69 @@
 	GTA.Render.PlayerRender = function( player ) {
 
 		this.player = player;
+		this.style = false;
+		
+		this.walkIndex = 0;
+		
+		this.frameUpdate = new Date().getTime();
+
+
+		
 		return this;
 	};
 
 	GTA.Render.PlayerRender.prototype.CreateMesh = function()
 	{
 
-		this.geometry = new THREE.CubeGeometry( 10, 5, 64 );
+		this.geometry = new THREE.PlaneGeometry( 1, 1, 1,1 );
 
-		this.material = new THREE.MeshBasicMaterial( { color: 0xfff444 } );
-
-		this.mesh = new THREE.Mesh( this.geometry, this.material );
+		this.materials = this.CreateMaterials();	
+		
+		
+		this.mesh = new THREE.Mesh( this.geometry, this.materials.walking[0].material );
+		
 		return this.mesh;
 	}
+	
+	GTA.Render.PlayerRender.prototype.CreateMaterials = function(){
+		materials = new Object();
+		
+		materials.walking = new Array();
+		for(i=0;i<8;i++){
+	 	   var texture = new THREE.Texture(this.style.sprites.player.walking[i].image);
+			texture.needsUpdate = true;
+			
+			obj = new Object();
+			obj.material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+			obj.w = this.style.sprites.player.walking[i].w;
+			obj.h = this.style.sprites.player.walking[i].h;
+						
+			materials.walking.push(obj);
+		}
+	    return materials;
+	}
+	
 	GTA.Render.PlayerRender.prototype.Update = function()
 	{
 		this.mesh.position.x = this.player.position.x;
 		this.mesh.position.y = this.player.position.y;
 		this.mesh.position.z = this.player.position.z*64;
 		
-		this.mesh.rotation = new THREE.Vector3(0,0,this.player.rotation);
+		if(((new Date().getTime()) - this.frameUpdate) > 60){
+			this.frameUpdate = (new Date().getTime());
+			
+			this.walkIndex ++;
+			if(this.walkIndex >= 8)
+				this.walkIndex = 0;
+			
+			
+			this.mesh.material = this.materials.walking[this.walkIndex].material;
+			this.mesh.scale.x = this.materials.walking[this.walkIndex].w;
+			this.mesh.scale.y = this.materials.walking[this.walkIndex].h;
+			
+		}
+		
+		this.mesh.rotation = new THREE.Vector3(0,0,this.player.rotation - Math.PI);
 	}
 
 

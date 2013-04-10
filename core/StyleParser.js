@@ -62,10 +62,16 @@
 	            case "CARI": //Car Info
 	                break;
 	            case "SPRG": //Sprite Graphics
+                	style.sprgDataStart = reader.tell();
+					style.sprgDataLength = chunkSize;				
 	                break;
 	            case "SPRX": //Sprite Index
+		        	style.sprxDataStart = reader.tell();
+					style.sprxDataLength = chunkSize;								
 	                break;
 	            case "PALB": //Palette Base
+					style.palbDataStart = reader.tell();
+					style.palbDataLength = chunkSize;	
 	                break;
 	            case "SPEC": //Undocumented
 	                break;
@@ -77,10 +83,26 @@
 	    }
     
 	    var ppal = ReadPPAL(reader, style.ppalDataStart, style.ppalDataLength);
-	    var sprb = null;//ReadSPRB(reader, style.sprbDataStart, style.sprbDataLength);
 	    var palx = ReadPALX(reader, style.palxDataStart, style.palxDataLength);
-    
+	    var palb = ReadPALB(reader, style.palbDataStart, style.palbDataLength);
+		
+		
+
+	    var sprb = ReadSPRB(reader, style.sprbDataStart, style.sprbDataLength);
+		var sprx = ReadSPRX(reader, style.sprxDataStart, style.sprxDataLength);
+		
 	    style.tiles = ReadTiles(reader, style.tileDataStart, style.tileDataLength, ppal, palx, tileNumbers);
+		style.sprites = new Object();
+		
+		//See list of remaps http://projectcerbera.com/gta/2/tutorials/characters
+
+		style.sprites.player = new Object();
+		style.sprites.player.walking = new Array();
+		for(i=0;i<8;i++){
+			style.sprites.player.walking.push(ReadSprite(reader, style.sprgDataStart, style.sprgDataLength, sprx, palb, ppal, palx, 235+i,/* palb.ped_remap+25*/false));
+		}
+			//}
+		
 	    return style;
 		
 		
@@ -135,6 +157,133 @@
 		    }
     
 		    return ppal;
+		}
+		
+		
+		function ReadPALB(reader, start, size) {
+		    reader.seek(start);
+		    palb = new Object();
+			
+			palb.tile = 0;
+			palb.sprite = palb.tile+reader.getUint16();
+			palb.car_remap = palb.sprite + reader.getUint16();
+			palb.ped_remap = palb.car_remap + reader.getUint16();
+			palb.code_obj_remap = palb.ped_remap + reader.getUint16();
+			palb.map_obj_remap = palb.code_obj_remap + reader.getUint16();
+			palb.user_remap = palb.map_obj_remap + reader.getUint16();
+			palb.font_remap = palb.user_remap + reader.getUint16();
+			
+		    return palb;
+		}
+
+		function ReadSPRX(reader, start, size) {
+		    reader.seek(start);
+		    sprx = new Array();
+			
+			chunkSize = 4+2+2;
+		    for (var i = 0; i < size/chunkSize; i++)
+		    {
+				sprxObject = new Object();
+				sprxObject.ptr = reader.getUint32();
+				sprxObject.w = reader.getUint8();
+				sprxObject.h = reader.getUint8();
+				sprxObject.pad = reader.getUint16();
+
+				sprx.push(sprxObject);
+				//console.log(sprxObject);
+		    }
+    
+		    return sprx;
+		}
+		
+		function ReadSPRB(reader, start, size) {
+		    reader.seek(start);
+		    sprb = new Object();
+			
+			sprb.car = 0;
+			sprb.ped = sprb.car + reader.getUint16();
+			sprb.code_obj = sprb.ped + reader.getUint16();
+			sprb.map_obj = sprb.map_obj + reader.getUint16();
+			sprb.user = sprb.user + reader.getUint16();
+			sprb.font = sprb.font + reader.getUint16();
+			
+		    return sprb;
+		}
+		
+		
+		function ReadSprite(reader, start, size, sprx, palb, ppal, palx, spriteNumber, remap){
+			var sprite = new Object();
+		
+			spriteIndex = sprx[spriteNumber];
+
+			virtualPalette = spriteNumber + palb.sprite;
+
+			if(remap == undefined || remap == false){
+				remapPaletteIndex = -1;
+			} else {
+				remapPaletteIndex =  remap;
+			}
+			
+			ptr = start+spriteIndex.ptr;
+           
+		    var pallete = palx[virtualPalette];
+
+		    remapPalette = undefined;
+			if(remapPaletteIndex != -1){
+				remapPalette = palx[remapPaletteIndex];
+			}
+			
+			if ( localStorage.getItem('sprite'+spriteNumber+"palette"+remapPaletteIndex) && GTA.Constants.CLIENT_SETTING.USE_LOCAL_CACHED_STYLE_TILES) 
+			{
+	            var image = new Image();
+	            image.src = localStorage.getItem('sprite'+spriteNumber+"palette"+remapPaletteIndex);
+			} else {
+	            var canvas = createCanvas(spriteIndex.w, spriteIndex.h);
+	            var context = canvas.getContext("2d");
+
+	            for (var y = 0; y < spriteIndex.h; ++y) {
+	                for (var x = 0; x < spriteIndex.w; ++x) {
+						var color = reader.getUint8(ptr + (y ) * 256 + (x));
+						
+						
+						if(remapPalette != undefined){
+		                    palID = (Math.floor(remapPalette / 64)) * 256 * 64 + (remapPalette % 64) + color * 64;
+		                    baseColor = ppal[palID];
+							
+							if(baseColor.r == 0 && baseColor.g == 0 && baseColor.b == 0){
+			                    palID = (Math.floor(pallete / 64)) * 256 * 64 + (pallete % 64) + color * 64;
+			                    baseColor = ppal[palID];
+							}
+						} else {
+		                    palID = (Math.floor(pallete / 64)) * 256 * 64 + (pallete % 64) + color * 64;
+		                    baseColor = ppal[palID];
+						}
+						
+	                    drawPixel(context, x, y, baseColor); 
+	                }
+	            }
+	            var image = new Image();
+	            image.src = canvas.toDataURL("image/png");      
+				//window.open(image.src,"Window"+remap, 'width='+spriteIndex.w+',height='+spriteIndex.h);
+				//console.log(image.src);
+
+				try {
+					localStorage.setItem('sprite'+spriteNumber+"palette"+remapPaletteIndex,image.src);
+				}
+				catch(e){
+					if(e.code == 22){
+						console.log("Out of local storage memory. Clearing")
+						localStorage.clear();
+					}
+				}
+			
+			}
+			ret = new Object();
+			ret.image = image;
+			ret.w = spriteIndex.w;
+			ret.h = spriteIndex.h
+			
+			return ret;
 		}
 
 		function ReadTiles(reader, start, size, ppal, palx, uniqueTileNumbers) {

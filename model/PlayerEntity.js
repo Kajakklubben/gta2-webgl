@@ -67,7 +67,8 @@ if(typeof Box2D == 'undefined'){
 	
 		body_def.linearDamping = 0.0;
 		body_def.angularDamping = 0;
-	
+		body_def.allowSleep = false;
+		
 		body_def.type = b2Body.b2_dynamicBody;
 		
 		
@@ -86,15 +87,15 @@ if(typeof Box2D == 'undefined'){
 		dir = false;
 		
 		if (this.keyboard.isUp()) {
-			dir = new GTA.Model.Point(0, deltatime * GTA.Constants.PLAYER.MOVESPEED,0);
+			dir = new GTA.Model.Point(0,  GTA.Constants.PLAYER.MOVESPEED,0);
 			if(this.keyboard.isShift()){
-				dir = new GTA.Model.Point(0, deltatime * GTA.Constants.PLAYER.MOVESPEED*3,0);
+				dir = new GTA.Model.Point(0,  GTA.Constants.PLAYER.MOVESPEED*3,0);
 				
 			}
 			dir.rotate(this.rotation);
 		}
 		if (this.keyboard.isDown()) {
-			dir = new GTA.Model.Point(0, -deltatime * GTA.Constants.PLAYER.MOVESPEED,0);
+			dir = new GTA.Model.Point(0, - GTA.Constants.PLAYER.MOVESPEED,0);
 			dir.rotate(this.rotation);
 		}
 		if (this.keyboard.isLeft()) {
@@ -137,14 +138,13 @@ if(typeof Box2D == 'undefined'){
 		this.body.SetFixedRotation(this.rotation);
 		this.body.SetPosition(new b2Vec2(this.position.x/10, -this.position.y/10));
 		
-		
 		filter = this.fixture.GetFilterData();
 		filter.maskBits = 1<<Math.ceil(floor+1);
 		this.fixture.SetFilterData(filter);
 		
 		if(dir != false){
-			speed = new b2Vec2(dir.x*6, -dir.y*6);
-
+			speed = new b2Vec2(dir.x/10, -dir.y/10);
+			
 			curvel = this.body.GetLinearVelocity();
 
 			if (curvel.Length() < speed.Length() || curvel.Length() > speed.Length()  + 0.25)
@@ -157,7 +157,7 @@ if(typeof Box2D == 'undefined'){
 				this.body.ApplyImpulse(speed, this.body.GetPosition());
 			}
 			
-			this.collisionWorld.Step(1/60 , 10, 10);
+			this.collisionWorld.Step(deltatime , 10, 10);
 			
 		}
 
