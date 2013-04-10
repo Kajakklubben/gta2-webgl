@@ -4,10 +4,22 @@
 
 (function(){
 	GTA.namespace("GTA.Core");
+	
+	
+	
+	
 	//constructor
 	GTA.Core.StyleParser = function(  ) {
 		
+		this.Sprites = new Object();
+		this.Sprites.PED = new Object();
+		this.Sprites.PED.DUMMY = 77;
+		this.Sprites.PED.EMERG = 235;
+		this.Sprites.PED.GANG = 393;
+		
 		return this;
+		
+		
 	}
 	
 	GTA.Core.StyleParser.prototype.ParseStyle = function(data, tileNumbers)
@@ -97,10 +109,11 @@
 		//See list of remaps http://projectcerbera.com/gta/2/tutorials/characters
 
 		style.sprites.player = new Object();
-		style.sprites.player.walking = new Array();
+		style.sprites.player.running = new Array();
 		for(i=0;i<8;i++){
-			style.sprites.player.walking.push(ReadSprite(reader, style.sprgDataStart, style.sprgDataLength, sprx, palb, ppal, palx, 235+i,/* palb.ped_remap+25*/false));
+			style.sprites.player.running.push(ReadSprite(reader, style.sprgDataStart, style.sprgDataLength, sprx, palb, ppal, palx, this.Sprites.PED.EMERG+8+i,palb.ped_remap+25, true));
 		}
+		style.sprites.player.idle = ReadSprite(reader, style.sprgDataStart, style.sprgDataLength, sprx, palb, ppal, palx, this.Sprites.PED.EMERG+8+i,/* palb.ped_remap+25*/false);
 			//}
 		
 	    return style;
@@ -115,17 +128,21 @@
 		}
 
 
-		function drawPixel(ctx, x, y, color) {
+		function drawPixel(ctx, x, y, color, alpha) {
 		    imgd = ctx.getImageData(x, y, 1, 1);
 		    pix = imgd.data;
 		    pix[0] = color.r;
 		    pix[1] = color.g;
 		    pix[2] = color.b;
-		    if(color.r+color.g+color.b < 13)
-		        pix[3] = 0;
-		    else
-		        pix[3] = 255;
-
+			
+			if(alpha == undefined){
+			    if(color.r+color.g+color.b < 13)
+			        pix[3] = 0;
+			    else
+			        pix[3] = 255;
+			} else {
+				pix[3] = alpha;
+			}
 		    ctx.putImageData(imgd, x, y);
 		}
 
@@ -211,7 +228,7 @@
 		}
 		
 		
-		function ReadSprite(reader, start, size, sprx, palb, ppal, palx, spriteNumber, remap){
+		function ReadSprite(reader, start, size, sprx, palb, ppal, palx, spriteNumber, remap, castShadow){
 			var sprite = new Object();
 		
 			spriteIndex = sprx[spriteNumber];
@@ -233,16 +250,17 @@
 				remapPalette = palx[remapPaletteIndex];
 			}
 			
-			if ( localStorage.getItem('sprite'+spriteNumber+"palette"+remapPaletteIndex) && GTA.Constants.CLIENT_SETTING.USE_LOCAL_CACHED_STYLE_TILES) 
+			/*if ( localStorage.getItem('sprite'+spriteNumber+"palette"+remapPaletteIndex) && GTA.Constants.CLIENT_SETTING.USE_LOCAL_CACHED_STYLE_TILES) 
 			{
 	            var image = new Image();
 	            image.src = localStorage.getItem('sprite'+spriteNumber+"palette"+remapPaletteIndex);
-			} else {
-	            var canvas = createCanvas(spriteIndex.w, spriteIndex.h);
+			} else*/ {
+	            var canvas = createCanvas(spriteIndex.w+4, spriteIndex.h+4);
 	            var context = canvas.getContext("2d");
 
 	            for (var y = 0; y < spriteIndex.h; ++y) {
 	                for (var x = 0; x < spriteIndex.w; ++x) {
+						
 						var color = reader.getUint8(ptr + (y ) * 256 + (x));
 						
 						
@@ -259,7 +277,15 @@
 		                    baseColor = ppal[palID];
 						}
 						
-	                    drawPixel(context, x, y, baseColor); 
+						if(baseColor.r > 0 || baseColor.g > 0 || baseColor.b > 0){
+		                    drawPixel(context, x, y, baseColor); 
+							
+							if(castShadow){
+								drawPixel(context, x+4, y+4, new Color(0,0,0),150); 
+							}
+						}
+						
+						
 	                }
 	            }
 	            var image = new Image();
@@ -280,8 +306,8 @@
 			}
 			ret = new Object();
 			ret.image = image;
-			ret.w = spriteIndex.w;
-			ret.h = spriteIndex.h
+			ret.w = spriteIndex.w+4;
+			ret.h = spriteIndex.h+4
 			
 			return ret;
 		}

@@ -37,16 +37,28 @@
 		
 		materials.walking = new Array();
 		for(i=0;i<8;i++){
-	 	   var texture = new THREE.Texture(this.style.sprites.player.walking[i].image);
+	 	   	var texture = new THREE.Texture(this.style.sprites.player.running[i].image);
 			texture.needsUpdate = true;
 			
 			obj = new Object();
 			obj.material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-			obj.w = this.style.sprites.player.walking[i].w;
-			obj.h = this.style.sprites.player.walking[i].h;
+			obj.w = this.style.sprites.player.running[i].w;
+			obj.h = this.style.sprites.player.running[i].h;
 						
 			materials.walking.push(obj);
 		}
+		
+		{
+	 	   	var texture = new THREE.Texture(this.style.sprites.player.idle.image);
+			texture.needsUpdate = true;
+		
+			obj = new Object();
+			obj.material = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+			obj.w = this.style.sprites.player.idle.w;
+			obj.h = this.style.sprites.player.idle.h;
+			materials.idle = obj;
+		}
+		
 	    return materials;
 	}
 	
