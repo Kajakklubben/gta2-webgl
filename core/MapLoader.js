@@ -36,7 +36,7 @@
 		
 	    var ctx = this;
 	    this.loading = true;
-		getBinaryData("http://localhost:8000/","MP1-comp.gmp", MapLoadComplete);
+		getBinaryData("/","MP1-comp.gmp", MapLoadComplete);
 			
 		function MapLoadComplete(data, err, littleEndian)
 		{	
@@ -57,7 +57,7 @@
 			if(loadStyle){
 				statusview.ShowMessage("Loading Style data");
 			
-				getBinaryData("http://localhost:8000/","bil.sty", StyleLoadComplete);
+				getBinaryData("/","bil.sty", StyleLoadComplete);
 			} else {
 				
 				OnCompleted();
