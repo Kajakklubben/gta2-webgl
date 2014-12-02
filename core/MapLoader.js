@@ -160,9 +160,11 @@
 			if(xhr != undefined) //Client implementation
 			{
 			    xhr.open("GET", host+file, !!callback);
+			    xhr.responseType = 'arraybuffer';
+
 			    if (callback) {
-			        xhr.onload = function () { callback(xhr.responseText, true, true) };
-			        xhr.onerror = function () { callback(xhr.responseText, false, true) };
+			        xhr.onload = function () { callback(xhr.response, true, true) };
+			        xhr.onerror = function () { callback(xhr.response, false, true) };
 			    }
 			    xhr.send();
 

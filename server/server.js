@@ -2,6 +2,7 @@
 var Maple = require('../maple/Maple');
 require('../core/GTA');
 
+console.log("GTA2 Web Server");
 
 GLOBAL.jDataView = require('../libs/jdataview');
 require('../core/MapLoader');
