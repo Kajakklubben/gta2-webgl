@@ -3,6 +3,7 @@ gta2-webgl
 
 Why not port GTA2 to webgl? That's a great idea.... 
 
+![image](https://raw.githubusercontent.com/Kajakklubben/gta2-webgl/master/preview.gif)
 
 ## Lets run it!
 cd to server and run `node server` and launch your browser (chrome)
