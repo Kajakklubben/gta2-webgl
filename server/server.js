@@ -87,7 +87,6 @@ var TestServer = Maple.Class(function(clientClass) {
     },
 
     disconnected: function(client) {
-       
            this.broadcast(GTA.Constants.MESSAGE_TYPES.REMOVEPLAYER,[{id:client.id}]);
            this.game.removePlayer(client.id);
     }
@@ -108,7 +107,7 @@ var TestClient = Maple.Class(function(server, conn, isBinary) {
 
 var srv = new TestServer(TestClient);
 srv.start({
-    port: GTA.Constants.SERVER_SETTING.SOCKET_PORT,
+    port: process.env.PORT,
     logicRate: 1 // only update logic and send back every n ticks
 });
 
