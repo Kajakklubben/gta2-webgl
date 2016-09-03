@@ -29,7 +29,7 @@
 		SERVER_SETTING:
 		{
 			
-			SOCKET_DOMAIN	: "localhost:81/server/server.js",
+			SOCKET_DOMAIN	: window.location.hostname + ":81/server/server.js",
 			SOCKET_PORT		: 81,
 
 		
