@@ -29,8 +29,8 @@
 		SERVER_SETTING:
 		{
 			
-			SOCKET_DOMAIN	: "gta2.kajakklubben.org/server/server.js",
-			SOCKET_PORT		: 80,
+			SOCKET_DOMAIN	: "localhost:81/server/server.js",
+			SOCKET_PORT		: 81,
 
 		
 		},

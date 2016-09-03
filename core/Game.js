@@ -59,9 +59,9 @@
 		this.lastTime= Date.now();
 	}
 
-	GTA.Core.Game.prototype.addPlayer = function(client)
+	GTA.Core.Game.prototype.addPlayer = function(client, keyboard)
 	{
-		var player = new GTA.Model.PlayerEntity(client, this.maploader.collisionMap);
+		var player = new GTA.Model.PlayerEntity(client, this.maploader.collisionMap, keyboard);
 		player.id = client.id;
 		
 		this.levelState.players.push(player);

@@ -6,7 +6,6 @@
 	GTA.namespace("GTA.Render");
 	//constructor
 	GTA.Render.PlayerRender = function( player ) {
-
 		this.player = player;
 		this.style = false;
 		
@@ -68,17 +67,25 @@
 		this.mesh.position.y = this.player.position.y;
 		this.mesh.position.z = this.player.position.z*64;
 		
-		if(((new Date().getTime()) - this.frameUpdate) > 60){
-			this.frameUpdate = (new Date().getTime());
-			
-			this.walkIndex ++;
-			if(this.walkIndex >= 8)
-				this.walkIndex = 0;
-			
-			
-			this.mesh.material = this.materials.walking[this.walkIndex].material;
-			this.mesh.scale.x = this.materials.walking[this.walkIndex].w;
-			this.mesh.scale.y = this.materials.walking[this.walkIndex].h;
+		if(this.player.velocity.getLengthSquared() > 0) {
+			if(((new Date().getTime()) - this.frameUpdate) > 60){
+				this.frameUpdate = (new Date().getTime());
+				
+				this.walkIndex ++;
+				if(this.walkIndex >= 8)
+					this.walkIndex = 0;
+				
+				
+				this.mesh.material = this.materials.walking[this.walkIndex].material;
+				this.mesh.scale.x = this.materials.walking[this.walkIndex].w;
+				this.mesh.scale.y = this.materials.walking[this.walkIndex].h;
+				
+			}
+		}
+		else {
+			this.mesh.material = this.materials.idle.material;
+			this.mesh.scale.x = this.materials.idle.w;
+			this.mesh.scale.y = this.materials.idle.h;
 			
 		}
 		

@@ -49,7 +49,6 @@ var Client = Class(function() {
    
    
     render: function(t, dt, u) {
-
     	var newInput  = this.input.constructInputBitmask();
     
         if(newInput != this.inputState)
@@ -107,13 +106,13 @@ var Client = Class(function() {
             console.log("added some player")
             var newPlayer = this.game.addPlayer(this);
             newPlayer.fromJson(data[0]);
-           
-
+			newPlayer.isLocal = false;
         }
         if(type == GTA.Constants.MESSAGE_TYPES.ADDCLIENTPLAYER)
         {
             console.log("added my player")
-            var newPlayer = this.game.addPlayer(this);
+            var newPlayer = this.game.addPlayer(this, this.input);
+			newPlayer.isLocal = true;
             newPlayer.fromJson(data[0]);
             this.player = newPlayer;
             this.renderer.followTarget = newPlayer.render;
@@ -136,3 +135,5 @@ var Client = Class(function() {
 
 var client = new Client();
 client.initClient();
+
+var keyboardinclient;

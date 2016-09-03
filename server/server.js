@@ -47,7 +47,6 @@ var TestServer = Maple.Class(function(clientClass) {
     },
 
     update: function(t, tick) {
-     
        this.broadcast(GTA.Constants.MESSAGE_TYPES.SYNC, [this.game.toJson()]);
      
     },
@@ -107,7 +106,9 @@ var TestClient = Maple.Class(function(server, conn, isBinary) {
 
 var srv = new TestServer(TestClient);
 srv.start({
-    port: process.env.PORT,
+    port: GTA.Constants.SERVER_SETTING.SOCKET_PORT,
     logicRate: 1 // only update logic and send back every n ticks
 });
+
+console.log("Starting testServer at port "+ GTA.Constants.SERVER_SETTING.SOCKET_PORT);
 

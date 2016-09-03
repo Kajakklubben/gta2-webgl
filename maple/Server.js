@@ -181,7 +181,9 @@ Maple.Server = Maple.Class(function(clientClass, messageTypes) {
 
             var client = that._clients.get(conn.clientId);
             if (client) {
+				try {
                 that._clients.remove(client);
+				} catch(e) {}
                 that.disconnected(client);
             }
 
