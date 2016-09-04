@@ -16,11 +16,15 @@
 		this.camera = false;
 		this.stats = false;
 		
+		this.cameraSpeed;
+		
 		this.styleData = false;
 		
 		var context = this;
 		this.gameInstance.OnAddedPlayer = function(player) {context.OnAddedPlayer(player);};
 		this.gameInstance.OnRemovedPlayer = function(player) {context.OnRemovedPlayer(player);};
+		
+		
 
 		window.addEventListener('resize', function(){context.onWindowResize();}, false );
 		
@@ -70,9 +74,11 @@
 		this.mapRender.camera = this.camera;
 		this.mapRender.CreateMesh(mapData, styleData);
 		
-		this.animate();
+		//this.animate();
 	}
 
+	
+	
 	//Being called from client object
 	GTA.Client.Render.prototype.update = function()
 	{
@@ -83,8 +89,14 @@
 		
 		if(this.followTarget != false)
 		{
-			var target = new GTA.Model.Point(this.camera.position.x-this.followTarget.GetPosition().x,this.camera.position.y-this.followTarget.GetPosition().y);
+			var target = new GTA.Model.Point(this.camera.position.x-this.followTarget.GetPosition().x, this.camera.position.y-this.followTarget.GetPosition().y);
 			var targetZ = (this.camera.position.z-GTA.Constants.RENDER_SETTING.CAM_STANDARD_HEIGHT)-this.followTarget.GetPosition().z*64;
+			
+			var targetLength = target.getLength();
+			
+			if(targetLength > 20) {
+				target.setLength(20);
+			}
 			
 			this.camera.position.x -= target.x/2;
 			this.camera.position.y -= target.y/2;
@@ -109,17 +121,16 @@
 		this.dynamicObjects.splice(0,this.dynamicObjects.indexOf(player.render));
 	}
 
-	//Currently not being used
 	GTA.Client.Render.prototype.animate = function () {
-
 		var ctx = this;
-		requestAnimationFrame( function(){ctx.animate()} );
+		requestAnimationFrame( function(){
+			ctx.mapRender.render();
 
-		this.mapRender.render();
+			ctx.renderer.render( ctx.mapRender.scene, ctx.mapRender.camera );
+		
+			ctx.stats.update();
+		} );
 
-		this.renderer.render( this.mapRender.scene, this.mapRender.camera );
-	
-		this.stats.update();
 
 
 	}

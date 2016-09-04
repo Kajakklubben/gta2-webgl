@@ -63,6 +63,8 @@ var Client = Class(function() {
         }
 
         this.game.update(false);
+		
+		this.renderer.animate();
     },
 
     stopped: function() {

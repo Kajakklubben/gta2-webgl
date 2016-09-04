@@ -54,6 +54,11 @@
 		{
 			this.levelState.players[i].update(deltaTime);
 		}
+		this.maploader.collisionMap.world.Step(deltaTime , 10, 10);
+		for(var i in this.levelState.players)
+		{
+			this.levelState.players[i].afterBodyUpdate(deltaTime);
+		}
 
 		
 		this.lastTime= Date.now();

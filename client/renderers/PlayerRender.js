@@ -63,9 +63,13 @@
 	
 	GTA.Render.PlayerRender.prototype.Update = function()
 	{
+		
+		
 		this.mesh.position.x = this.player.position.x;
 		this.mesh.position.y = this.player.position.y;
 		this.mesh.position.z = this.player.position.z*64;
+			
+		
 		
 		if(this.player.velocity.getLengthSquared() > 0) {
 			if(((new Date().getTime()) - this.frameUpdate) > 60){

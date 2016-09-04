@@ -37,6 +37,8 @@ if(typeof Box2D == 'undefined'){
 		this.position.y = -190 * 64;
 		this.position.z = 0;
 		
+		this.initialPosition = this.position;
+		
 		this.velocity = new GTA.Model.Point();
 
 		this.rotation = 0.0;
@@ -137,36 +139,26 @@ if(typeof Box2D == 'undefined'){
 		filter.maskBits = 1<<Math.ceil(floor+1);
 		this.fixture.SetFilterData(filter);
 		
-		if(velocity.getLengthSquared() > 0){
-			speed = new b2Vec2(velocity.x/10, -velocity.y/10);
-			
-			curvel = this.body.GetLinearVelocity();
-
-			if (curvel.Length() < speed.Length() || curvel.Length() > speed.Length()  + 0.25)
-			{
-				curspeed = curvel.Normalize();
-				velChange = speed.Length()  - curspeed;
-				impulse = this.body.GetMass() * velChange;
-				speed.Multiply(1/speed.Length())
-				speed.Multiply(impulse);
-				this.body.ApplyImpulse(speed, this.body.GetPosition());
-			}
-			
-			this.collisionWorld.Step(deltatime , 10, 10);
-			
-		}
-
+		speed = new b2Vec2(velocity.x/10, -velocity.y/10);
+		this.body.SetLinearVelocity(speed);
 		this.velocity = velocity;
+
+	}
+	
+	GTA.Model.PlayerEntity.prototype.afterBodyUpdate = function(deltatime) {
+		if(typeof window !== "undefined" && !this.isLocal)
+			return;
 
 		this.position.x = this.body.GetPosition().x*10;
 		this.position.y = -this.body.GetPosition().y*10;
-	}
+	};
 	
 	
 
 	GTA.Model.PlayerEntity.prototype.toJson = function() {
 		///Fuck floating point precisions. 
 		var precision = 2;
+		
 		
 		var rotation = (Math.round(this.rotation * Math.pow(10, precision)));
 		return {
