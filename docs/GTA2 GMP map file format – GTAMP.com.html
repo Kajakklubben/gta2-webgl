@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en-US" class="no-js">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="profile" href="https://gmpg.org/xfn/11">
+	<link rel="pingback" href="https://GTAMP.com/wordpress/xmlrpc.php">
+	<script>
+(function(html){html.className = html.className.replace(/\bno-js\b/,'js')})(document.documentElement);
+//# sourceURL=twentyfifteen_javascript_detection
+</script>
+<title>GTA2 GMP map file format &#8211; GTAMP.com</title>
+<meta name='robots' content='max-image-preview:large' />
+<link rel='dns-prefetch' href='//GTAMP.com' />
+<link rel="alternate" type="application/rss+xml" title="GTAMP.com &raquo; Feed" href="https://GTAMP.com/feed/" />
+<link rel="alternate" type="application/rss+xml" title="GTAMP.com &raquo; Comments Feed" href="https://GTAMP.com/comments/feed/" />
+<link rel="alternate" type="application/rss+xml" title="GTAMP.com &raquo; GTA2 GMP map file format Comments Feed" href="https://GTAMP.com/gta2/gta2-gmp-map-file-format/feed/" />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://GTAMP.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2FGTAMP.com%2Fgta2%2Fgta2-gmp-map-file-format%2F" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://GTAMP.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2FGTAMP.com%2Fgta2%2Fgta2-gmp-map-file-format%2F&#038;format=xml" />
+<style id="wp-img-auto-sizes-contain-inline-css">
+img:is([sizes=auto i],[sizes^="auto," i]){contain-intrinsic-size:3000px 1500px}
+/*# sourceURL=wp-img-auto-sizes-contain-inline-css */
+</style>
+<style id="wp-emoji-styles-inline-css">
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+/*# sourceURL=wp-emoji-styles-inline-css */
+</style>
+<style id="wp-block-library-inline-css">
+:root{--wp-block-synced-color:#7a00df;--wp-block-synced-color--rgb:122,0,223;--wp-bound-block-color:var(--wp-block-synced-color);--wp-editor-canvas-background:#ddd;--wp-admin-theme-color:#007cba;--wp-admin-theme-color--rgb:0,124,186;--wp-admin-theme-color-darker-10:#006ba1;--wp-admin-theme-color-darker-10--rgb:0,107,160.5;--wp-admin-theme-color-darker-20:#005a87;--wp-admin-theme-color-darker-20--rgb:0,90,135;--wp-admin-border-width-focus:2px}@media (min-resolution:192dpi){:root{--wp-admin-border-width-focus:1.5px}}.wp-element-button{cursor:pointer}:root .has-very-light-gray-background-color{background-color:#eee}:root .has-very-dark-gray-background-color{background-color:#313131}:root .has-very-light-gray-color{color:#eee}:root .has-very-dark-gray-color{color:#313131}:root .has-vivid-green-cyan-to-vivid-cyan-blue-gradient-background{background:linear-gradient(135deg,#00d084,#0693e3)}:root .has-purple-crush-gradient-background{background:linear-gradient(135deg,#34e2e4,#4721fb 50%,#ab1dfe)}:root .has-hazy-dawn-gradient-background{background:linear-gradient(135deg,#faaca8,#dad0ec)}:root .has-subdued-olive-gradient-background{background:linear-gradient(135deg,#fafae1,#67a671)}:root .has-atomic-cream-gradient-background{background:linear-gradient(135deg,#fdd79a,#004a59)}:root .has-nightshade-gradient-background{background:linear-gradient(135deg,#330968,#31cdcf)}:root .has-midnight-gradient-background{background:linear-gradient(135deg,#020381,#2874fc)}:root{--wp--preset--font-size--normal:16px;--wp--preset--font-size--huge:42px}.has-regular-font-size{font-size:1em}.has-larger-font-size{font-size:2.625em}.has-normal-font-size{font-size:var(--wp--preset--font-size--normal)}.has-huge-font-size{font-size:var(--wp--preset--font-size--huge)}:root .has-text-align-center{text-align:center}:root .has-text-align-left{text-align:left}:root .has-text-align-right{text-align:right}.has-fit-text{white-space:nowrap!important}#end-resizable-editor-section{display:none}.aligncenter{clear:both}.items-justified-left{justify-content:flex-start}.items-justified-center{justify-content:center}.items-justified-right{justify-content:flex-end}.items-justified-space-between{justify-content:space-between}.screen-reader-text{word-wrap:normal!important;border:0;clip-path:inset(50%);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;word-break:normal!important}.screen-reader-text:focus{background-color:#ddd;clip-path:none;color:#444;display:block;font-size:1em;height:auto;left:5px;line-height:normal;padding:15px 23px 14px;text-decoration:none;top:5px;width:auto;z-index:100000}html :where(.has-border-color){border-style:solid}html :where([style^=border-color],[style*=";border-color"],[style*="; border-color"]){border-style:solid}html :where([style^=border-top-color],[style*=";border-top-color"],[style*="; border-top-color"]){border-top-style:solid}html :where([style^=border-right-color],[style*=";border-right-color"],[style*="; border-right-color"]){border-right-style:solid}html :where([style^=border-bottom-color],[style*=";border-bottom-color"],[style*="; border-bottom-color"]){border-bottom-style:solid}html :where([style^=border-left-color],[style*=";border-left-color"],[style*="; border-left-color"]){border-left-style:solid}html :where([style^=border-width],[style*=";border-width"],[style*="; border-width"]){border-style:solid}html :where([style^=border-top-width],[style*=";border-top-width"],[style*="; border-top-width"]){border-top-style:solid}html :where([style^=border-right-width],[style*=";border-right-width"],[style*="; border-right-width"]){border-right-style:solid}html :where([style^=border-bottom-width],[style*=";border-bottom-width"],[style*="; border-bottom-width"]){border-bottom-style:solid}html :where([style^=border-left-width],[style*=";border-left-width"],[style*="; border-left-width"]){border-left-style:solid}html :where(img[class*=wp-image-]){height:auto;max-width:100%}:where(figure){margin:0 0 1em}html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:var(--wp-admin--admin-bar--height,0px)}@media screen and (max-width:600px){html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:0px}}
+
+/*# sourceURL=/wp-includes/css/dist/block-library/common.min.css */
+</style>
+<style id="wp-block-search-inline-css">
+.wp-block-search__button{margin-left:10px;word-break:normal}.wp-block-search__button.has-icon{line-height:0}.wp-block-search__button svg{fill:currentColor;height:1.25em;min-height:24px;min-width:24px;vertical-align:text-bottom;width:1.25em}:where(.wp-block-search__button){border:1px solid #ccc;padding:6px 10px}.wp-block-search__inside-wrapper{display:flex;flex:auto;flex-wrap:nowrap;max-width:100%}.wp-block-search__label{width:100%}.wp-block-search.wp-block-search__button-only .wp-block-search__button{box-sizing:border-box;display:flex;flex-shrink:0;justify-content:center;margin-left:0;max-width:100%}.wp-block-search.wp-block-search__button-only .wp-block-search__inside-wrapper{min-width:0!important;transition-property:width}.wp-block-search.wp-block-search__button-only .wp-block-search__input{flex-basis:100%;transition-duration:.3s}.wp-block-search.wp-block-search__button-only.wp-block-search__searchfield-hidden,.wp-block-search.wp-block-search__button-only.wp-block-search__searchfield-hidden .wp-block-search__inside-wrapper{overflow:hidden}.wp-block-search.wp-block-search__button-only.wp-block-search__searchfield-hidden .wp-block-search__input{border-left-width:0!important;border-right-width:0!important;flex-basis:0;flex-grow:0;margin:0;min-width:0!important;padding-left:0!important;padding-right:0!important;width:0!important}:where(.wp-block-search__input){-webkit-appearance:initial;-moz-appearance:initial;appearance:none;border:1px solid #949494;flex-grow:1;font-family:inherit;font-size:inherit;font-style:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;margin-left:0;margin-right:0;min-width:3rem;padding:8px;text-decoration:unset!important;text-transform:inherit}:where(.wp-block-search__button-inside .wp-block-search__inside-wrapper){background-color:#fff;border:1px solid #949494;box-sizing:border-box;padding:4px}:where(.wp-block-search__button-inside .wp-block-search__inside-wrapper) .wp-block-search__input{border:none;border-radius:0;padding:0 4px}:where(.wp-block-search__button-inside .wp-block-search__inside-wrapper) .wp-block-search__input:focus{outline:none}:where(.wp-block-search__button-inside .wp-block-search__inside-wrapper) :where(.wp-block-search__button){padding:4px 8px}.wp-block-search.aligncenter .wp-block-search__inside-wrapper{margin:auto}.wp-block[data-align=right] .wp-block-search.wp-block-search__button-only .wp-block-search__inside-wrapper{float:right}
+/*# sourceURL=https://GTAMP.com/wordpress/wp-includes/blocks/search/style.min.css */
+</style>
+
+<style id="classic-theme-styles-inline-css">
+/*! This file is auto-generated */
+.wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+/*# sourceURL=/wp-includes/css/classic-themes.min.css */
+</style>
+
+<style id="global-styles-inline-css">
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #fff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--dark-gray: #111;--wp--preset--color--light-gray: #f1f1f1;--wp--preset--color--yellow: #f4ca16;--wp--preset--color--dark-brown: #352712;--wp--preset--color--medium-pink: #e53b51;--wp--preset--color--light-pink: #ffe5d1;--wp--preset--color--dark-purple: #2e2256;--wp--preset--color--purple: #674970;--wp--preset--color--blue-gray: #22313f;--wp--preset--color--bright-blue: #55c3dc;--wp--preset--color--light-blue: #e9f2f9;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgb(252,185,0) 0%,rgb(255,105,0) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgb(255,105,0) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--gradient--dark-gray-gradient-gradient: linear-gradient(90deg, rgba(17,17,17,1) 0%, rgba(42,42,42,1) 100%);--wp--preset--gradient--light-gray-gradient: linear-gradient(90deg, rgba(241,241,241,1) 0%, rgba(215,215,215,1) 100%);--wp--preset--gradient--white-gradient: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(230,230,230,1) 100%);--wp--preset--gradient--yellow-gradient: linear-gradient(90deg, rgba(244,202,22,1) 0%, rgba(205,168,10,1) 100%);--wp--preset--gradient--dark-brown-gradient: linear-gradient(90deg, rgba(53,39,18,1) 0%, rgba(91,67,31,1) 100%);--wp--preset--gradient--medium-pink-gradient: linear-gradient(90deg, rgba(229,59,81,1) 0%, rgba(209,28,51,1) 100%);--wp--preset--gradient--light-pink-gradient: linear-gradient(90deg, rgba(255,229,209,1) 0%, rgba(255,200,158,1) 100%);--wp--preset--gradient--dark-purple-gradient: linear-gradient(90deg, rgba(46,34,86,1) 0%, rgba(66,48,123,1) 100%);--wp--preset--gradient--purple-gradient: linear-gradient(90deg, rgba(103,73,112,1) 0%, rgba(131,93,143,1) 100%);--wp--preset--gradient--blue-gray-gradient: linear-gradient(90deg, rgba(34,49,63,1) 0%, rgba(52,75,96,1) 100%);--wp--preset--gradient--bright-blue-gradient: linear-gradient(90deg, rgba(85,195,220,1) 0%, rgba(43,180,211,1) 100%);--wp--preset--gradient--light-blue-gradient: linear-gradient(90deg, rgba(233,242,249,1) 0%, rgba(193,218,238,1) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0);--wp--preset--shadow--crisp: 6px 6px 0px rgb(0, 0, 0);}.wp-block-button{--wp--preset--dimension--25: 25%;--wp--preset--dimension--50: 50%;--wp--preset--dimension--75: 75%;--wp--preset--dimension--100: 100%;}:where(body) { margin: 0; }:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{padding-top: 0px;padding-right: 0px;padding-bottom: 0px;padding-left: 0px;}:root :where(.wp-element-button, .wp-block-button__link){background-color: #32373c;border-width: 0;color: #fff;font-family: inherit;font-size: inherit;font-style: inherit;font-weight: inherit;letter-spacing: inherit;line-height: inherit;padding-top: calc(0.667em + 2px);padding-right: calc(1.333em + 2px);padding-bottom: calc(0.667em + 2px);padding-left: calc(1.333em + 2px);text-decoration: none;text-transform: inherit;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-dark-gray-color{color: var(--wp--preset--color--dark-gray) !important;}.has-light-gray-color{color: var(--wp--preset--color--light-gray) !important;}.has-yellow-color{color: var(--wp--preset--color--yellow) !important;}.has-dark-brown-color{color: var(--wp--preset--color--dark-brown) !important;}.has-medium-pink-color{color: var(--wp--preset--color--medium-pink) !important;}.has-light-pink-color{color: var(--wp--preset--color--light-pink) !important;}.has-dark-purple-color{color: var(--wp--preset--color--dark-purple) !important;}.has-purple-color{color: var(--wp--preset--color--purple) !important;}.has-blue-gray-color{color: var(--wp--preset--color--blue-gray) !important;}.has-bright-blue-color{color: var(--wp--preset--color--bright-blue) !important;}.has-light-blue-color{color: var(--wp--preset--color--light-blue) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-dark-gray-background-color{background-color: var(--wp--preset--color--dark-gray) !important;}.has-light-gray-background-color{background-color: var(--wp--preset--color--light-gray) !important;}.has-yellow-background-color{background-color: var(--wp--preset--color--yellow) !important;}.has-dark-brown-background-color{background-color: var(--wp--preset--color--dark-brown) !important;}.has-medium-pink-background-color{background-color: var(--wp--preset--color--medium-pink) !important;}.has-light-pink-background-color{background-color: var(--wp--preset--color--light-pink) !important;}.has-dark-purple-background-color{background-color: var(--wp--preset--color--dark-purple) !important;}.has-purple-background-color{background-color: var(--wp--preset--color--purple) !important;}.has-blue-gray-background-color{background-color: var(--wp--preset--color--blue-gray) !important;}.has-bright-blue-background-color{background-color: var(--wp--preset--color--bright-blue) !important;}.has-light-blue-background-color{background-color: var(--wp--preset--color--light-blue) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-dark-gray-border-color{border-color: var(--wp--preset--color--dark-gray) !important;}.has-light-gray-border-color{border-color: var(--wp--preset--color--light-gray) !important;}.has-yellow-border-color{border-color: var(--wp--preset--color--yellow) !important;}.has-dark-brown-border-color{border-color: var(--wp--preset--color--dark-brown) !important;}.has-medium-pink-border-color{border-color: var(--wp--preset--color--medium-pink) !important;}.has-light-pink-border-color{border-color: var(--wp--preset--color--light-pink) !important;}.has-dark-purple-border-color{border-color: var(--wp--preset--color--dark-purple) !important;}.has-purple-border-color{border-color: var(--wp--preset--color--purple) !important;}.has-blue-gray-border-color{border-color: var(--wp--preset--color--blue-gray) !important;}.has-bright-blue-border-color{border-color: var(--wp--preset--color--bright-blue) !important;}.has-light-blue-border-color{border-color: var(--wp--preset--color--light-blue) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-dark-gray-gradient-gradient-gradient-background{background: var(--wp--preset--gradient--dark-gray-gradient-gradient) !important;}.has-light-gray-gradient-gradient-background{background: var(--wp--preset--gradient--light-gray-gradient) !important;}.has-white-gradient-gradient-background{background: var(--wp--preset--gradient--white-gradient) !important;}.has-yellow-gradient-gradient-background{background: var(--wp--preset--gradient--yellow-gradient) !important;}.has-dark-brown-gradient-gradient-background{background: var(--wp--preset--gradient--dark-brown-gradient) !important;}.has-medium-pink-gradient-gradient-background{background: var(--wp--preset--gradient--medium-pink-gradient) !important;}.has-light-pink-gradient-gradient-background{background: var(--wp--preset--gradient--light-pink-gradient) !important;}.has-dark-purple-gradient-gradient-background{background: var(--wp--preset--gradient--dark-purple-gradient) !important;}.has-purple-gradient-gradient-background{background: var(--wp--preset--gradient--purple-gradient) !important;}.has-blue-gray-gradient-gradient-background{background: var(--wp--preset--gradient--blue-gray-gradient) !important;}.has-bright-blue-gradient-gradient-background{background: var(--wp--preset--gradient--bright-blue-gradient) !important;}.has-light-blue-gradient-gradient-background{background: var(--wp--preset--gradient--light-blue-gradient) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+/*# sourceURL=global-styles-inline-css */
+</style>
+
+<link rel='stylesheet' id='twentyfifteen-fonts-css' href='https://GTAMP.com/wordpress/wp-content/themes/twentyfifteen/assets/fonts/noto-sans-plus-noto-serif-plus-inconsolata.css?ver=20230328' media='all' />
+<link rel='stylesheet' id='genericons-css' href='https://GTAMP.com/wordpress/wp-content/themes/twentyfifteen/genericons/genericons.css?ver=20251101' media='all' />
+<link rel='stylesheet' id='twentyfifteen-style-css' href='https://GTAMP.com/wordpress/wp-content/themes/twentyfifteen/style.css?ver=20260819' media='all' />
+<style id="twentyfifteen-style-inline-css">
+	/* Color Scheme */
+
+	/* Background Color */
+	body {
+		background-color: #111111;
+	}
+
+	/* Sidebar Background Color */
+	body:before,
+	.site-header {
+		background-color: #202020;
+	}
+
+	/* Box Background Color */
+	.post-navigation,
+	.pagination,
+	.secondary,
+	.site-footer,
+	.hentry,
+	.page-header,
+	.page-content,
+	.comments-area,
+	.widecolumn {
+		background-color: #202020;
+	}
+
+	/* Box Background Color */
+	button,
+	input[type="button"],
+	input[type="reset"],
+	input[type="submit"],
+	.pagination .prev,
+	.pagination .next,
+	.widget_calendar tbody a,
+	.widget_calendar tbody a:hover,
+	.widget_calendar tbody a:focus,
+	.page-links a,
+	.page-links a:hover,
+	.page-links a:focus,
+	.sticky-post {
+		color: #202020;
+	}
+
+	/* Main Text Color */
+	button,
+	input[type="button"],
+	input[type="reset"],
+	input[type="submit"],
+	.pagination .prev,
+	.pagination .next,
+	.widget_calendar tbody a,
+	.page-links a,
+	.sticky-post {
+		background-color: #bebebe;
+	}
+
+	/* Main Text Color */
+	body,
+	blockquote cite,
+	blockquote small,
+	a,
+	.dropdown-toggle:after,
+	.image-navigation a:hover,
+	.image-navigation a:focus,
+	.comment-navigation a:hover,
+	.comment-navigation a:focus,
+	.widget-title,
+	.entry-footer a:hover,
+	.entry-footer a:focus,
+	.comment-metadata a:hover,
+	.comment-metadata a:focus,
+	.pingback .edit-link a:hover,
+	.pingback .edit-link a:focus,
+	.comment-list .reply a:hover,
+	.comment-list .reply a:focus,
+	.site-info a:hover,
+	.site-info a:focus {
+		color: #bebebe;
+	}
+
+	/* Main Text Color */
+	.entry-content a,
+	.entry-summary a,
+	.page-content a,
+	.comment-content a,
+	.pingback .comment-body > a,
+	.author-description a,
+	.taxonomy-description a,
+	.textwidget a,
+	.entry-footer a:hover,
+	.comment-metadata a:hover,
+	.pingback .edit-link a:hover,
+	.comment-list .reply a:hover,
+	.site-info a:hover {
+		border-color: #bebebe;
+	}
+
+	/* Secondary Text Color */
+	button:hover,
+	button:focus,
+	input[type="button"]:hover,
+	input[type="button"]:focus,
+	input[type="reset"]:hover,
+	input[type="reset"]:focus,
+	input[type="submit"]:hover,
+	input[type="submit"]:focus,
+	.pagination .prev:hover,
+	.pagination .prev:focus,
+	.pagination .next:hover,
+	.pagination .next:focus,
+	.widget_calendar tbody a:hover,
+	.widget_calendar tbody a:focus,
+	.page-links a:hover,
+	.page-links a:focus {
+		background-color: rgba( 190, 190, 190, 0.7);
+	}
+
+	/* Secondary Text Color */
+	blockquote,
+	a:hover,
+	a:focus,
+	.main-navigation .menu-item-description,
+	.post-navigation .meta-nav,
+	.post-navigation a:hover .post-title,
+	.post-navigation a:focus .post-title,
+	.image-navigation,
+	.image-navigation a,
+	.comment-navigation,
+	.comment-navigation a,
+	.widget,
+	.author-heading,
+	.entry-footer,
+	.entry-footer a,
+	.taxonomy-description,
+	.page-links > .page-links-title,
+	.entry-caption,
+	.comment-author,
+	.comment-metadata,
+	.comment-metadata a,
+	.pingback .edit-link,
+	.pingback .edit-link a,
+	.post-password-form label,
+	.comment-form label,
+	.comment-notes,
+	.comment-awaiting-moderation,
+	.logged-in-as,
+	.form-allowed-tags,
+	.no-comments,
+	.site-info,
+	.site-info a,
+	.wp-caption-text,
+	.gallery-caption,
+	.comment-list .reply a,
+	.widecolumn label,
+	.widecolumn .mu_register label {
+		color: rgba( 190, 190, 190, 0.7);
+	}
+
+	/* Secondary Text Color */
+	blockquote,
+	.logged-in-as a:hover,
+	.comment-author a:hover {
+		border-color: rgba( 190, 190, 190, 0.7);
+	}
+
+	/* Border Color */
+	hr,
+	.dropdown-toggle:hover,
+	.dropdown-toggle:focus {
+		background-color: rgba( 190, 190, 190, 0.1);
+	}
+
+	/* Border Color */
+	pre,
+	abbr[title],
+	table,
+	th,
+	td,
+	input,
+	textarea,
+	.main-navigation ul,
+	.main-navigation li,
+	.post-navigation,
+	.post-navigation div + div,
+	.pagination,
+	.comment-navigation,
+	.widget li,
+	.widget_categories .children,
+	.widget_nav_menu .sub-menu,
+	.widget_pages .children,
+	.site-header,
+	.site-footer,
+	.hentry + .hentry,
+	.author-info,
+	.entry-content .page-links a,
+	.page-links > span,
+	.page-header,
+	.comments-area,
+	.comment-list + .comment-respond,
+	.comment-list article,
+	.comment-list .pingback,
+	.comment-list .trackback,
+	.comment-list .reply a,
+	.no-comments {
+		border-color: rgba( 190, 190, 190, 0.1);
+	}
+
+	/* Border Focus Color */
+	a:focus,
+	button:focus,
+	input:focus {
+		outline-color: rgba( 190, 190, 190, 0.3);
+	}
+
+	input:focus,
+	textarea:focus {
+		border-color: rgba( 190, 190, 190, 0.3);
+	}
+
+	/* Sidebar Link Color */
+	.secondary-toggle:before {
+		color: #bebebe;
+	}
+
+	.site-title a,
+	.site-description {
+		color: #bebebe;
+	}
+
+	/* Sidebar Text Color */
+	.site-title a:hover,
+	.site-title a:focus {
+		color: rgba( 190, 190, 190, 0.7);
+	}
+
+	/* Sidebar Border Color */
+	.secondary-toggle {
+		border-color: rgba( 190, 190, 190, 0.1);
+	}
+
+	/* Sidebar Border Focus Color */
+	.secondary-toggle:hover,
+	.secondary-toggle:focus {
+		border-color: rgba( 190, 190, 190, 0.3);
+	}
+
+	.site-title a {
+		outline-color: rgba( 190, 190, 190, 0.3);
+	}
+
+	/* Meta Background Color */
+	.entry-footer {
+		background-color: #1b1b1b;
+	}
+
+	@media screen and (min-width: 38.75em) {
+		/* Main Text Color */
+		.page-header {
+			border-color: #bebebe;
+		}
+	}
+
+	@media screen and (min-width: 59.6875em) {
+		/* Make sure its transparent on desktop */
+		.site-header,
+		.secondary {
+			background-color: transparent;
+		}
+
+		/* Sidebar Background Color */
+		.widget button,
+		.widget input[type="button"],
+		.widget input[type="reset"],
+		.widget input[type="submit"],
+		.widget_calendar tbody a,
+		.widget_calendar tbody a:hover,
+		.widget_calendar tbody a:focus {
+			color: #202020;
+		}
+
+		/* Sidebar Link Color */
+		.secondary a,
+		.dropdown-toggle:after,
+		.widget-title,
+		.widget blockquote cite,
+		.widget blockquote small {
+			color: #bebebe;
+		}
+
+		.widget button,
+		.widget input[type="button"],
+		.widget input[type="reset"],
+		.widget input[type="submit"],
+		.widget_calendar tbody a {
+			background-color: #bebebe;
+		}
+
+		.textwidget a {
+			border-color: #bebebe;
+		}
+
+		/* Sidebar Text Color */
+		.secondary a:hover,
+		.secondary a:focus,
+		.main-navigation .menu-item-description,
+		.widget,
+		.widget blockquote,
+		.widget .wp-caption-text,
+		.widget .gallery-caption {
+			color: rgba( 190, 190, 190, 0.7);
+		}
+
+		.widget button:hover,
+		.widget button:focus,
+		.widget input[type="button"]:hover,
+		.widget input[type="button"]:focus,
+		.widget input[type="reset"]:hover,
+		.widget input[type="reset"]:focus,
+		.widget input[type="submit"]:hover,
+		.widget input[type="submit"]:focus,
+		.widget_calendar tbody a:hover,
+		.widget_calendar tbody a:focus {
+			background-color: rgba( 190, 190, 190, 0.7);
+		}
+
+		.widget blockquote {
+			border-color: rgba( 190, 190, 190, 0.7);
+		}
+
+		/* Sidebar Border Color */
+		.main-navigation ul,
+		.main-navigation li,
+		.widget input,
+		.widget textarea,
+		.widget table,
+		.widget th,
+		.widget td,
+		.widget pre,
+		.widget li,
+		.widget_categories .children,
+		.widget_nav_menu .sub-menu,
+		.widget_pages .children,
+		.widget abbr[title] {
+			border-color: rgba( 190, 190, 190, 0.1);
+		}
+
+		.dropdown-toggle:hover,
+		.dropdown-toggle:focus,
+		.widget hr {
+			background-color: rgba( 190, 190, 190, 0.1);
+		}
+
+		.widget input:focus,
+		.widget textarea:focus {
+			border-color: rgba( 190, 190, 190, 0.3);
+		}
+
+		.sidebar a:focus,
+		.dropdown-toggle:focus {
+			outline-color: rgba( 190, 190, 190, 0.3);
+		}
+	}
+/*# sourceURL=twentyfifteen-style-inline-css */
+</style>
+<link rel='stylesheet' id='twentyfifteen-block-style-css' href='https://GTAMP.com/wordpress/wp-content/themes/twentyfifteen/css/blocks.css?ver=20240715' media='all' />
+<script id="jquery-core-js" src="https://GTAMP.com/wordpress/wp-includes/js/jquery/jquery.min.js?ver=3.7.1"></script>
+<script id="jquery-migrate-js" src="https://GTAMP.com/wordpress/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1"></script>
+<script id="twentyfifteen-script-js-extra">
+var screenReaderText = {"expand":"\u003Cspan class=\"screen-reader-text\"\u003Eexpand child menu\u003C/span\u003E","collapse":"\u003Cspan class=\"screen-reader-text\"\u003Ecollapse child menu\u003C/span\u003E"};
+//# sourceURL=twentyfifteen-script-js-extra
+</script>
+<script data-wp-strategy="defer" defer id="twentyfifteen-script-js" src="https://GTAMP.com/wordpress/wp-content/themes/twentyfifteen/js/functions.js?ver=20250729"></script>
+<link rel="https://api.w.org/" href="https://GTAMP.com/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://GTAMP.com/wp-json/wp/v2/pages/3229" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://GTAMP.com/wordpress/xmlrpc.php?rsd" />
+<meta name="generator" content="WordPress 7.1.3" />
+<link rel="canonical" href="https://GTAMP.com/gta2/gta2-gmp-map-file-format/" />
+<link rel='shortlink' href='https://GTAMP.com/?p=3229' />
+<link rel="icon" href="https://GTAMP.com/wordpress/wp-content/uploads/frenzy.png" sizes="32x32" />
+<link rel="icon" href="https://GTAMP.com/wordpress/wp-content/uploads/frenzy.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://GTAMP.com/wordpress/wp-content/uploads/frenzy.png" />
+<meta name="msapplication-TileImage" content="https://GTAMP.com/wordpress/wp-content/uploads/frenzy.png" />
+</head>
+
+<body class="wp-singular page-template-default page page-id-3229 page-child parent-pageid-35 wp-embed-responsive wp-theme-twentyfifteen">
+<div id="page" class="hfeed site">
+	<a class="skip-link screen-reader-text" href="#content">
+		Skip to content	</a>
+
+	<div id="sidebar" class="sidebar">
+		<header id="masthead" class="site-header">
+			<div class="site-branding">
+									<p class="site-title"><a href="https://GTAMP.com/" rel="home" >GTAMP.com</a></p>
+										<p class="site-description">Grand Theft Auto Multiplayer</p>
+				
+				<button class="secondary-toggle">Menu and widgets</button>
+			</div><!-- .site-branding -->
+		</header><!-- .site-header -->
+
+			<div id="secondary" class="secondary">
+
+					<nav id="site-navigation" class="main-navigation">
+				<div class="menu-gta-v-container"><ul id="menu-gta-v" class="nav-menu"><li id="menu-item-3179" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-home menu-item-3179"><a href="https://GTAMP.com/">Home</a></li>
+<li id="menu-item-3576" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-3576"><a href="https://discord.gg/BTdbHvQWsd">Discord</a></li>
+<li id="menu-item-3577" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-3577"><a href="/forum/">Forum</a></li>
+<li id="menu-item-3180" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3180"><a href="https://GTAMP.com/about/">About</a></li>
+<li id="menu-item-3182" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3182"><a href="https://GTAMP.com/gta1/">GTA1</a></li>
+<li id="menu-item-3183" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3183"><a href="https://GTAMP.com/gta1/gta1-cheats/">GTA1 cheats</a></li>
+<li id="menu-item-3184" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3184"><a href="https://GTAMP.com/gta1/gta1-multiplayer/">GTA1 multiplayer</a></li>
+<li id="menu-item-3185" class="menu-item menu-item-type-post_type menu-item-object-page current-page-ancestor menu-item-3185"><a href="https://GTAMP.com/gta2/">GTA2</a></li>
+<li id="menu-item-3186" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3186"><a href="https://GTAMP.com/gta2/credits/">GTA2 credits</a></li>
+<li id="menu-item-3187" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3187"><a href="https://GTAMP.com/gta2/gta2-cheats/">GTA2 cheats</a></li>
+<li id="menu-item-3188" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3188"><a href="https://GTAMP.com/gta2/gta2-common-problems/">GTA2 common problems</a></li>
+<li id="menu-item-3189" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3189"><a href="https://GTAMP.com/gta2/gta2-game-hunter/">GTA2 Game Hunter</a></li>
+<li id="menu-item-3190" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3190"><a href="https://GTAMP.com/gta2/maps/">GTA2 maps</a></li>
+<li id="menu-item-3191" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3191"><a href="https://GTAMP.com/gta2/gta2-movies/">GTA2 movies</a></li>
+<li id="menu-item-3192" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3192"><a href="https://GTAMP.com/gta2/gta2-multiplayer-faq/">GTA2 multiplayer FAQ</a></li>
+<li id="menu-item-3193" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3193"><a href="https://GTAMP.com/gta2/scripting/">GTA2 scripting</a></li>
+<li id="menu-item-3194" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3194"><a href="https://GTAMP.com/gta2/tools/">GTA2 tools and editors</a></li>
+<li id="menu-item-3195" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3195"><a href="https://GTAMP.com/gta2/gta2-multiplayer/">GTA2 multiplayer guide</a></li>
+<li id="menu-item-3197" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3197"><a href="https://GTAMP.com/gta3/">GTA3</a></li>
+<li id="menu-item-3198" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3198"><a href="https://GTAMP.com/gta3/vice-city/">Vice City</a></li>
+<li id="menu-item-3199" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3199"><a href="https://GTAMP.com/gta3/san-andreas/">San Andreas</a></li>
+<li id="menu-item-3200" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3200"><a href="https://GTAMP.com/gta3/liberty-city-stories/">Liberty City Stories</a></li>
+<li id="menu-item-3201" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3201"><a href="https://GTAMP.com/gta3/vice-city-stories/">Vice City Stories</a></li>
+<li id="menu-item-3202" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3202"><a href="https://GTAMP.com/gta4/">GTA4</a></li>
+<li id="menu-item-3203" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3203"><a href="https://GTAMP.com/gta4/gay-tony-cheats/">Ballad of Gay Tony cheats</a></li>
+<li id="menu-item-3204" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3204"><a href="https://GTAMP.com/gta4/cheats/">GTA IV cheats and secrets</a></li>
+<li id="menu-item-3205" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3205"><a href="https://GTAMP.com/gta4/the-lost-and-damned/">The Lost and Damned cheats</a></li>
+<li id="menu-item-3206" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3206"><a href="https://GTAMP.com/other-crime-games/">Other Crime Games</a></li>
+<li id="menu-item-3207" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3207"><a href="https://GTAMP.com/other-crime-games/saints-row-2/">Saints Row 2</a></li>
+<li id="menu-item-3208" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3208"><a href="https://GTAMP.com/donate/">Support this site and my apps</a></li>
+<li id="menu-item-3209" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-3209"><a href="https://GTAMP.com/chinatown-wars-cheats/">Chinatown Wars cheats</a></li>
+</ul></div>			</nav><!-- .main-navigation -->
+		
+		
+					<div id="widget-area" class="widget-area" role="complementary">
+				<aside id="block-2" class="widget widget_block widget_search"><form role="search" method="get" action="https://GTAMP.com/" class="wp-block-search__button-outside wp-block-search__text-button wp-block-search" ><label class="wp-block-search__label" for="wp-block-search__input-1" >Search</label><div class="wp-block-search__inside-wrapper" ><input class="wp-block-search__input" id="wp-block-search__input-1" placeholder="" value="" type="search" name="s" required /><button aria-label="Search" class="wp-block-search__button wp-element-button" type="submit" >Search</button></div></form></aside><aside id="linkcat-2" class="widget widget_links"><h2 class="widget-title">Links</h2>
+	<ul class='xoxo blogroll'>
+<li><a href="https://twitch.tv/gtamp" title="GTAMP&#8217;s Twitch channel"><img src="https://GTAMP.com/wordpress/images/gtamp.gif" alt="1. twitch.tv/gtamp" title="GTAMP&#8217;s Twitch channel" /></a></li>
+<li><a href="https://projectcerbera.com/gta/2/" target="_blank"><img src="https://gtamp.com/wordpress/images/cerbera.gif" alt="2. Project Cerbera" /></a></li>
+<li><a href="https://www.thegtaplace.com/" target="_blank"><img src="https://gtamp.com/wordpress/images/thegtaplace.gif" alt="3. The GTA Place" /></a></li>
+<li><a href="https://GTATools.com" title="Tools for editing all the PC GTA games.  Coded by Delfi in Delphi." target="_blank"><img src="https://gtamp.com/wordpress/images/gtatools.gif" alt="GTATools.com" title="Tools for editing all the PC GTA games.  Coded by Delfi in Delphi." /></a></li>
+<li><a href="https://wikigta.org" title="WikiGTA is a large site about Grand Theft Auto series, where you can find walkthroughs, screens, maps and other information about the complete series." target="_blank">WikiGTA</a></li>
+
+	</ul>
+</aside>
+<aside id="pages-3" class="widget widget_pages"><h2 class="widget-title">Pages</h2><nav aria-label="Pages">
+			<ul>
+				<li class="page_item page-item-49"><a href="https://GTAMP.com/about/">About</a></li>
+<li class="page_item page-item-918"><a href="https://GTAMP.com/chinatown-wars-cheats/">Chinatown Wars cheats</a></li>
+<li class="page_item page-item-34 page_item_has_children"><a href="https://GTAMP.com/gta1/">GTA1</a>
+<ul class='children'>
+	<li class="page_item page-item-1041"><a href="https://GTAMP.com/gta1/gta1-cheats/">GTA1 cheats</a></li>
+	<li class="page_item page-item-1018"><a href="https://GTAMP.com/gta1/gta1-multiplayer/">GTA1 multiplayer</a></li>
+</ul>
+</li>
+<li class="page_item page-item-35 page_item_has_children current_page_ancestor current_page_parent"><a href="https://GTAMP.com/gta2/">GTA2</a>
+<ul class='children'>
+	<li class="page_item page-item-1045"><a href="https://GTAMP.com/gta2/gta2-cheats/">GTA2 cheats</a></li>
+	<li class="page_item page-item-113"><a href="https://GTAMP.com/gta2/gta2-common-problems/">GTA2 common problems</a></li>
+	<li class="page_item page-item-1541"><a href="https://GTAMP.com/gta2/credits/">GTA2 credits</a></li>
+	<li class="page_item page-item-51"><a href="https://GTAMP.com/gta2/gta2-game-hunter/">GTA2 Game Hunter</a></li>
+	<li class="page_item page-item-3229 current_page_item"><a href="https://GTAMP.com/gta2/gta2-gmp-map-file-format/" aria-current="page">GTA2 GMP map file format</a></li>
+	<li class="page_item page-item-124"><a href="https://GTAMP.com/gta2/maps/">GTA2 maps</a></li>
+	<li class="page_item page-item-56"><a href="https://GTAMP.com/gta2/gta2-movies/">GTA2 movies</a></li>
+	<li class="page_item page-item-55"><a href="https://GTAMP.com/gta2/gta2-multiplayer-faq/">GTA2 multiplayer FAQ</a></li>
+	<li class="page_item page-item-45"><a href="https://GTAMP.com/gta2/gta2-multiplayer/">GTA2 multiplayer guide</a></li>
+	<li class="page_item page-item-179"><a href="https://GTAMP.com/gta2/scripting/">GTA2 scripting</a></li>
+	<li class="page_item page-item-3233"><a href="https://GTAMP.com/gta2/gta2-style-sty-graphics-file-format/">GTA2 Style STY graphics file format</a></li>
+	<li class="page_item page-item-1644"><a href="https://GTAMP.com/gta2/tools/">GTA2 tools and editors</a></li>
+</ul>
+</li>
+<li class="page_item page-item-36 page_item_has_children"><a href="https://GTAMP.com/gta3/">GTA3</a>
+<ul class='children'>
+	<li class="page_item page-item-37"><a href="https://GTAMP.com/gta3/liberty-city-stories/">Liberty City Stories</a></li>
+	<li class="page_item page-item-2"><a href="https://GTAMP.com/gta3/san-andreas/">San Andreas</a></li>
+	<li class="page_item page-item-94"><a href="https://GTAMP.com/gta3/vice-city/">Vice City</a></li>
+	<li class="page_item page-item-39"><a href="https://GTAMP.com/gta3/vice-city-stories/">Vice City Stories</a></li>
+</ul>
+</li>
+<li class="page_item page-item-40 page_item_has_children"><a href="https://GTAMP.com/gta4/">GTA4</a>
+<ul class='children'>
+	<li class="page_item page-item-1658"><a href="https://GTAMP.com/gta4/gay-tony-cheats/">Ballad of Gay Tony cheats</a></li>
+	<li class="page_item page-item-88"><a href="https://GTAMP.com/gta4/cheats/">GTA IV cheats and secrets</a></li>
+	<li class="page_item page-item-808"><a href="https://GTAMP.com/gta4/the-lost-and-damned/">The Lost and Damned cheats</a></li>
+</ul>
+</li>
+<li class="page_item page-item-3211"><a href="https://GTAMP.com/gtav/">GTA5</a></li>
+<li class="page_item page-item-106 page_item_has_children"><a href="https://GTAMP.com/other-crime-games/">Other Crime Games</a>
+<ul class='children'>
+	<li class="page_item page-item-125"><a href="https://GTAMP.com/other-crime-games/saints-row-2/">Saints Row 2</a></li>
+</ul>
+</li>
+<li class="page_item page-item-129"><a href="https://GTAMP.com/donate/">Support this site and my apps</a></li>
+			</ul>
+
+			</nav></aside><aside id="rss-3" class="widget widget_rss"><h2 class="widget-title"><a class="rsswidget rss-widget-feed" href="https://gtamp.com/forum/feed.php"><img class="rss-widget-icon" style="border:0" width="14" height="14" src="https://GTAMP.com/wordpress/wp-includes/images/rss.png" alt="RSS feed: Latest forum topics" loading="lazy" /></a> <a class="rsswidget rss-widget-title" href="https://gtamp.com/forum/index.php">Latest forum topics</a></h2><nav aria-label="Latest forum topics"><ul><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14167#p14167'>Modding forum • Re: [Requesting Help] New Textures &amp; How To Make Better Cube Buildings</a> <span class="rss-date">October 14, 2026</span> <cite>B-$hep</cite></li><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14166#p14166'>Modding forum • [Requesting Help] New Textures &amp; How To Make Better Cube Buildings</a> <span class="rss-date">October 14, 2026</span> <cite>The_Loonies</cite></li><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14165#p14165'>Modding forum • Re: New GTA2 Map Editor</a> <span class="rss-date">October 11, 2026</span> <cite>B-$hep</cite></li><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14164#p14164'>Modding forum • Re: New GTA2 Map Editor</a> <span class="rss-date">October 11, 2026</span> <cite>B-$hep</cite></li><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14163#p14163'>Modding forum • Re: New GTA2 Map Editor</a> <span class="rss-date">October 11, 2026</span> <cite>trubetz</cite></li><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14162#p14162'>Modding forum • Re: New GTA2 Map Editor</a> <span class="rss-date">October 11, 2026</span> <cite>valps</cite></li><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14161#p14161'>Modding forum • Re: New GTA2 Map Editor</a> <span class="rss-date">October 11, 2026</span> <cite>trubetz</cite></li><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14160#p14160'>Modding forum • Re: New GTA2 Map Editor</a> <span class="rss-date">October 11, 2026</span> <cite>B-$hep</cite></li><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14159#p14159'>Modding forum • New GTA2 Map Editor</a> <span class="rss-date">October 11, 2026</span> <cite>B-$hep</cite></li><li><a class='rsswidget' href='https://gtamp.com/forum/viewtopic.php?p=14158#p14158'>Modding forum • Re: official GTA2 Map Editor patches</a> <span class="rss-date">October 10, 2026</span> <cite>B-$hep</cite></li></ul></nav></aside><aside id="categories-3" class="widget widget_categories"><h2 class="widget-title">Categories</h2><nav aria-label="Categories">
+			<ul>
+					<li class="cat-item cat-item-17"><a href="https://GTAMP.com/category/censorship/">Censorship</a>
+</li>
+	<li class="cat-item cat-item-18"><a href="https://GTAMP.com/category/gta-chinatown-wars/">Chinatown Wars</a>
+</li>
+	<li class="cat-item cat-item-37"><a href="https://GTAMP.com/category/events/">Events</a>
+</li>
+	<li class="cat-item cat-item-6"><a href="https://GTAMP.com/category/gta4/">GTA IV</a>
+</li>
+	<li class="cat-item cat-item-31"><a href="https://GTAMP.com/category/gta-v/">GTA V</a>
+</li>
+	<li class="cat-item cat-item-41"><a href="https://GTAMP.com/category/gta-vi/">GTA VI</a>
+</li>
+	<li class="cat-item cat-item-4"><a href="https://GTAMP.com/category/gta1/">GTA1</a>
+</li>
+	<li class="cat-item cat-item-3"><a href="https://GTAMP.com/category/gta2/">GTA2</a>
+</li>
+	<li class="cat-item cat-item-5"><a href="https://GTAMP.com/category/gta3/">GTA3</a>
+</li>
+	<li class="cat-item cat-item-35"><a href="https://GTAMP.com/category/other-crime-games/just-cause-2/">Just Cause 2</a>
+</li>
+	<li class="cat-item cat-item-25"><a href="https://GTAMP.com/category/l-a-noire/">L.A. Noire</a>
+</li>
+	<li class="cat-item cat-item-11"><a href="https://GTAMP.com/category/liberty-city-stories/">Liberty City Stories</a>
+</li>
+	<li class="cat-item cat-item-15"><a href="https://GTAMP.com/category/other-crime-games/">Other Crime Games</a>
+</li>
+	<li class="cat-item cat-item-36"><a href="https://GTAMP.com/category/other-crime-games/payback/">Payback</a>
+</li>
+	<li class="cat-item cat-item-24"><a href="https://GTAMP.com/category/red-dead-redemption/">Red Dead Redemption</a>
+</li>
+	<li class="cat-item cat-item-39"><a href="https://GTAMP.com/category/red-dead-redemption-2/">Red Dead Redemption 2</a>
+</li>
+	<li class="cat-item cat-item-32"><a href="https://GTAMP.com/category/other-crime-games/retro-city-rampage/">Retro City Rampage</a>
+</li>
+	<li class="cat-item cat-item-20"><a href="https://GTAMP.com/category/rockstar-games/">Rockstar Games</a>
+</li>
+	<li class="cat-item cat-item-33"><a href="https://GTAMP.com/category/other-crime-games/saints-row/">Saints Row</a>
+</li>
+	<li class="cat-item cat-item-9"><a href="https://GTAMP.com/category/san-andreas/">San Andreas</a>
+</li>
+	<li class="cat-item cat-item-21"><a href="https://GTAMP.com/category/gta4/the-ballad-of-gay-tony/">The Ballad of Gay Tony</a>
+</li>
+	<li class="cat-item cat-item-19"><a href="https://GTAMP.com/category/gta4/the-lost-and-damned/">The Lost and Damned</a>
+</li>
+	<li class="cat-item cat-item-22"><a href="https://GTAMP.com/category/tv/">TV</a>
+</li>
+	<li class="cat-item cat-item-10"><a href="https://GTAMP.com/category/vice-city/">Vice City</a>
+</li>
+	<li class="cat-item cat-item-12"><a href="https://GTAMP.com/category/vice-city-stories/">Vice City Stories</a>
+</li>
+			</ul>
+
+			</nav></aside><aside id="archives-3" class="widget widget_archive"><h2 class="widget-title">Archives</h2><nav aria-label="Archives">
+			<ul>
+					<li><a href='https://GTAMP.com/2026/08/'>August 2026</a></li>
+	<li><a href='https://GTAMP.com/2026/01/'>January 2026</a></li>
+	<li><a href='https://GTAMP.com/2025/05/'>May 2025</a></li>
+	<li><a href='https://GTAMP.com/2024/07/'>July 2024</a></li>
+	<li><a href='https://GTAMP.com/2024/05/'>May 2024</a></li>
+	<li><a href='https://GTAMP.com/2023/12/'>December 2023</a></li>
+	<li><a href='https://GTAMP.com/2023/11/'>November 2023</a></li>
+	<li><a href='https://GTAMP.com/2022/12/'>December 2022</a></li>
+	<li><a href='https://GTAMP.com/2022/08/'>August 2022</a></li>
+	<li><a href='https://GTAMP.com/2020/07/'>July 2020</a></li>
+	<li><a href='https://GTAMP.com/2020/04/'>April 2020</a></li>
+	<li><a href='https://GTAMP.com/2019/12/'>December 2019</a></li>
+	<li><a href='https://GTAMP.com/2019/09/'>September 2019</a></li>
+	<li><a href='https://GTAMP.com/2019/07/'>July 2019</a></li>
+	<li><a href='https://GTAMP.com/2019/06/'>June 2019</a></li>
+	<li><a href='https://GTAMP.com/2018/12/'>December 2018</a></li>
+	<li><a href='https://GTAMP.com/2018/08/'>August 2018</a></li>
+	<li><a href='https://GTAMP.com/2018/07/'>July 2018</a></li>
+	<li><a href='https://GTAMP.com/2018/05/'>May 2018</a></li>
+	<li><a href='https://GTAMP.com/2018/04/'>April 2018</a></li>
+	<li><a href='https://GTAMP.com/2017/12/'>December 2017</a></li>
+	<li><a href='https://GTAMP.com/2017/10/'>October 2017</a></li>
+	<li><a href='https://GTAMP.com/2017/08/'>August 2017</a></li>
+	<li><a href='https://GTAMP.com/2017/06/'>June 2017</a></li>
+	<li><a href='https://GTAMP.com/2017/04/'>April 2017</a></li>
+	<li><a href='https://GTAMP.com/2017/03/'>March 2017</a></li>
+	<li><a href='https://GTAMP.com/2016/11/'>November 2016</a></li>
+	<li><a href='https://GTAMP.com/2016/10/'>October 2016</a></li>
+	<li><a href='https://GTAMP.com/2016/09/'>September 2016</a></li>
+	<li><a href='https://GTAMP.com/2016/01/'>January 2016</a></li>
+	<li><a href='https://GTAMP.com/2015/12/'>December 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/10/'>October 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/09/'>September 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/08/'>August 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/07/'>July 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/06/'>June 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/05/'>May 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/04/'>April 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/03/'>March 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/02/'>February 2015</a></li>
+	<li><a href='https://GTAMP.com/2015/01/'>January 2015</a></li>
+	<li><a href='https://GTAMP.com/2014/12/'>December 2014</a></li>
+	<li><a href='https://GTAMP.com/2014/11/'>November 2014</a></li>
+	<li><a href='https://GTAMP.com/2014/09/'>September 2014</a></li>
+	<li><a href='https://GTAMP.com/2014/08/'>August 2014</a></li>
+	<li><a href='https://GTAMP.com/2014/07/'>July 2014</a></li>
+	<li><a href='https://GTAMP.com/2014/06/'>June 2014</a></li>
+	<li><a href='https://GTAMP.com/2014/05/'>May 2014</a></li>
+	<li><a href='https://GTAMP.com/2014/04/'>April 2014</a></li>
+	<li><a href='https://GTAMP.com/2014/03/'>March 2014</a></li>
+	<li><a href='https://GTAMP.com/2014/02/'>February 2014</a></li>
+	<li><a href='https://GTAMP.com/2013/12/'>December 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/11/'>November 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/10/'>October 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/09/'>September 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/08/'>August 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/07/'>July 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/06/'>June 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/05/'>May 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/04/'>April 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/03/'>March 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/02/'>February 2013</a></li>
+	<li><a href='https://GTAMP.com/2013/01/'>January 2013</a></li>
+	<li><a href='https://GTAMP.com/2012/12/'>December 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/11/'>November 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/10/'>October 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/09/'>September 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/08/'>August 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/07/'>July 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/06/'>June 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/05/'>May 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/04/'>April 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/03/'>March 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/02/'>February 2012</a></li>
+	<li><a href='https://GTAMP.com/2012/01/'>January 2012</a></li>
+	<li><a href='https://GTAMP.com/2011/12/'>December 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/11/'>November 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/10/'>October 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/09/'>September 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/08/'>August 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/07/'>July 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/06/'>June 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/05/'>May 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/04/'>April 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/03/'>March 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/02/'>February 2011</a></li>
+	<li><a href='https://GTAMP.com/2011/01/'>January 2011</a></li>
+	<li><a href='https://GTAMP.com/2010/12/'>December 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/11/'>November 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/10/'>October 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/09/'>September 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/08/'>August 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/07/'>July 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/06/'>June 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/05/'>May 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/04/'>April 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/03/'>March 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/02/'>February 2010</a></li>
+	<li><a href='https://GTAMP.com/2010/01/'>January 2010</a></li>
+	<li><a href='https://GTAMP.com/2009/12/'>December 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/11/'>November 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/10/'>October 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/09/'>September 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/08/'>August 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/07/'>July 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/06/'>June 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/05/'>May 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/04/'>April 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/03/'>March 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/02/'>February 2009</a></li>
+	<li><a href='https://GTAMP.com/2009/01/'>January 2009</a></li>
+	<li><a href='https://GTAMP.com/2008/12/'>December 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/11/'>November 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/10/'>October 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/09/'>September 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/08/'>August 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/07/'>July 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/06/'>June 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/05/'>May 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/04/'>April 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/03/'>March 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/02/'>February 2008</a></li>
+	<li><a href='https://GTAMP.com/2008/01/'>January 2008</a></li>
+	<li><a href='https://GTAMP.com/2007/12/'>December 2007</a></li>
+	<li><a href='https://GTAMP.com/2007/11/'>November 2007</a></li>
+	<li><a href='https://GTAMP.com/2007/05/'>May 2007</a></li>
+	<li><a href='https://GTAMP.com/2007/01/'>January 2007</a></li>
+	<li><a href='https://GTAMP.com/2006/11/'>November 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/10/'>October 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/09/'>September 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/08/'>August 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/07/'>July 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/06/'>June 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/05/'>May 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/04/'>April 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/03/'>March 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/02/'>February 2006</a></li>
+	<li><a href='https://GTAMP.com/2006/01/'>January 2006</a></li>
+	<li><a href='https://GTAMP.com/2005/12/'>December 2005</a></li>
+	<li><a href='https://GTAMP.com/2005/11/'>November 2005</a></li>
+	<li><a href='https://GTAMP.com/2005/10/'>October 2005</a></li>
+	<li><a href='https://GTAMP.com/2005/09/'>September 2005</a></li>
+	<li><a href='https://GTAMP.com/2005/08/'>August 2005</a></li>
+	<li><a href='https://GTAMP.com/2005/07/'>July 2005</a></li>
+	<li><a href='https://GTAMP.com/2005/06/'>June 2005</a></li>
+	<li><a href='https://GTAMP.com/2005/05/'>May 2005</a></li>
+	<li><a href='https://GTAMP.com/2005/04/'>April 2005</a></li>
+			</ul>
+
+			</nav></aside>			</div><!-- .widget-area -->
+		
+	</div><!-- .secondary -->
+
+	</div><!-- .sidebar -->
+
+	<div id="content" class="site-content">
+
+	<div id="primary" class="content-area">
+		<main id="main" class="site-main">
+
+		
+<article id="post-3229" class="post-3229 page type-page status-publish hentry">
+	
+	<header class="entry-header">
+		<h1 class="entry-title">GTA2 GMP map file format</h1>	</header><!-- .entry-header -->
+
+	<div class="entry-content">
+		<p>GBH Map Format</p>
+<p>Version 8.2</p>
+<p>18th August 1999</p>
+<p>1997-1999 DMA Design Ltd</p>
+<p><b>Table of Contents</b></p>
+<p><b>1.</b><b>Table of Contents</b><b>2</b></p>
+<p><b>2.</b><b>Introduction</b><b>3</b></p>
+<p><b>3.</b><b>Map Format</b><b>3</b></p>
+<p><b>4.</b><b>Compression</b><b>6</b></p>
+<p><b>5.</b><b>Map Zones</b><b>7</b></p>
+<p><b>6.</b><b>Map Objects</b><b>9</b></p>
+<p><b>7.</b><b>PSX Mapping Table</b><b>10</b></p>
+<p><b>8.</b><b>Tile Animation</b><b>10</b></p>
+<p><b>9.</b><b>Lights</b><b>10</b></p>
+<p><b>10.</b><b>Junction List</b><b>11</b></p>
+<p><b>11.</b><b>File Format</b><b>12</b></p>
+<p><b>12.</b><b>Document Revision List</b><b>13</b></p>
+<p>￼<b>Introduction</b></p>
+<p>This document describes the format of the map file used by GBH, and the format of the data in that file.</p>
+<p><b>Map Format</b></p>
+<p>The GBH map is stored as a 3D array of <i>block_info</i> structures. The size of this array is fixed at 256x256x8. This corresponds to x and y co-ordinates from 0 to 255 and z co-ordinates from 0 to 7. Note that the player is not allowed to go outwith the range of 1 to 254 in x and y and 1 to 6 in z, so that there is a one-block unused buffer all around the outside of the map.</p>
+<p>At the roof of the map (z=7), no filled blocks are allowed.</p>
+<p>At the floor of the map (z=0), blocks can have a lid but no sides, and cannot be slopes. They are automatically treated as water ( i.e. the player drowns if he lands on top of them ).</p>
+<p>&nbsp;</p>
+<p>The whole array, in uncompressed from, looks like this :</p>
+<p>struct map</p>
+<p>{</p>
+<p>block_info city_scape[8][256][256];</p>
+<p>};</p>
+<p>&nbsp;</p>
+<p>The structure of each element of the array looks like this :</p>
+<p>struct block_info</p>
+<p>{</p>
+<p>UInt16 left, right, top, bottom, lid;</p>
+<p>UInt8 arrows;</p>
+<p>UInt8 slope_type;</p>
+<p>}</p>
+<p>&nbsp;</p>
+<p>Within this, the <i>arrows</i> bitmap looks like this :</p>
+<table>
+<tbody>
+<tr>
+<td colspan="2"><b>arrows</b></td>
+</tr>
+<tr>
+<td>bit 0</td>
+<td>green left</td>
+</tr>
+<tr>
+<td>bit 1</td>
+<td>green right</td>
+</tr>
+<tr>
+<td>bit 2</td>
+<td>green up</td>
+</tr>
+<tr>
+<td>bit 3</td>
+<td>green down</td>
+</tr>
+<tr>
+<td>bit 4</td>
+<td>red left</td>
+</tr>
+<tr>
+<td>bit 5</td>
+<td>red right</td>
+</tr>
+<tr>
+<td>bit 6</td>
+<td>red up</td>
+</tr>
+<tr>
+<td>bit 7</td>
+<td>red down</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>Green arrows are used to mark the normal road network. Dummy cars use them to see where they are allowed to drive (i.e. which side of the road to drive on, where the corners &amp; junctions are, etc.). The green arrows must be set up perfectly for the game to function.</p>
+<p>Red arrows are used to mark special routes which are only used in special cases, e.g. mission cars in a hurry or police cars on an emergency. They might mark shortcuts across parks or pavements, for example.</p>
+<p>Note that green and red arrows do not have to be on road. It is allowed to place them on any ground type except air.</p>
+<p>&nbsp;</p>
+<p>The <i>slope_type</i> bitmap looks like this :</p>
+<table>
+<tbody>
+<tr>
+<td colspan="2"><b>slope_type</b></td>
+</tr>
+<tr>
+<td>bits 0-1</td>
+<td>ground type<br />
+( 0 = air, 1 = road, 2 = pavement, 3 = field )</td>
+</tr>
+<tr>
+<td>bits 2-7</td>
+<td> slope type<br />
+(0 = none<br />
+1- 2 = up 26 low, high<br />
+3 &#8211; 4 = down 26 low, high5 &#8211; 6 = left 26 low, high<br />
+7 &#8211; 8 = right 26 low, high<br />
+9 &#8211; 16 = up 7 low – high17 &#8211; 24 = down 7 low – high<br />
+25 &#8211; 32 = left 7 low – high<br />
+33 &#8211; 40 = right 7 low – high</p>
+<p>41 &#8211; 44 = 45up,down,left,right</p>
+<p>45 = diagonal, facing up left</p>
+<p>46 = diagonal, facing up right</p>
+<p>47 = diagonal, facing down left</p>
+<p>48 = diagonal, facing down right</p>
+<p>49 = 3 or 4-sided diagonal slope, facing up left<br />
+50 = 3 or 4-sided diagonal slope, facing up right<br />
+51 = 3 or 4-sided diagonal slope, facing down left<br />
+52 = 3 or 4-sided diagonal slope, facing down right</p>
+<p>53 = partial block left</p>
+<p>54 = partial block right</p>
+<p>55 = partial block top</p>
+<p>56 = partial block bottom</p>
+<p>57 = partial block top left corner</p>
+<p>58 = partial block top right corner</p>
+<p>59 = partial block bottom right corner</p>
+<p>60 = partial block bottom left corner</p>
+<p>61 = partial centre block 16&#215;16</p>
+<p>62 = reserved for future use<br />
+63 = indicates slope in block above )</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>A slope code of 63 indicates not that this block is a slope but that the block above is a slope. This code must always be set in blocks which are underneath slope blocks (except if the block underneath is a diagonal). The ground type of the block with a type 63 slope must be 0 (air). It cannot itself be a slope.</p>
+<p>In the map, slope blocks must always be placed only in a complete group – e.g. a lower 26[Symbol] part must always be connected to a higher 26[Symbol] part.</p>
+<p>&nbsp;</p>
+<p>Codes 45-48 are diagonals. A diagonal is a special triangular block, where one side is at a 45[Symbol] angle, the other sides are straight and the lid is a triangle. The up or down side which the diagonal is facing towards is ignored – it takes the data from the left or right side. A limited form of collision with diagonal blocks is supported – see below. A diagonal is not a slope – there is no need for a code 63 underneath it.</p>
+<p>&nbsp;</p>
+<p>Codes 49-52 are diagonal slopes. There are 2 types of diagonal slope – 3-sided and 4-sided. 3-sided diagonal slopes are shapes with a triangular base going up to a point. They are designed to be placed on top of  diagonals to provide spires. These are identified by having a lid tile number of 1023 – which is a dummy graphic number. The top, bottom, left &amp; right sides are used to store the sides (with the top or bottom ignored as required)</p>
+<p>4-sided diagaonal slopes are identified by the fact that they have a normal  (or zero) lid tile number. These are the inverse shape of the 3-sided diagonal slopes and are used to fill in the corners between slopes. They have a triangular lid and an inverted triangle diagonal side which goes down to a point at the low corner. Note that the small triangular sides under this are not drawn at all.</p>
+<p>A limited form of collision with 3-sided diagonal slopes is supported – see below. There is no need for a code 63 underneath.</p>
+<p>&nbsp;</p>
+<p>Codes 53-56 are partial blocks. These are like normal cube blocks except only 24 pixels wide, instead of 64. The graphics are cropped to fit. There is no need for a code 63 underneath. As with diagonals, there is no collison support, so they must be kept seperate from the player.</p>
+<p>&nbsp;</p>
+<p>Codes 57-60 are partial corner blocks. These are like normal cube blocks except only 24 pixels wide and 24 pixels long, instead of 64. The graphics are cropped to fit. There is no need for a code 63 underneath. As with diagonals, there is no collison support, so they must be kept seperate from the player.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>The left, right, top &amp; bottom 16-bit values store a bitmap like this :</p>
+<table>
+<tbody>
+<tr>
+<td>bits 0-9</td>
+<td>tile graphic number (0-1023)</td>
+</tr>
+<tr>
+<td>bit 10</td>
+<td>wall (1 = collide, 0 = no collide)</td>
+</tr>
+<tr>
+<td>bit 11</td>
+<td>bullet wall (1 = collide, 0 = no collide)</td>
+</tr>
+<tr>
+<td>bit 12</td>
+<td>flat (1 = flat, 0 = not flat)</td>
+</tr>
+<tr>
+<td>bit 13</td>
+<td>flip (1 = flip, 0 = no flip )</td>
+</tr>
+<tr>
+<td>bit 14-15</td>
+<td>rotation code (0=0[Symbol], 1=90[Symbol], 2=180[Symbol], 3=270[Symbol])</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>The lid 16-bit value stores a bitmap like this :</p>
+<table>
+<tbody>
+<tr>
+<td>bits 0-9</td>
+<td>tile graphic number (0-1023)</td>
+</tr>
+<tr>
+<td>bit 10-11</td>
+<td>lighting level (0-3)</td>
+</tr>
+<tr>
+<td>bit 12</td>
+<td>flat (1 = flat, 0 = not flat)</td>
+</tr>
+<tr>
+<td>bit 13</td>
+<td>flip (1 = flip, 0 = no flip )</td>
+</tr>
+<tr>
+<td>bit 14-15</td>
+<td>rotation code (0=0[Symbol], 1=90[Symbol], 2=180[Symbol], 3=270[Symbol])</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p><i>tile graphic number</i> simply indicates which of the possible 1024 tile graphics to draw on this surface. It serves as an index into the tile information in the style file. A value of 0 means leave it blank. 992-1022 are reserved for internal use by the game engine. 1023 is used as a dummy tile number to mark 3-sided diagonal slopes.</p>
+<p>&nbsp;</p>
+<p><i>wall</i> indicates whether or not a car, ped or object should collide with this tile.</p>
+<p><i>bullet wall</i> indicates whether or not a bullet should collide with this tile.</p>
+<p>Note that only (<i>wall</i>=1,<i>bullet wall</i>=1), (<i>wall</i>=1, <i>bullet wall</i>=0) and (<i>wall</i>=0, <i>bullet wall</i>=0) are allowed. (<i>wall</i>=0, <i>bullet wall</i>=1) is not allowed as you cannot have a wall which stops bullets but not peds.</p>
+<p><i>wall</i> and <i>bullet wall</i> must be 0 for diagonals – the game does not support collision with these.</p>
+<p>It is not allowed to set the <i>bullet </i>or <i>bullet wall</i> bit if the <i>tile graphic number</i> is 0 or if the tile is opposite a flat, as this would cause an invisible wall.</p>
+<p>The <i>bullet </i>or <i>bullet wall</i> bits must be set at the outside edges of a slope ( to stop the player getting on to the slope from the side. They must not be set at the ends of a slope block, except at the highest end of the highest block.</p>
+<p>&nbsp;</p>
+<p><i>flat</i> indicates whether or not this tile should be treated as a flat. This means that it gets drawn transparently, and (except for a lid ) the tile opposite is used as the graphic for the reverse side.</p>
+<p>If both matching sides of a block (i.e. top and bottom or left and right) are flat, then both tiles are drawn at both positions.</p>
+<p>Flat slopes and diagonals are allowed.</p>
+<p>&nbsp;</p>
+<p><i>flip </i>indicates whether or not this tile is to be drawn flipped left to right.</p>
+<p><i>rotation code</i> describes a rotation to turn this tile by when drawing it. Any combination of flipping and rotation is allowed.</p>
+<p>Note that flipping and rotation is not supported on the sides of slopes.</p>
+<p>&nbsp;</p>
+<p><i>lighting level</i> marks which shading level to apply to a lid tile. 0 is normal brightness. 1-3 are increasing levels of darkness.</p>
+<p>&nbsp;</p>
+<p><b><i>Diagonals Collision</i></b></p>
+<p>The game supports a limited form of collision with diagonals only. It does this by creating a temporary dummy invisible object whenever it encounters a diagonal block. This means that collision with the bottom of a diagonal block works – but collision with the top of it (i.e. walking on top of it) does not. Players must be prevented from reaching the top part of diagonal blocks ( or even throwing things up there ).</p>
+<p>Diagonals cannot be flat, and the diagonal wall will always be collidable whatever the wall and bullet wall bits are set to. The tiles behind the diagonal wall must have graphics and wall bits and bullet wall bits, and the tiles in front must not have them.</p>
+<p>All this applies to 3-sided diagonal slopes as well (collision-wise, these are treated the same as diagonal blocks) – but not to 4-sided diagonal slopes.</p>
+<p>&nbsp;</p>
+<p><b>Compression</b></p>
+<p>The memory required by the uncompressed map is 256x256x8x12 bytes = 6MB . Clearly, this is too large to be practical in-game. In addition, the map stores a lot of unnecessary data, such as hidden faces, etc. For these reasons, a compressed form of the map is required.</p>
+<p>There are two types of compressed map : CMAP(16-bit) &amp; DMAP(32-bit). CMAP was the original format but the PC version maps have outgrown this, so will now use DMAP.</p>
+<p>The PSX version can use DMAP for development but must use CMAP in the final version.</p>
+<p>&nbsp;</p>
+<p>After compression, the map is stored in 3 data areas :</p>
+<p>&nbsp;</p>
+<p>CMAP version :</p>
+<p>struct compressed_map</p>
+<p>{</p>
+<p>UInt16 base [256][256];</p>
+<p>UInt16 column_words;</p>
+<p>UInt16 column[<i>variable size &#8211; see column_words</i>];</p>
+<p>UInt16 num_blocks;</p>
+<p>block_info block[<i>variable size &#8211; see num_blocks</i>];</p>
+<p>};</p>
+<p>&nbsp;</p>
+<p>DMAP version :</p>
+<p>struct compressed_map</p>
+<p>{</p>
+<p>UInt32 base [256][256];</p>
+<p>UInt32 column_words;</p>
+<p>UInt32 column[<i>variable size &#8211; see column_words</i>];</p>
+<p>UInt32 num_blocks;</p>
+<p>block_info block[<i>variable size &#8211; see num_blocks</i>];</p>
+<p>};</p>
+<p>&nbsp;</p>
+<p><b><i>base</i></b></p>
+<p>&#8211; a 2D array of 16-bit/32-bit unsigned ints, where each int stores a word/dword offset into <i>column</i> – that is, the index of the start of the column which sits at that square on the ground.</p>
+<p><b><i>column</i></b></p>
+<p>&#8211; a variable length array of words/dwords. For each column, the format is:</p>
+<p>CMAP version :</p>
+<p>struct col_info</p>
+<p>{</p>
+<p>UInt8 height;</p>
+<p>UInt8 offset;</p>
+<p>UInt16 blockd[<i>variable size &#8211; see height</i>];</p>
+<p>};</p>
+<p>&nbsp;</p>
+<p>DMAP version :</p>
+<p>struct col_info</p>
+<p>{</p>
+<p>UInt8 height;</p>
+<p>UInt8 offset;</p>
+<p>UInt16 pad;</p>
+<p>UInt32 blockd[<i>variable size &#8211; see height</i>];</p>
+<p>};</p>
+<p>Here,  <i>height</i> is the height of the column (0 to 7).</p>
+<p><i>offset </i>is the number of empty blocks at the bottom (0 to <i>height</i>).</p>
+<p><i>blockd</i> is a variable length array of block numbers, with <i>blockd</i>[0] storing the block at z=<i>offset</i>. Each block number is a reference to the block data stored in <i>block</i>.</p>
+<p>In a CMAP, there is a limit of 65536 words of column data. In a DMAP, the limit is 131072 dwords.</p>
+<p><b><i>block</i></b></p>
+<p>&#8211; a variable length array of <i>block_info</i> structures, containing every distinct combination of faces &amp; types required for the level. Each individual block is addressed by its block number.</p>
+<p>Note that block 0 is always all zero – it represents an air block with no graphics.</p>
+<p>In a CMAP, there is a limit of 65536 distinct blocks in the world. In a DMAP, the limit is 131072 blocks.</p>
+<p>&nbsp;</p>
+<p><b><i>Hidden Surface Removal</i></b></p>
+<p>As part of the compression process, all hidden surfaces of the map are removed. This means that all tiles which cannot be seen by the player, because they are on the inside of a building or on the outside of the world, for example, have their face bitmap set to zero.</p>
+<p><b>Map Zones</b></p>
+<p>Map zones are used in the game to identify named areas for various purposes.</p>
+<p>Map zone information stores the name, size and position of a variable number of zones within the map. The structure of a single map zone entry is :</p>
+<p>struct map_zone</p>
+<p>{</p>
+<p>UInt8 zone_type;</p>
+<p>UInt8 x,y;</p>
+<p>UInt8 w,h;</p>
+<p>UInt8 name_length;</p>
+<p>Char name[<i>0 to 255 &#8211; see name_length</i>];</p>
+<p>};</p>
+<p>&nbsp;</p>
+<p>(<i>x</i>,<i>y</i>) is the position of the top left corner of the zone (in block co-ordinates).</p>
+<p><i>w</i> and <i>h</i> are the width and height of the zone in blocks. Only rectangular zones are allowed.</p>
+<p>&nbsp;</p>
+<p><i>name</i> is a variable-length string whose length is stored in <i>name_length</i>. Valid lengths are 0 to 255 characters. There is no NULL terminator.</p>
+<p>&nbsp;</p>
+<p>Valid values of the <i>zone_type</i> field are :</p>
+<table>
+<tbody>
+<tr>
+<td colspan="2">zone_type</td>
+</tr>
+<tr>
+<td>0</td>
+<td>general purpose</td>
+</tr>
+<tr>
+<td>1</td>
+<td>navigation</td>
+</tr>
+<tr>
+<td>2</td>
+<td>traffic light</td>
+</tr>
+<tr>
+<td>3</td>
+<td>unused</td>
+</tr>
+<tr>
+<td>4</td>
+<td>unused</td>
+</tr>
+<tr>
+<td>5</td>
+<td>arrow blocker</td>
+</tr>
+<tr>
+<td>6</td>
+<td>railway station (platform)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>bus stop (pavement)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>general trigger</td>
+</tr>
+<tr>
+<td>9</td>
+<td>unused</td>
+</tr>
+<tr>
+<td>10</td>
+<td>information</td>
+</tr>
+<tr>
+<td>11</td>
+<td>railway station entry point</td>
+</tr>
+<tr>
+<td>12</td>
+<td>railway station exit point</td>
+</tr>
+<tr>
+<td>13</td>
+<td>railway stop point</td>
+</tr>
+<tr>
+<td>14</td>
+<td>gang</td>
+</tr>
+<tr>
+<td>15</td>
+<td>local navigation</td>
+</tr>
+<tr>
+<td>16</td>
+<td>restart</td>
+</tr>
+<tr>
+<td>17</td>
+<td>unused</td>
+</tr>
+<tr>
+<td>18</td>
+<td>unused</td>
+</tr>
+<tr>
+<td>19</td>
+<td>unused</td>
+</tr>
+<tr>
+<td>20</td>
+<td>arrest restart</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p><i>general purpose </i>zones are used simply to mark an area so that it can be referred to by that name in mission scripts.</p>
+<p>&nbsp;</p>
+<p><i>navigation</i> zones are used to store the correct geographical names of areas within the city. When the player enters a new navigation zone, its name is displayed on screen. When a police radio message reports a crime, the enclosing navigation zone is used to describe the area. Every block in the city must be within some navigation zone. They can overlap, in which case the smaller area zone gets priority. It is not allowed for equally sized zones to overlap. The navigation zone names are not translated in foreign versions of the game – they always have the same name. For large areas, the game appends North, South, etc. to the displayed name, so as to give the player a better idea of where he is.</p>
+<p>&nbsp;</p>
+<p><i>traffic light</i> zones are used to mark junctions where traffic lights are required. The game will automatically construct a traffic light system at each traffic light zone. It is not allowed to place a traffic light zone on an area which is not a valid junction.</p>
+<p>Traffic light zones must not be on slopes, and must not be within one block of the end of a slope. Traffic light zones must be at least a screen away from each other.</p>
+<p>&nbsp;</p>
+<p><i>arrow blocker zones</i> are used to mark zones in the map where gang arrows should not be drawn even if within a gang zone.</p>
+<p>&nbsp;</p>
+<p><i>railway station</i> zones are used to mark the location of railway stations The platform zone marks where the platform is, i.e. where peds should stand. This must be adjacent to a valid train route. The stop point marks where trains should stop. The entry and exit points mark the points on the track where trains  enter and exit the station.</p>
+<p>&nbsp;</p>
+<p><i>bus stop</i> zones are used to mark the location of bus stops.  The zone is placed on the pavement and it marks where the peds should stand. Buses will stop at the nearest road piece( error if none close ). There are no specific bus routes – buses are simply created at random and stop at bus stops whenever they pass them.</p>
+<p>&nbsp;</p>
+<p><i>general trigger</i> zones are used to mark the position of general purpose triggers. These are used by mission scripts to set off an event when the player enters an area of the map. Normally, some sort of event will be associated with the general trigger zone in the mission script.</p>
+<p>&nbsp;</p>
+<p><i>Information</i> zones are used to mark an area which has different information values from the area round about it. The actual information is set up using the mission script.</p>
+<p>&nbsp;</p>
+<p><i>gang</i> zones are used to mark the areas used by particular gangs. The name of the zone is the name of the gang. Any one gang may have many zones.</p>
+<p>&nbsp;</p>
+<p><i>local navigation</i> zones are used, like <i>navigation</i> zones, to mark the names of places which the player can visit. Local navigation zones will tend to be smaller than main navigation zones. On-screen, the local navigation zone is shown before the main navigation zone – e.g. “Johnny’s Strip Club, Hackenslash” would be displayed if the player is in the local navigation zone “Johnny’s Strip Club” and the main navigation zone “Hackenslash”. The rules for overlapping for local navigation zones are the same as for main navigation zones. However, unlike main navigation zones, local navigation zones do not have to cover the whole city.</p>
+<p>&nbsp;</p>
+<p><i>restart</i> zones are the places where the player is restarted after he dies . There must be at least one restart zone in a map. They can be any size . When the player dies, he is restarted at the nearest restart zone ( except if it is a mult-player game and another player is too close ) .</p>
+<p>&nbsp;</p>
+<p><i>arrest restart</i> zones mark the places where the player is taken to after he has been arrested. They must be only one block in size.</p>
+<p>&nbsp;</p>
+<p>Named zones in the city need not have different names to each other. However, it should be noted that there could be confusion when a mission script refers to a zone by name if that name is not unique.</p>
+<p>&nbsp;</p>
+<p>Zones must be sorted by order of area ( smallest first ).</p>
+<p><b><i>Station Names</i></b></p>
+<p>Railway station names start with a 5-letter code which is unique to that railway line. Following that, they have a code which is different for each station. This code is a digit 0-9 ( the order of which determines the order of visiting). The entry point, exit point and stop point for the station have the same name.</p>
+<p><b>Map Objects</b></p>
+<p>Map objects are items, such as bins, piles of rubbish &amp; trees which can be positioned on top of any valid ground block in the map.</p>
+<p>An object entry looks like this:</p>
+<p>struct</p>
+<p>{</p>
+<p>Fix16 x,y;</p>
+<p>Ang8 rotation;</p>
+<p>UInt8 object_type;</p>
+<p>} map_object;</p>
+<p>&nbsp;</p>
+<p>(<i>x</i>,<i>y</i>) is the position of the object in (1.8.7) fixed-point block co-ordinates. The upper 9 bits of each number stores the block across the map ( with a sign ), and the lower 7 bits stores the position within the block. No z co-ordinate is specified, as the object is assumed to be sitting on top of the ground at whatever height that happens to be. An object cannot be placed where there is only air or water or on top of blocks without proper collision, such as diagonals.</p>
+<p>Note that, although floating point co-ordinates are used internally by the game, co-ordinates such as these which may be stored in a file must be fixed point, or else console versions could not use the file.</p>
+<p>&nbsp;</p>
+<p><i>rotation</i> is the rotation of the object, stored as an <i>Ang8</i>, which maps the 360[Symbol] of a circle onto values from 0 to 255, with 0 representing 0[Symbol] and 128 representing 180[Symbol].</p>
+<p>&nbsp;</p>
+<p><i>object_type</i> is a code which identifies the type of object. It serves as an index into the object information in the style file.</p>
+<p>&nbsp;</p>
+<p>Note that map objects cannot be used to store parked cars.</p>
+<p><b>PSX Mapping Table</b></p>
+<p>The PSX mapping table is used to map PC tile numbers onto PSX graphics.</p>
+<p>The mapping table looks like this :</p>
+<p>struct</p>
+<p>{</p>
+<p>UInt8 tile_number;</p>
+<p>UInt8 undefined;</p>
+<p>} mapping_entry;</p>
+<p>&nbsp;</p>
+<p>mapping_entry mapping_table[1024];</p>
+<p>&nbsp;</p>
+<p>The table is indexed by PC tile numbers [0-1023]. <i>tile_number</i> gives the PSX tile number to use. <i>undefined</i> will be used to store information on lighting, etc.</p>
+<p>&nbsp;</p>
+<p><b>Tile Animation</b></p>
+<p>The map can store tile animation data which is used to produce fixed background animations like moving water or flickering neon signs.</p>
+<p>This tile animation data is stored in a list of <i>tile_animation</i> structures. Each of these looks like this :</p>
+<p>&nbsp;</p>
+<p>struct</p>
+<p>{</p>
+<p>UInt16 base;</p>
+<p>UInt8 frame_rate;</p>
+<p>UInt8 repeat;</p>
+<p>UInt8 anim_length;</p>
+<p>UInt8 unused</p>
+<p>UInt16 tiles[0 to 255 &#8211; see anim_length];</p>
+<p>} tile_animation;</p>
+<p>&nbsp;</p>
+<p><i>base </i>is the base tile of the animation. This marks the tile as an animating tile.</p>
+<p>&nbsp;</p>
+<p><i>frame_rate </i>is the number of game frames that each frame of the animation is displayed for.</p>
+<p>&nbsp;</p>
+<p><i>repeat </i>is the number of times the animation will be played. 0 means play forever.</p>
+<p>&nbsp;</p>
+<p><i>anim_length </i>is the number of tiles in the animation.</p>
+<p>&nbsp;</p>
+<p><i>tiles </i>is a variable length array of UInt16s that stores the tile numbers that make up the animation.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><b>Lights</b></p>
+<p>Lighting information is stored in an array of map_light structures. Each of these looks like this :</p>
+<p>&nbsp;</p>
+<p>struct</p>
+<p>{</p>
+<p>UInt32 ARGB;</p>
+<p>Fix16x,y,z;</p>
+<p>Fix16 radius;</p>
+<p>UInt8 intensity;</p>
+<p>UInt8 shape;</p>
+<p>UInt8on_time;</p>
+<p>UInt8off_time;</p>
+<p>} map_light;</p>
+<p>&nbsp;</p>
+<p><i>ARGB</i> is the colour of the light, with 8 bits each for alpha, red, green &amp; blue. Note that alpha is not used and should be set to zero.</p>
+<p>&nbsp;</p>
+<p>(<i>x</i>,<i>y</i>,<i>z</i>) is the position of the light in (1.8.7) fixed point world co-ordinates ( as with map objects ).</p>
+<p>&nbsp;</p>
+<p><i>radius</i> is the radius of the light in blocks, again in (1.8.7) fixed point. The maximum is 8. Fractions are allowed.</p>
+<p>&nbsp;</p>
+<p><i>intensity</i> is the strength of the light, from 0 (weakest) to 255 (strongest) .</p>
+<p>&nbsp;</p>
+<p><i>on_time</i>, <i>off_time</i> and <i>shape</i> are used to define animation of the light.</p>
+<p><i>on_time</i> is how many game cycles (0-255) the light should stay on for. <i>off_time</i> is how many game cycles (0-255) the light should stay off for. If <i>on_time</i> is zero then the light is not animated.</p>
+<p>If <i>shape</i> is not zero then it is the random variance for on_time &amp; off_time, i.e. it is the maximum number of additional game cycles (0-255) which might be added to the on or off time of the light as it animates. Note that <i>shape</i>+<i>on_time</i> and <i>shape</i>+<i>off_time</i> must not exceed 255.</p>
+<p>&nbsp;</p>
+<p>Only spherical lights are supported.</p>
+<p>&nbsp;</p>
+<p><b>Junction List</b></p>
+<p>This is a list of junction information used in the routefinder mid-game. Generated by the editor from the map, it contains junction information, horizontal segments, vertical segments, the number of junctions, the number of horizontal segments, and finally, the number of vertical segments.</p>
+<p>&nbsp;</p>
+<p>struct</p>
+<p>{</p>
+<p>linknorth;</p>
+<p>linksouth;</p>
+<p>linkeast;</p>
+<p>linkwest;</p>
+<p>&nbsp;</p>
+<p>search_type junc_type;</p>
+<p>UInt8min_x;</p>
+<p>UInt8min_y;</p>
+<p>UInt8max_x;</p>
+<p>UInt8max_y;</p>
+<p>} junction</p>
+<p>&nbsp;</p>
+<p><i>north, south, west, west </i>are 4 byte descriptions of the ‘links’ to other junctions.</p>
+<p><i>search_type </i>defines what arrows are involved with this junction.</p>
+<p><i>(min_x , min_y) (max_x, max_y) </i>are a pair of UInt8 coordinates describing the size of the junction.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>struct</p>
+<p>{</p>
+<p>UInt16 junction_num1;</p>
+<p>UInt16 junction_num2;</p>
+<p>UInt8min_x;</p>
+<p>UInt8min_y;</p>
+<p>UInt8max_x;</p>
+<p>UInt8max_y;</p>
+<p>} segment</p>
+<p>&nbsp;</p>
+<p><i>junction_num1, junction_num2 </i>are the junctions at either end of this segment.</p>
+<p><i>(min_x, min_y) (max_x, max_y) </i>are a pair of UInt8 coordinates describing the area covered by this segment.</p>
+<p>&nbsp;</p>
+<p>At the moment, these arrays are padded out to their maximum sizes – this may be changed in time.</p>
+<p>&nbsp;</p>
+<p><b>File Format</b></p>
+<p>All of the above data is stored on disk in a single map file, which is used by both the game and the editor and must be kept uptodate. The file consists of a header and a series of named chunks ( which can be in any order ).</p>
+<p>Any program which uses the map file should load in the chunks it needs and ignore the others.</p>
+<p>Any program which both loads and saves map files must make sure that all chunks are transferred.</p>
+<p>Any program which saves map data must ensure that the compressed map is uptodate with respect to the uncompressed map.</p>
+<p>&nbsp;</p>
+<p>The file header looks like this :</p>
+<table>
+<tbody>
+<tr>
+<td colspan="3"><b>map file header</b></td>
+</tr>
+<tr>
+<td>name</td>
+<td>size</td>
+<td>notes</td>
+</tr>
+<tr>
+<td>file_type</td>
+<td>Char[4]</td>
+<td>“GBMP” – code for GBH map file</td>
+</tr>
+<tr>
+<td>version_code</td>
+<td>UInt16</td>
+<td>&#8211; map file format version – currently 500</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>Each chunk in the file is preceded by a header which looks like this :</p>
+<table>
+<tbody>
+<tr>
+<td colspan="3"><b>chunk header</b></td>
+</tr>
+<tr>
+<td>name</td>
+<td>size</td>
+<td>notes</td>
+</tr>
+<tr>
+<td>chunk_type</td>
+<td>Char[4]</td>
+<td>code name for the chunk type</td>
+</tr>
+<tr>
+<td>chunk_size</td>
+<td>UInt32</td>
+<td>size of the chunk in bytes (not including this header)</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>The chunks in the map file are :</p>
+<table>
+<tbody>
+<tr>
+<td colspan="2"><b>map chunks</b></td>
+</tr>
+<tr>
+<td>chunk name</td>
+<td>description</td>
+</tr>
+<tr>
+<td>UMAP</td>
+<td>uncompressed map</td>
+</tr>
+<tr>
+<td>CMAP</td>
+<td>compressed map (16-bit)</td>
+</tr>
+<tr>
+<td>DMAP</td>
+<td>compressed map (32-bit)</td>
+</tr>
+<tr>
+<td>ZONE</td>
+<td>map zones</td>
+</tr>
+<tr>
+<td>MOBJ</td>
+<td>map objects</td>
+</tr>
+<tr>
+<td>PSXM</td>
+<td>PSX mapping table</td>
+</tr>
+<tr>
+<td>ANIM</td>
+<td>tile animation</td>
+</tr>
+<tr>
+<td>LGHT</td>
+<td>Lights</td>
+</tr>
+<tr>
+<td>RGEN</td>
+<td>Junction List</td>
+</tr>
+</tbody>
+</table>
+<p><b>Document Revision List</b></p>
+<table>
+<tbody>
+<tr>
+<td>Version</td>
+<td>Date</td>
+<td>Author</td>
+<td>Comments</td>
+</tr>
+<tr>
+<td>1.00</td>
+<td>14/10/1997</td>
+<td>KRH</td>
+<td>first draft</td>
+</tr>
+<tr>
+<td>2.00</td>
+<td>16/10/1997</td>
+<td>KRH</td>
+<td>added zones, routes, objects, diagonals &amp; changed map orientation</td>
+</tr>
+<tr>
+<td>3.0</td>
+<td>23/10/97</td>
+<td>KRH</td>
+<td>compression, file format, table of contents</td>
+</tr>
+<tr>
+<td>4.0</td>
+<td>27/10/97</td>
+<td>KRH</td>
+<td>pedroutefinding</td>
+</tr>
+<tr>
+<td>5.0</td>
+<td>25/02/98</td>
+<td>KRH</td>
+<td>cmap&amp;col_info&amp; both sides flat updates,pedrremoved</td>
+</tr>
+<tr>
+<td>5.5</td>
+<td>25/06/98</td>
+<td>KRH</td>
+<td>New zone types, new block types, lid lighting</td>
+</tr>
+<tr>
+<td>5.6</td>
+<td>30/06/98</td>
+<td>KRH</td>
+<td>Correct zone types</td>
+</tr>
+<tr>
+<td>6.0</td>
+<td>09/07/98</td>
+<td>KRH</td>
+<td>add PSXM chunk</td>
+</tr>
+<tr>
+<td>6.1</td>
+<td>03/09/98</td>
+<td>KRH</td>
+<td>add gang zones &amp; local navigation zones, relax rule on unique zone names</td>
+</tr>
+<tr>
+<td>6.2</td>
+<td>09/09/98</td>
+<td>KRH</td>
+<td>add restart zones</td>
+</tr>
+<tr>
+<td>6.3</td>
+<td>17/09/98</td>
+<td>KRH</td>
+<td>add tile animation</td>
+</tr>
+<tr>
+<td>6.4</td>
+<td>25/09/98</td>
+<td>KRH</td>
+<td>changed tile animation format</td>
+</tr>
+<tr>
+<td>6.5</td>
+<td>17/12/98</td>
+<td>KRH</td>
+<td>partial centre blocks, inversediagslopes, no rotation on slope sides, railway setup</td>
+</tr>
+<tr>
+<td>7.0</td>
+<td>07/01/99</td>
+<td>KRH</td>
+<td>add lighting information &amp; change fixed point format to 1.8.7</td>
+</tr>
+<tr>
+<td>7.5</td>
+<td>26/01/99</td>
+<td>KRH</td>
+<td>change roadblocks &amp; add animated lights</td>
+</tr>
+<tr>
+<td>7.6</td>
+<td>02/02/99</td>
+<td>KRH</td>
+<td>diagonals collision</td>
+</tr>
+<tr>
+<td>7.7</td>
+<td>23/02/99</td>
+<td>BB</td>
+<td>Junction list chunk info added</td>
+</tr>
+<tr>
+<td>7.8</td>
+<td>01/04/99</td>
+<td>KRH</td>
+<td>arrest restart zones</td>
+</tr>
+<tr>
+<td>8.0</td>
+<td>14/06/99</td>
+<td>KRH</td>
+<td>DMAPs &amp; shading level added, roadblocks &amp; routes removed</td>
+</tr>
+<tr>
+<td>8.1</td>
+<td>24/06/99</td>
+<td>KRH</td>
+<td>remove remap animation</td>
+</tr>
+<tr>
+<td>8.2</td>
+<td>18/08/99</td>
+<td>KRH</td>
+<td>arrow blocker zones</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+			</div><!-- .entry-content -->
+
+	
+</article><!-- #post-3229 -->
+
+<div id="comments" class="comments-area">
+
+	
+	
+		<div id="respond" class="comment-respond">
+		<h3 id="reply-title" class="comment-reply-title">Leave a Reply</h3><form action="https://GTAMP.com/wordpress/wp-comments-post.php" method="post" id="commentform" class="comment-form"><p class="comment-notes"><span id="email-notes">Your email address will not be published.</span> <span class="required-field-message">Required fields are marked <span class="required">*</span></span></p><p class="comment-form-comment"><label for="comment">Comment <span class="required">*</span></label> <textarea id="comment" name="comment" cols="45" rows="8" maxlength="65525" required></textarea></p><p class="comment-form-author"><label for="author">Name</label> <input id="author" name="author" type="text" value="" size="30" maxlength="245" autocomplete="name" /></p>
+<p class="comment-form-email"><label for="email">Email</label> <input id="email" name="email" type="email" value="" size="30" maxlength="100" aria-describedby="email-notes" autocomplete="email" /></p>
+<p class="comment-form-url"><label for="url">Website</label> <input id="url" name="url" type="url" value="" size="30" maxlength="200" autocomplete="url" /></p>
+<p class="form-submit"><input name="submit" type="submit" id="submit" class="submit" value="Post Comment" /> <input type='hidden' name='comment_post_ID' value='3229' id='comment_post_ID' />
+<input type='hidden' name='comment_parent' id='comment_parent' value='0' />
+</p><p style="display: none;"><input type="hidden" id="akismet_comment_nonce" name="akismet_comment_nonce" value="3f0e81066c" /></p><p style="display: none !important;" class="akismet-fields-container" data-prefix="ak_"><label>&#916;<textarea name="ak_hp_textarea" cols="45" rows="8" maxlength="100"></textarea></label><input type="hidden" id="ak_js_1" name="ak_js" value="96"/><script>
+document.getElementById( "ak_js_1" ).setAttribute( "value", ( new Date() ).getTime() );
+</script>
+</p></form>	</div><!-- #respond -->
+	
+</div><!-- .comments-area -->
+
+		</main><!-- .site-main -->
+	</div><!-- .content-area -->
+
+
+	</div><!-- .site-content -->
+
+	<footer id="colophon" class="site-footer">
+		<div class="site-info">
+									<a href="https://wordpress.org/" class="imprint">
+				Proudly powered by WordPress			</a>
+		</div><!-- .site-info -->
+	</footer><!-- .site-footer -->
+
+</div><!-- .site -->
+
+<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/wordpress/wp-*.php","/wordpress/wp-admin/*","/wordpress/wp-content/uploads/*","/wordpress/wp-content/*","/wordpress/wp-content/plugins/*","/wordpress/wp-content/themes/twentyfifteen/*","/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+<script defer id="akismet-frontend-js" src="https://GTAMP.com/wordpress/wp-content/plugins/akismet/_inc/akismet-frontend.js?ver=1787209817"></script>
+<script id="wp-emoji-settings" type="application/json">
+{"baseUrl":"https://s.w.org/images/core/emoji/17.0.2/72x72/","ext":".png","svgUrl":"https://s.w.org/images/core/emoji/17.0.2/svg/","svgExt":".svg","source":{"concatemoji":"https://GTAMP.com/wordpress/wp-includes/js/wp-emoji-release.min.js?ver=7.1.3"}}
+</script>
+<script type="module">
+/*! This file is auto-generated */
+var e="script#wp-emoji-settings",t=document.querySelector(e);if(!(t instanceof HTMLScriptElement))throw new Error("Element missing: "+e);const r=JSON.parse(t.text),s=(window._wpemojiSettings=r,"wpEmojiSettingsSupports"),o=["flag","emoji"];function i(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(s,JSON.stringify(t))}catch(e){}}function c(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0);const r=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);return t.every((e,t)=>e===r[t])}function p(e,t){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var n=e.getImageData(16,16,1,1);for(let e=0;e<n.data.length;e++)if(0!==n.data[e])return!1;return!0}function u(e,t,n,r){switch(t){case"flag":return n(e,"\ud83c\udff3\ufe0f\u200d\u26a7\ufe0f","\ud83c\udff3\ufe0f\u200b\u26a7\ufe0f")?!1:!n(e,"\ud83c\udde8\ud83c\uddf6","\ud83c\udde8\u200b\ud83c\uddf6")&&!n(e,"\ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f","\ud83c\udff4\u200b\udb40\udc67\u200b\udb40\udc62\u200b\udb40\udc65\u200b\udb40\udc6e\u200b\udb40\udc67\u200b\udb40\udc7f");case"emoji":return!r(e,"\ud83e\u1fac8")}return!1}function f(e,t,n,r){let a;const s=(a="undefined"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):document.createElement("canvas")).getContext("2d",{willReadFrequently:!0}),o=(s.textBaseline="top",s.font="600 32px Arial",{});return e.forEach(e=>{o[e]=t(s,e,n,r)}),o}function a(e){var t=document.createElement("script");t.src=e,t.defer=!0,document.head.appendChild(t)}r.supports={everything:!0,everythingExceptFlag:!0},new Promise(t=>{let n=function(){try{var e=JSON.parse(sessionStorage.getItem(s));if("object"==typeof e&&"number"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&"object"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if("undefined"!=typeof Worker&&"undefined"!=typeof OffscreenCanvas&&"undefined"!=typeof URL&&URL.createObjectURL&&"undefined"!=typeof Blob)try{var e="postMessage("+f.toString()+"("+[JSON.stringify(o),u.toString(),c.toString(),p.toString()].join(",")+"));",r=new Blob([e],{type:"text/javascript"});const a=new Worker(URL.createObjectURL(r),{name:"wpTestEmojiSupports"});return void(a.onmessage=e=>{i(n=e.data),a.terminate(),t(n)})}catch(e){}i(n=f(o,u,c,p))}t(n)}).then(e=>{for(const n in e)r.supports[n]=e[n],r.supports.everything=r.supports.everything&&r.supports[n],"flag"!==n&&(r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&r.supports[n]);var t;r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&!r.supports.flag,r.supports.everything||((t=r.source||{}).concatemoji?a(t.concatemoji):t.wpemoji&&t.twemoji&&(a(t.twemoji),a(t.wpemoji)))});
+//# sourceURL=https://GTAMP.com/wordpress/wp-includes/js/wp-emoji-loader.min.js
+</script>
+
+</body>
+</html>

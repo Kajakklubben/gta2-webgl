@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Sprites · Grand Theft Kayak 2</title>
+  <link rel="stylesheet" href="/src/client/ui/ui.css">
+  <style>
+    body { margin: 0; min-height: 100vh; overflow: auto; background: #111820; color: #ecf2f8; font: 15px system-ui, sans-serif; touch-action: pan-y; -webkit-text-size-adjust: 100%; overscroll-behavior-x: none; }
+    button, input, select { min-height: 38px; font: inherit; cursor: pointer; touch-action: manipulation; }
+    input { cursor: text; }
+    .sprite-page-shell { min-height: 100vh; padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); box-sizing: border-box; }
+    #sprite-library { position: static; width: min(900px, 100%); max-height: none; margin: 0 auto; transform: none; }
+    .sprite-page-back { border: 1px solid #6b86a0; border-radius: 5px; padding: 5px 8px; background: #1b3045; color: #fff; text-decoration: none; }
+    .sprite-page-back:hover, .sprite-page-back:focus-visible { border-color: #b9ddff; outline: none; }
+    @media (max-width: 700px) {
+      #sprite-library { padding: 10px; border-radius: 6px; }
+      .sprite-preview-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="sprite-page-shell">
+    <section id="sprite-library" aria-label="Loaded sprite library" role="main">
+      <div class="sprite-library-header"><strong>Sprites</strong><a class="sprite-page-back" href="/">Back to game</a></div>
+      <div class="sprite-library-controls"><label>Group <select id="sprite-category"><option value="all">All sprites</option><option value="player">Characters</option><option value="cars">Traffic cars</option><option value="weapons">Weapons and effects</option><option value="objects">Map objects</option><option value="code">Other code objects</option></select></label><label>Find <input id="sprite-search" type="search" placeholder="title or use"></label></div>
+      <label class="sprite-entry-label">Sprite <select id="sprite-entry"></select></label>
+      <div class="sprite-library-actions"><button id="sprite-prev" type="button">Previous</button><span id="sprite-position" aria-live="polite"></span><button id="sprite-next" type="button">Next</button></div>
+      <label class="sprite-interpolation"><input id="sprite-interpolate" type="checkbox" checked> Blend between animation frames</label>
+      <div id="sprite-variants" class="sprite-variants" hidden aria-label="Sprite variants"></div>
+      <div class="sprite-preview-grid">
+        <figure class="sprite-preview-card"><figcaption>Snapped</figcaption><canvas id="sprite-preview" width="256" height="192" aria-label="Snapped animated sprite preview"></canvas></figure>
+        <figure class="sprite-preview-card"><figcaption>Interpolated · <output id="sprite-blend-state">0% blend</output></figcaption><canvas id="sprite-preview-interpolated" width="256" height="192" aria-label="Interpolated animated sprite preview"></canvas></figure>
+      </div>
+      <h2 id="sprite-title">Loading sprites…</h2><p id="sprite-usage"></p>
+    </section>
+  </main>
+  <script type="module" src="/src/client/app/sprites.ts"></script>
+</body>
+</html>

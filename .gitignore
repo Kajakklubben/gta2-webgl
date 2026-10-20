@@ -11,4 +11,16 @@ planetest.html
 /constants.js
 /*.sty
 /render/constants.js
+node_modules/
+.pnpm-store/
+dist/
+test-results/
+playwright-report/
+logs/
+assets/*.gmp
+assets/*.sty
+assets/App_Executables/
 /render/constants.js
+
+# Local checkout of the upstream GTA2 decompilation; see docs/gta2-decompiled-source.md
+/references/gta2_re/
