@@ -8,4 +8,6 @@ world, `world-runtime.ts` defines generic phase coordination, and
 the engine's native solver implementation; its bodies, fixtures, contacts, ray
 casts, and multiple internal native worlds are exposed only through the
 solver-neutral contracts in `physics-world.ts`. The engine must not import
-GTA2 state or rules.
+GTA2 state or rules. `spatial-depth.ts` contains the shared placement and
+semantic depth contracts used by physics and presentation adapters; it does
+not contain renderer coordinates or sort policy.

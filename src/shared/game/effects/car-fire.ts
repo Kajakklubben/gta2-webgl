@@ -2,9 +2,6 @@ import { GTA2_CAR_FIRE_SPRITES } from '../../domain/world/gta2-sprites';
 import { SOURCE_FIX16_ONE, WORLD } from '../../domain/world/world';
 import type { GameObjectPlacement, GameObjectSprite } from '../gameobjects/gameobject';
 
-/** Vehicle sprites use the 15 render band; car-fire particles are drawn just above them. */
-const CAR_FIRE_RENDER_ORDER = 16;
-
 export interface CarFireParticleOptions {
   readonly sourceModel: number;
   readonly sequence: readonly number[];
@@ -89,8 +86,7 @@ export function sourceCarFireParticles({
       // the alpha is intentionally softer than an explosion ring.
       opacity,
       depthTest: true, depthWrite: false, alphaTest: .01,
-      depthOffset: WORLD.render.projectileZOffset + index * .02,
-      renderOrder: CAR_FIRE_RENDER_ORDER + index,
+      renderDepth: { band: 'effect' },
       fallbackColor: 0xff8a3d,
     });
   }

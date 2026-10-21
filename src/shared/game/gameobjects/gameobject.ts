@@ -1,5 +1,6 @@
 import { collisionId, defaultCollisionCategory, type CollisionBody, type CollisionQuery } from '../physics/collision-world';
 import type { PhysicsBody } from '../../engine/physics-world';
+import type { SpatialPlacement, SpatialRenderHint } from '../../engine/spatial-depth';
 import type { SurfaceResult } from '../../domain/physics/map-surface';
 import type { HazardState, NpcState, PlayerState, WorldEventInput } from '../../protocol/types';
 import type { WeaponSystem } from '../../domain/combat/weapon-system';
@@ -47,14 +48,7 @@ export function gameObjectKey(kind: GameObjectKind, id: GameObjectId): GameObjec
 }
 
 /** Canonical world placement shared by every placed game object. */
-export interface GameObjectPlacement {
-  x: number;
-  y: number;
-  z: number;
-  rotation: number;
-  /** Integer map collision layer; z may remain fractional on a slope. */
-  layer?: number;
-}
+export interface GameObjectPlacement extends SpatialPlacement {}
 
 /** Engine-facing sprite description consumed by the client renderer. */
 export type SpriteAtlas = 'player' | 'cars' | 'codeObjects' | 'objects';
@@ -151,9 +145,8 @@ export interface GameObjectSpriteLayer {
   readonly depthTest?: boolean;
   readonly depthWrite?: boolean;
   readonly alphaTest?: number;
-  readonly depthOffset?: number;
-  /** Stable pass ordering for transparent presentation layers. */
-  readonly renderOrder?: number;
+  /** Semantic intent resolved by the client renderer. */
+  readonly renderDepth?: SpatialRenderHint;
   /** Source sprite blend mode for presentation layers. */
   readonly blending?: 'normal' | 'additive';
   readonly fallbackColor?: number;

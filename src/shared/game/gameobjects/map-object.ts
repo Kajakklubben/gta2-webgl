@@ -44,7 +44,7 @@ export class StaticMapObject extends StaticGameObject<StaticMapObjectState, numb
       model: this.mutableState.model,
       placement: this.placement,
       frameTicks: this.definition.frameTicks,
-      renderOrder: this.definition.drawLayer,
+      renderDepth: { band: 'map', sourceLayer: this.definition.drawLayer },
       blending: (this.definition.spriteFlags & 3) === 2 ? 'additive' : 'normal',
       depthTest: true,
       depthWrite: false,

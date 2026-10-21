@@ -1,5 +1,4 @@
 import { GTA2_PICKUP_SPRITES } from '../../../shared/domain/world/gta2-sprites';
-import { WORLD } from '../../../shared/domain/world/world';
 import type { PickupState } from '../../../shared/protocol/types';
 import type { GameObjectSprite, SpriteDefinitionRef } from '../../../shared/game/gameobjects/gameobject';
 import type { SpriteRange } from './types';
@@ -32,10 +31,7 @@ export function spriteFor(state: Pick<PickupState, 'weapon' | 'x' | 'y' | 'z' | 
     depthTest: true,
     depthWrite: false,
     alphaTest: .01,
-    // Pickups sit on the map surface. The small positive offset keeps the
-    // transparent sprite from losing the depth test to the floor lid.
-    depthOffset: WORLD.render.projectileZOffset,
-    renderOrder: 4,
+    renderDepth: { band: 'ground' },
     fallbackColor: 0x55d6ff,
   };
 }

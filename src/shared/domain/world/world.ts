@@ -247,8 +247,6 @@ export const WORLD = {
   render: {
     cameraHeight: 400,
     entityZOffset: 7,
-    /** A ped crossing a car door is hidden by the chassis until it is out. */
-    vehicleOccupantDepthOffset: -1,
     projectileZOffset: 8,
     labelZOffset: 6,
   },

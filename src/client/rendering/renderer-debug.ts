@@ -3,9 +3,10 @@ import { vehicleBounds } from '../../shared/loader/vehicle-bounds';
 import type { GameMap } from '../../shared/loader/map-parser';
 import type { NpcState, PlayerState, TrafficState } from '../../shared/protocol/types';
 import { rotateVehicleLocal, vehicleDoorDefinitions, vehicleDoorPoint } from '../../shared/domain/vehicles/vehicle-occupancy';
-import { WORLD, tileToWorld, worldEntityZ, worldZ } from '../../shared/domain/world/world';
+import { WORLD, tileToWorld, worldZ } from '../../shared/domain/world/world';
 import { GTA2MapZoneType } from '../../shared/domain/world/gta2-enums';
 import { PedestrianNavigation } from '../../shared/domain/pedestrians/pedestrian-navigation';
+import { renderWorldZ as worldEntityZ } from './spatial-depth';
 
 // Debug stroke widths are screen pixels, not world units. This keeps the
 // overlays readable and makes changing this value produce an actual visual

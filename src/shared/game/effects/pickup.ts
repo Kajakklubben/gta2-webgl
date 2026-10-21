@@ -4,7 +4,6 @@ import { StatefulGameObject, type GameObjectUpdateHandler } from '../gameobjects
 import { PlayerObject } from '../gameobjects/player';
 import { COLLISION_CATEGORY } from '../../domain/physics/collision-rules';
 import { GTA2_PICKUP_SPRITES } from '../../domain/world/gta2-sprites';
-import { WORLD } from '../../domain/world/world';
 export class PickupObject extends StatefulGameObject<PickupState, number> {
   constructor(state: PickupState, update?: GameObjectUpdateHandler<PickupState>) { super(state.id, state, 'pickup', update); this.collision = { shape: { type: 'circle', radius: 0 }, solid: false, mask: COLLISION_CATEGORY.player | COLLISION_CATEGORY.vehicle }; }
   override get collisionEnabled() { return this.mutableState.active; }
@@ -24,7 +23,7 @@ export class PickupObject extends StatefulGameObject<PickupState, number> {
       placement: this.placement,
       opacity: this.mutableState.active ? 1 : 0,
       depthTest: true, depthWrite: false, alphaTest: .01,
-      depthOffset: WORLD.render.projectileZOffset, renderOrder: 4,
+      renderDepth: { band: 'ground' },
       fallbackColor: 0x55d6ff,
     };
   }

@@ -22,7 +22,7 @@ describe('rendering sprite categories', () => {
   it('exposes weapon and pickup ranges without leaking source tables to callers', () => {
     expect(weapons.sourceModelRange(128)).toEqual({ start: 540, count: 1 });
     expect(pickups.rangeForWeapon(0)).toEqual({ start: 18, count: 8 });
-    expect(pickups.spriteFor({ weapon: 0, x: 10, y: 20, z: 1, active: true })).toMatchObject({ model: 18, frameCount: 8, renderOrder: 4, depthWrite: false });
+    expect(pickups.spriteFor({ weapon: 0, x: 10, y: 20, z: 1, active: true })).toMatchObject({ model: 18, frameCount: 8, renderDepth: { band: 'ground' }, depthWrite: false });
   });
 
   it('provides stable pedestrian definitions', () => {

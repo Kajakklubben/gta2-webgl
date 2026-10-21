@@ -100,8 +100,7 @@ function electricalBeamSprite(state: ProjectileState, placement: GameObjectSprit
       },
       opacity: .9 - index * .08, scale: .72 + (index % 2) * .12,
       depthTest: false, depthWrite: false, alphaTest: .01,
-      depthOffset: WORLD.render.projectileZOffset + .2,
-      renderOrder: 18 + index * .01,
+      renderDepth: { band: 'effect', elevation: .2 },
       fallbackColor: 0x9be7ff,
     };
   });
@@ -407,7 +406,7 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
         depthTest: true,
         depthWrite: false,
         alphaTest: .01,
-        depthOffset: WORLD.render.projectileZOffset - .5,
+        renderDepth: { band: 'effect', elevation: -.5 },
         fallbackColor: 0xff9a43,
       };
     }
@@ -421,7 +420,7 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
         placement: { ...this.placement, x: state.x - direction.x * 8, y: state.y - direction.y * 8, z: state.z + .08, rotation },
         opacity: state.life <= 0 ? 0 : Math.min(1, state.life / 4), scale: .65,
         depthTest: true, depthWrite: false, alphaTest: .01,
-        depthOffset: WORLD.render.projectileZOffset - .4, renderOrder: 7, fallbackColor: 0xff7b36,
+        renderDepth: { band: 'effect', elevation: -.4 }, fallbackColor: 0xff7b36,
       };
     }
     let flameLead = 0;
@@ -437,7 +436,7 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
       frameCount,
       placement: spritePlacement,
       opacity: state.life <= 0 ? 0 : Math.min(1, state.life / 4) * (state.destroyedByWater ? Math.min(1, state.life / GTA2_WATER_SPLASH_VISUAL_TICKS) : 1), depthTest: true, depthWrite: false,
-      alphaTest: .01, depthOffset: WORLD.render.projectileZOffset, fallbackColor: 0xffc04d,
+      alphaTest: .01, renderDepth: { band: 'effect' as const }, fallbackColor: 0xffc04d,
     };
     let sprite: GameObjectSprite = { ...spriteBase, frameMs: 55 };
     if (frameTicks !== undefined) sprite = { ...spriteBase, frameTicks };

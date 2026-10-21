@@ -2,8 +2,9 @@ import * as THREE from 'three';
 import type { Pixels } from '../../shared/loader/style-parser';
 import type { PlayerState, PickupState } from '../../shared/protocol/types';
 import { WEAPONS } from '../../shared/domain/combat/weapons';
-import { WORLD, worldEntityZ } from '../../shared/domain/world/world';
+import { WORLD } from '../../shared/domain/world/world';
 import { pixelTexture } from './textures';
+import { renderWorldZ as worldEntityZ } from './spatial-depth';
 
 export interface PresentationFrame {
   readonly now: number;

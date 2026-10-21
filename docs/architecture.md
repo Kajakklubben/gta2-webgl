@@ -35,6 +35,8 @@ runtime libraries     Planck.js, Three.js, WebSocket, browser/Node APIs
 - `fixed-clock.ts` accumulates real time and executes bounded fixed steps;
 - `game-engine.ts` drives a fixed-step world;
 - `world-runtime.ts` provides generic phase coordination; and
+- `spatial-depth.ts` defines solver- and renderer-neutral placement plus
+  semantic presentation-depth hints; and
 - `physics-world.ts` defines the engine-facing physics boundary and the
   solver-neutral `PhysicsBody` transfer port. `planck-physics.ts` contains the
   native Planck implementation behind that boundary, including any internal
@@ -61,7 +63,8 @@ internal system layout.
 - `game-state.ts` owns object identity, typed lookup, state views, and deferred
   spawn/despawn operations;
 - `gameobject.ts` defines placement, collision descriptors, update contexts,
-  and engine-neutral draw commands;
+  and engine-neutral draw commands. Draw commands carry semantic depth hints,
+  never Three.js render orders or numeric depth offsets;
 - `player/` and `vehicle/` contain multi-file actor families;
 - `npc.ts` and `map-object.ts` contain single-file object types; and
 - `src/shared/game/effects` contains pickups, projectiles, hazards, and car-fire
@@ -138,7 +141,9 @@ one `Gta2Game` per room and drives it through `GameEngine`.
 
 `src/client/rendering` turns draw commands and authoritative state into Three.js
 presentation. `renderer.ts` coordinates cameras, map meshes, sprites,
-interpolation, transient presentation, and debug layers. `src/client/tools`
+interpolation, transient presentation, and debug layers. `spatial-depth.ts`
+resolves physics-owned support heights and semantic draw intent into concrete
+world Z coordinates and backend sort keys. `src/client/tools`
 contains the sprite viewer and deterministic scenario viewer; these tools reuse
 production loaders, game objects, and rendering without becoming alternate
 gameplay implementations.

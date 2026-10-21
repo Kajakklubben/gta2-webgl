@@ -92,7 +92,7 @@ describe('ped animation transitions', () => {
   it('maps jump, fall, entry, and exit transitions to source terminal frames', () => {
     const state = playerState();
     state.jump = { phase: 'rising', progress: .1, height: 12, baseZ: 0, vx: 170, vy: 0 };
-    expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'jumping', frame: .8, depthOffset: 12 });
+    expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'jumping', frame: .8, renderDepth: { elevation: 12 } });
     state.jump.progress = .95;
     expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'jumping', frame: 7 });
     state.jump = undefined; state.combat!.respawn = 80;
@@ -103,10 +103,9 @@ describe('ped animation transitions', () => {
     expect(new PlayerObject(state).getSprite(0).animation).toBe('dead');
     state.combat!.respawn = 0; state.animation = { kind: 'entering', progress: 0 };
     expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'entering', frame: 0 });
-    expect(new PlayerObject(state).getSprite(0).depthOffset).toBeUndefined();
+    expect(new PlayerObject(state).getSprite(0).renderDepth).toBeUndefined();
     state.animation = { kind: 'exiting', progress: 1 };
-    expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'exiting', frame: 7, depthOffset: expect.any(Number) });
-    expect(new PlayerObject(state).getSprite(0).depthOffset).toBeLessThan(0);
+    expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'exiting', frame: 7, renderDepth: { relation: 'behind-vehicle' } });
   });
 
   it('keeps NPC knockdown and firing states visible as authored sequences', () => {

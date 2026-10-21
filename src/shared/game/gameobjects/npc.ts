@@ -476,7 +476,7 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     }
     if (stateAnimation === 'firing') return base('firing', { animationKey: `npc:${this.mutableState.id}:fire` });
     if (stateAnimation === 'throwing' || stateAnimation === 'throwingIdle') return base(stateAnimation, { animationKey: `npc:${this.mutableState.id}:throw` });
-    if (stateAnimation === 'jumping') return base('jumping', { animationKey: `npc:${this.mutableState.id}:jump`, depthOffset: this.mutableState.jump?.height ?? 0 });
+    if (stateAnimation === 'jumping') return base('jumping', { animationKey: `npc:${this.mutableState.id}:jump`, renderDepth: { elevation: this.mutableState.jump?.height ?? 0 } });
     if (stateAnimation === 'lying' || stateAnimation === 'lyingReverse') return base(stateAnimation, { animationKey: `npc:${this.mutableState.id}:${stateAnimation}` });
     if (stateAnimation === 'armedRunning' || stateAnimation === 'armedWalking') return base(stateAnimation, { animationKey: `npc:${this.mutableState.id}:${stateAnimation}` });
     if (stateAnimation === 'armed') {

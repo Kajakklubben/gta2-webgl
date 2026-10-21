@@ -9,12 +9,13 @@ import { gameObjectKey, type GameObjectDrawCommand } from '../../shared/game/gam
 import { SpriteEngine } from './sprite-engine';
 import { effects, pickups } from './sprite';
 import { PresentationSystem } from './presentation-system';
-import { WORLD, tileToWorld, worldActorSurfaceZ, worldEntityZ, worldZ } from '../../shared/domain/world/world';
+import { WORLD, tileToWorld, worldActorSurfaceZ, worldZ } from '../../shared/domain/world/world';
 import { Gta2Camera } from './gta2-camera';
 import type { CameraInput } from './gta2-camera';
 import { createTopDownCamera, setTopDownCamera, TOP_DOWN_FOV } from './world-projection';
 import { buildPedestrianDebug, buildRoadDebug, clearDebugEntities, clearPedestrianDebugLabels, clearTrafficDebugLabels, drawDebugEntities } from './renderer-debug';
 import { RenderInterpolation, type RenderObjectFrame } from './render-interpolation';
+import { renderWorldZ as worldEntityZ } from './spatial-depth';
 
 export type { DebugDrawGroups, RenderFrame } from './types';
 import type { DebugDrawGroups, RenderFrame } from './types';

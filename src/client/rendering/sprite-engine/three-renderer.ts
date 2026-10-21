@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import type { GameObjectDrawCommand, GameObjectSprite, GameObjectSpriteLayer } from '../../../shared/game/gameobjects/gameobject';
 import type { Pixels } from '../../../shared/loader/models/style';
-import { worldEntityZ } from '../../../shared/domain/world/world';
 import { pixelTexture } from '../textures';
 import { AnimationPlayer } from './animation-player';
 import { SpriteAssetRegistry } from './asset-registry';
 import { fallbackColor, fallbackSize, renderPolicy } from './render-policy';
 import { buildRenderQueue, spriteRenderOrder } from './render-queue';
+import { resolveRenderDepth } from '../spatial-depth';
 
 type SpriteMesh = THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
 
@@ -80,7 +80,11 @@ export class ThreeSpriteRenderer {
       material.color.set(beam.color);
       material.opacity = beam.opacity ?? sprite.opacity ?? 1;
       mesh.visible = length > 1e-6 && material.opacity > .001;
-      mesh.position.set((from.x + to.x) * .5, (from.y + to.y) * .5, worldEntityZ((from.z + to.z) * .5) + (sprite.depthOffset ?? 0));
+      const beamDepth = resolveRenderDepth(command, {
+        ...sprite,
+        placement: { ...sprite.placement, z: (from.z + to.z) * .5 },
+      }, index);
+      mesh.position.set((from.x + to.x) * .5, (from.y + to.y) * .5, beamDepth.worldZ);
       mesh.scale.set(length, beam.width, 1);
       mesh.rotation.z = Math.atan2(dy, dx);
       mesh.renderOrder = spriteRenderOrder(command, sprite);
@@ -114,6 +118,7 @@ export class ThreeSpriteRenderer {
 
     const placement = sprite.placement;
     const policy = renderPolicy(sprite, command);
+    const spatialDepth = resolveRenderDepth(command, sprite);
     const material = mesh.material;
     material.opacity = (sprite.opacity ?? 1) * (1 - blend);
     material.depthTest = policy.depthTest;
@@ -144,7 +149,7 @@ export class ThreeSpriteRenderer {
       const size = fallbackSize(command);
       mesh.scale.set(size.width * scale, (sprite.mirrorY ? -1 : 1) * size.height * scale, 1);
     }
-    mesh.position.set(placement.x, placement.y, worldEntityZ(placement.z) + (sprite.depthOffset ?? 0));
+    mesh.position.set(placement.x, placement.y, spatialDepth.worldZ);
     mesh.rotation.z = placement.rotation + rotationBlend * (Math.PI * 2 / Math.max(1, frames.length));
 
     const interpolationMaterial = interpolationMesh.material;
@@ -169,7 +174,7 @@ export class ThreeSpriteRenderer {
       }
       interpolationMesh.scale.set(next.width * scale, (sprite.mirrorY ? -1 : 1) * next.height * scale, 1);
     }
-    interpolationMesh.position.set(placement.x, placement.y, worldEntityZ(placement.z) + (sprite.depthOffset ?? 0));
+    interpolationMesh.position.set(placement.x, placement.y, spatialDepth.worldZ);
     interpolationMesh.rotation.z = placement.rotation;
   }
 

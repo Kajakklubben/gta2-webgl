@@ -1,4 +1,5 @@
 import type { GameObjectDrawCommand, GameObjectSpriteLayer } from '../../../shared/game/gameobjects/gameobject';
+import type { SpatialRenderBand } from '../../../shared/engine/spatial-depth';
 
 export interface SpriteRenderPolicy {
   readonly renderOrder: number;
@@ -7,18 +8,62 @@ export interface SpriteRenderPolicy {
   readonly alphaTest: number;
 }
 
-/** Source default draw layers, with explicit command values taking priority. */
+const SOURCE_EFFECT_BANDS: Readonly<Record<string, number>> = {
+  'rocket-trail': 18,
+  'electric-arc': 18,
+  'fire-trail': 7,
+  'water-splash': 5,
+  'blood-burst': 8,
+  'impact-burst': 8,
+  'explosion-small': 20,
+  'explosion-large': 20,
+  'car-fire-small': 16,
+  'car-fire-large': 16,
+  'car-fire-wreck': 16,
+  'ped-fire': 6,
+};
+
+function defaultBand(command: GameObjectDrawCommand): SpatialRenderBand {
+  if (command.kind === 'map-object') return 'map';
+  if (command.kind === 'vehicle') return 'vehicle';
+  if (command.kind === 'player' || command.kind === 'npc') return 'actor';
+  if (command.kind === 'pickup') return 'ground';
+  if (command.kind === 'projectile' || command.kind === 'hazard') return 'effect';
+  return 'ground';
+}
+
+/** Resolve semantic presentation intent to an internal renderer pass. */
+export function renderPass(command: GameObjectDrawCommand, sprite: GameObjectSpriteLayer): number {
+  const hint = sprite.renderDepth;
+  if (hint?.sourceLayer !== undefined) return hint.sourceLayer;
+  if (hint?.relation === 'behind-vehicle') return 13;
+  if (hint?.relation === 'above-vehicle') return 16;
+
+  const sourceSequence = sprite.sourceSequence;
+  if (sourceSequence !== undefined) {
+    const sourcePass = SOURCE_EFFECT_BANDS[sourceSequence];
+    if (sourcePass !== undefined) return sourcePass;
+  }
+
+  switch (hint?.band ?? defaultBand(command)) {
+    case 'map': return 0;
+    case 'ground': return command.kind === 'pickup' ? 4 : 2;
+    case 'actor': return command.kind === 'npc' ? 14 : 23;
+    case 'vehicle': return 15;
+    case 'effect': {
+      if (command.kind === 'hazard' && sprite.animation === 'fire') return 6;
+      if (command.kind === 'hazard' && sprite.animation === 'water') return 5;
+      if (command.kind === 'hazard' && (sprite.animation === 'skid' || sprite.animation === 'slick' || sprite.animation === 'mine')) return 2;
+      return 18;
+    }
+    case 'overlay': return 50;
+  }
+}
+
+/** Source default draw layers, with semantic hints taking priority. */
 export function renderPolicy(sprite: GameObjectSpriteLayer, _command?: GameObjectDrawCommand): SpriteRenderPolicy {
-  let defaultOrder = 2;
-  if (sprite.atlas === 'cars') defaultOrder = 15;
-  else if (sprite.atlas === 'player') defaultOrder = 23;
-  else if (sprite.atlas === 'codeObjects') defaultOrder = 2;
-  // NPCs share the pedestrian atlas with the player, but source-style vehicle
-  // sprites occlude them. Keep the player presentation layer unchanged while
-  // placing NPC bodies behind cars by their draw-command kind.
-  if (_command?.kind === 'npc' && sprite.atlas === 'player') defaultOrder = 14;
   return {
-    renderOrder: sprite.renderOrder ?? defaultOrder,
+    renderOrder: _command ? renderPass(_command, sprite) : 2,
     depthTest: sprite.depthTest ?? true,
     depthWrite: sprite.depthWrite ?? false,
     alphaTest: sprite.alphaTest ?? .01,

@@ -13,15 +13,6 @@ import { sourceCarFireParticles } from './car-fire';
 /** Particle_4C::PoolUpdate's source delays for explosion frames 0..15. */
 const SOURCE_EXPLOSION_FRAME_TICKS = [2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1] as const;
 
-/** Vehicle sprites use the 15 render band. Source car-fire particles are
- * emitted after the chassis and must therefore occupy the next band; keeping
- * this explicit also covers every generated particle layer. */
-const CAR_FIRE_RENDER_ORDER = 16;
-/** Explosion particles are a full-screen gameplay effect and must remain
- * visible when their blast overlaps a vehicle. Keep them below the player
- * actor band while drawing them after vehicle sprites. */
-const EXPLOSION_RENDER_ORDER = 20;
-
 function sourceExplosionFrame(age: number, frameCount: number) {
   const cycleTicks = SOURCE_EXPLOSION_FRAME_TICKS.slice(0, frameCount).reduce((sum, ticks) => sum + ticks, 0);
   let remaining = cycleTicks > 0 ? Math.max(0, age) % cycleTicks : 0;
@@ -123,8 +114,7 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
         },
         opacity, scale: sourceScale * (kind === 'impact' ? .72 : .8),
         depthTest: true, depthWrite: false, alphaTest: .01,
-        depthOffset: WORLD.render.projectileZOffset + index * .02,
-        renderOrder: (kind === 'water' ? 5 : 8) + index,
+        renderDepth: { band: 'effect' },
         fallbackColor: kind === 'blood' ? 0xc42d3d : kind === 'impact' ? (this.mutableState.variant === 2 ? 0xfff0a0 : 0xffc34a) : 0x69d8ff,
       });
     }
@@ -140,7 +130,6 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
     if (this.mutableState.kind === 'skid') {
       const kind = this.mutableState.kind;
       const color = 0x22252a;
-      const renderOrder = 2;
       let scale = 1;
       if (this.mutableState.scale !== undefined) scale = this.mutableState.scale;
       const sprite: GameObjectSprite = {
@@ -150,8 +139,7 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
         // skid sprite already contains its alpha; fading the old fallback
         // rectangle made the marks look like unrelated translucent blobs.
         opacity: kind === 'skid' ? (this.mutableState.life > 0 ? 1 : 0) : Math.min(1, this.mutableState.life / 10),
-        depthTest: true, depthWrite: false, alphaTest: .01, depthOffset: WORLD.render.projectileZOffset,
-        renderOrder, fallbackColor: color, scale,
+        depthTest: true, depthWrite: false, alphaTest: .01, renderDepth: { band: 'ground' }, fallbackColor: color, scale,
       };
       if (kind === 'skid' && this.mutableState.sourceModel !== undefined) {
         const sourceSprite = sourceSkidSprite(this.mutableState.sourceModel);
@@ -237,8 +225,7 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
           depthTest: true,
           depthWrite: false,
           alphaTest: .01,
-          depthOffset: WORLD.render.projectileZOffset + index * .03,
-          renderOrder: EXPLOSION_RENDER_ORDER + index,
+          renderDepth: { band: 'effect' },
           fallbackColor: 0xff7040,
         };
       });
@@ -267,12 +254,6 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
       opacity = 1;
       if (primaryFire?.opacity !== undefined) opacity = primaryFire.opacity;
     }
-    let depthOffset = 0;
-    if (this.mutableState.kind === 'fire') depthOffset = WORLD.render.projectileZOffset;
-    let renderOrder = 0;
-    if (fireSequence) renderOrder = CAR_FIRE_RENDER_ORDER;
-    else if (this.mutableState.kind === 'fire') renderOrder = 6;
-    if (isExplosion) renderOrder = EXPLOSION_RENDER_ORDER;
     let fallbackColor = 0x75c043;
     if (this.mutableState.kind === 'mine') fallbackColor = 0xff3b30;
     else if (this.mutableState.kind === 'fire') fallbackColor = 0xff8a3d;
@@ -288,8 +269,7 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
       depthTest: true,
       depthWrite: false,
       alphaTest: .01,
-      depthOffset,
-      renderOrder,
+      renderDepth: this.mutableState.kind === 'fire' ? { band: 'effect' } : { band: 'ground' },
       fallbackColor,
     };
     if (fireSequence) sprite = { ...sprite, modelSequence: fireSequence };
@@ -523,7 +503,7 @@ export class VehicleBombObject extends HazardObject {
       definition: { bank: 'code-object', sourceId: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb },
       animation: 'projectile', frameCount: 1, loop: false, frameMs: 55,
       placement: this.placement, opacity: this.mutableState.armingTimer === 0 ? 0 : 1,
-      depthTest: true, depthWrite: false, alphaTest: .01, depthOffset: WORLD.render.projectileZOffset,
+      depthTest: true, depthWrite: false, alphaTest: .01, renderDepth: { band: 'effect' },
       fallbackColor: 0xff7040,
     };
   }

@@ -362,8 +362,8 @@ it('renders car fire as source fire particles, not a generic explosion', () => {
   expect(sprite.layers).toHaveLength(4);
   expect(sprite.layers?.[0]?.placement.y).toBeLessThan(30);
   expect(sprite.layers?.[0]?.scale).toBeGreaterThan(1);
-  expect(sprite.renderOrder).toBeGreaterThan(15);
-  expect(sprite.layers?.every(layer => (layer.renderOrder ?? 0) > 15)).toBe(true);
+  expect(sprite.renderDepth?.band).toBe('effect');
+  expect(sprite.layers?.every(layer => layer.renderDepth?.band === 'effect')).toBe(true);
 });
 
 it('uses the source timing and scale for a vehicle item explosion', () => {
@@ -372,8 +372,8 @@ it('uses the source timing and scale for a vehicle item explosion', () => {
   });
   const sprite = explosion.getSprite(0);
   expect(sprite).toMatchObject({ frame: 0, frameCount: 16, scale: 1.5, loop: false });
-  expect(sprite.renderOrder).toBeGreaterThan(15);
-  expect(sprite.layers?.every(layer => (layer.renderOrder ?? 0) > 15)).toBe(true);
+  expect(sprite.renderDepth?.band).toBe('effect');
+  expect(sprite.layers?.every(layer => layer.renderDepth?.band === 'effect')).toBe(true);
   explosion.tick(); explosion.tick();
   expect(explosion.getSprite(0).frame).toBe(1);
 });

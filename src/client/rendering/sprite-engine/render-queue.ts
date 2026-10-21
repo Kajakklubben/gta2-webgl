@@ -1,6 +1,6 @@
 import type { GameObjectDrawCommand, GameObjectSpriteLayer } from '../../../shared/game/gameobjects/gameobject';
-import { worldEntityZ } from '../../../shared/domain/world/world';
 import { renderPolicy } from './render-policy';
+import { resolveRenderDepth } from '../spatial-depth';
 
 export interface SpriteRenderJob {
   readonly command: GameObjectDrawCommand;
@@ -8,17 +8,12 @@ export interface SpriteRenderJob {
   readonly key: string;
   readonly shadow: boolean;
   readonly sequence: number;
-  /** Concrete Three.js order, including the source-style depth tie-break. */
+  /** Concrete backend order, including the spatial depth tie-break. */
   readonly renderOrder: number;
 }
 
-const RENDER_ORDER_BAND = 1_000_000;
-const DEPTH_ORDER_SCALE = 1_000;
-
-export function spriteRenderOrder(command: GameObjectDrawCommand, sprite: GameObjectSpriteLayer, sequence = 0) {
-  const policy = renderPolicy(sprite, command);
-  const depth = Math.max(-500, Math.min(500, worldEntityZ(sprite.placement.z) + (sprite.depthOffset ?? 0)));
-  return policy.renderOrder * RENDER_ORDER_BAND + depth * DEPTH_ORDER_SCALE + sequence;
+export function spriteRenderOrder(command: GameObjectDrawCommand, sprite: GameObjectSpriteLayer, sequence = 0, passOverride?: number) {
+  return resolveRenderDepth(command, sprite, sequence, passOverride).sortKey;
 }
 
 function childPlacement(parent: GameObjectSpriteLayer, child: GameObjectSpriteLayer, attachment: NonNullable<GameObjectSpriteLayer['attachments']>[number]): GameObjectSpriteLayer {
@@ -59,12 +54,11 @@ function addLayer(
       },
       opacity: (sprite.opacity ?? 1) * (shadow.opacity ?? .3),
       scale: (sprite.scale ?? 1) * (shadow.scale ?? .6),
-      depthOffset: -.35,
-      renderOrder: Math.min(policy.renderOrder, 0) - 1,
+      renderDepth: { band: 'ground', elevation: -.35 },
       depthWrite: false,
     };
     const shadowSequence = sequence.value++;
-    jobs.push({ command, sprite: shadowLayer, key: `${key}:shadow`, shadow: true, sequence: shadowSequence, renderOrder: spriteRenderOrder(command, shadowLayer, shadowSequence) });
+    jobs.push({ command, sprite: shadowLayer, key: `${key}:shadow`, shadow: true, sequence: shadowSequence, renderOrder: spriteRenderOrder(command, shadowLayer, shadowSequence, Math.min(policy.renderOrder, 0) - 1) });
   }
   const { attachments, ...renderedSprite } = sprite;
   const renderedSequence = sequence.value++;
