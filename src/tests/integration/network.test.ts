@@ -135,14 +135,6 @@ it('rejects invalid origins and releases resources when the port is occupied', a
     resolve(response.statusCode!); response.resume(); forbidden.terminate();
   }));
   expect(response).toBe(403);
-  const previous = { ASSET_DIR: process.env['ASSET_DIR'], PORT: process.env['PORT'] };
-  try {
-    process.env['ASSET_DIR'] = server.directory; process.env['PORT'] = new URL(server.http).port;
-    await expect(startServer()).rejects.toMatchObject({ code: 'EADDRINUSE' });
-    process.env['PORT'] = 'invalid'; await expect(startServer()).rejects.toThrow('PORT must be');
-  } finally {
-    for (const key of ['ASSET_DIR', 'PORT'] as const) {
-      if (previous[key] === undefined) delete process.env[key]; else process.env[key] = previous[key];
-    }
-  }
+  await expect(startServer({ config: { assetDirectory: server.directory, port: Number(new URL(server.http).port) } })).rejects.toMatchObject({ code: 'EADDRINUSE' });
+  await expect(startServer({ config: { assetDirectory: server.directory, port: -1 } })).rejects.toThrow('port must be');
 });

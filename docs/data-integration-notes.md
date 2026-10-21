@@ -1,6 +1,26 @@
 # GTA2 data integration notes
 
-The supplied retail data is under `assets/App_Executables/data/`. The current prototype uses the identical copies at `assets/MP1-comp.gmp` and `assets/bil.sty`; the full directory also contains the other city maps, styles, multiplayer `.mmp` descriptors, mission `.SCR` files, and city sub-scripts.
+The supplied retail data is expected under the checkout-local `assets/`
+directory. A retail install can remain in `assets/App_Executables/data/`; the
+server also accepts the flat `assets/MP1-comp.gmp` and `assets/bil.sty` layout.
+The data directory may contain city maps, styles, multiplayer `.mmp`
+descriptors, mission `.SCR` files, and city sub-scripts. These files are local
+inputs and are not committed.
+
+## Loader structure
+
+The current loader boundary is organized as follows:
+
+- `src/shared/loader/map-parser.ts` and `models/map.ts` decode and model GMP data;
+- `src/shared/loader/style-parser.ts` and `models/style.ts` decode and model STY data;
+- `src/shared/loader/gci.ts`, `cars.ts`, `vehicle-bounds.ts`, and
+  `models/vehicles.ts` handle vehicle metadata;
+- `src/shared/loader/scr.ts` and `models/catalog.ts` handle authored pickup data;
+- `src/shared/loader/asset-loaders.ts` and `bundle.ts` compose typed bundles; and
+- `src/shared/loader/multiplayer-maps.ts` maps the supported multiplayer catalog.
+
+The server reads files through its asset adapter. Client and shared gameplay
+code consume the resulting typed bundle rather than opening files directly.
 
 The GMP documentation defines the data needed for traffic:
 
@@ -15,7 +35,7 @@ The runtime decodes `DMAP`, `CMAP`, and `UMAP` map chunks and loads authored map
 
 GCI `max_speed`, `gear2 speed`, and `gear3 speed` are decoded Fix16 values in map units per fixed tick. The executable's Fix16 one is `0x4000` (not `0x10000`); the shared boundary converts those decoded values to pixels per second using the 64-pixel tile size and 30 Hz world rate before player, traffic, and collision code consumes them. The traffic bands are therefore `0x1EB..0xCCC` (slow), `0xCCC..0x1333` (medium), and `0x1333..0x1999` (fast).
 
-Car handling now applies the source setup conversions as well as the per-frame values: GCI mass is multiplied by 1.1 before drivetrain and collision use, turbo models receive the source's 2x thrust result (normal models receive 1.5x), and the CARI chassis footprint is used to derive the server's Box2D density. Wheel-point velocity, driven-axle force, lateral grip, brake force, chassis torque, and mass-weighted contact impulses use the same authored metadata. Every car remains a dynamic solid, including parked and burned-out cars, so Planck can transfer collision pushes through the authored mass.
+Car handling now applies the source setup conversions as well as the per-frame values: GCI mass is multiplied by 1.1 before drivetrain and collision use, turbo models receive the source's 2x thrust result (normal models receive 1.5x), and the CARI chassis footprint is used to derive the server's Planck density. Wheel-point velocity, driven-axle force, lateral grip, brake force, chassis torque, and mass-weighted contact impulses use the same authored metadata. Every car remains a dynamic solid, including parked and burned-out cars, so Planck can transfer collision pushes through the authored mass.
 
 ## Car metadata loaded from the supplied data
 
@@ -69,7 +89,7 @@ the north-west corner of each map cube, while this renderer's integer tile grid
 is centred on the cube; script locations are therefore shifted by half a tile
 at the asset boundary. One tile is the 64-pixel STY sprite unit; world positions,
 weapon ranges, collision distances, and Three.js positions are world pixels.
-Box2D receives those positions through the explicit 10-pixels-per-physics-unit
+Planck receives those positions through the explicit 10-pixels-per-physics-unit
 conversion. Movement rates are authored as tiles per second and converted once
 at the motion boundary, so player, NPC, traffic, projectiles, and rendering no
 longer each apply an independent scale factor.
@@ -84,7 +104,7 @@ turn-in/turn-ratio, rear-end stability, handbrake slide, thrust, anti strength,
 skid threshold, and all three gear multipliers/speed thresholds. These values
 feed the shared fixed-step vehicle integrator where applicable.
 
-The server selects the pickup script that matches `MAP_FILE` when `SCR_FILE` is not set (`MP1-comp` uses `MP1-6P.SCR`, `bil-multi` uses `Industrial-6P.scr`, and the district maps use their matching scripts). Set `SCR_FILE` explicitly when running a custom map/script pairing. The loader accepts the retail `App_Executables/data` directory layout and loads the matching district's mission subdirectory.
+The server selects the pickup script configured for the map (`MP1-comp` uses `MP1-6P.SCR`, `bil-multi` uses `Industrial-6P.scr`, and the district maps use their matching scripts). Set `pickupScript` in `src/server/config.ts` for a custom map/script pairing. The loader accepts the retail `App_Executables/data` directory layout and loads the matching district's mission subdirectory.
 
 Pedestrians use a walkable-block route graph because the retail GMP format
 removed the old pedestrian-route chunk. Their server state carries a path

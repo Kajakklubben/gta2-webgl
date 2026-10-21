@@ -160,6 +160,9 @@ function validTrafficState(value: unknown): value is TrafficState {
     (traffic.headlights === undefined || typeof traffic.headlights === 'boolean') &&
     (traffic.emergencyLights === undefined || typeof traffic.emergencyLights === 'boolean') &&
     (traffic.horn === undefined || typeof traffic.horn === 'boolean') &&
+    (traffic.turretRotation === undefined || Number.isFinite(traffic.turretRotation)) &&
+    (traffic.mountedWeapons === undefined || (Array.isArray(traffic.mountedWeapons) && traffic.mountedWeapons.every(value => Number.isSafeInteger(value) && value >= 0 && value < weaponSlotCount))) &&
+    (traffic.trailerId === undefined || Number.isSafeInteger(traffic.trailerId)) &&
     Array.isArray(traffic.passengers) && traffic.passengers.every(value => typeof value === 'string') &&
     Array.isArray(traffic.occupants) && traffic.occupants.every(validVehicleOccupant) &&
     Array.isArray(traffic.doorStates) && traffic.doorStates.every(validVehicleDoor) &&
@@ -200,6 +203,8 @@ function validNpcState(value: unknown): value is NpcState {
     Number.isSafeInteger(npc.fireTimer) && npc.fireTimer >= 0 &&
     (npc.crossingRoad === undefined || typeof npc.crossingRoad === 'boolean') &&
     (npc.faction === undefined || (Number.isSafeInteger(npc.faction) && npc.faction >= 0 && npc.faction <= 255)) &&
+    (npc.threatenedBy === undefined || typeof npc.threatenedBy === 'string') &&
+    (npc.threatTimer === undefined || (Number.isSafeInteger(npc.threatTimer) && npc.threatTimer >= 0)) &&
     (npc.jump === undefined || validJump(npc.jump)) &&
     (npc.drowningTimer === undefined || (Number.isSafeInteger(npc.drowningTimer) && npc.drowningTimer >= 0)) &&
     (npc.deathCause === undefined || ['weapon', 'run-over', 'explosion', 'fire', 'water'].includes(npc.deathCause)) &&
@@ -217,6 +222,8 @@ export function isPlayer(value: unknown): value is PlayerState {
     (player.animation === undefined || (['entering', 'exiting', 'seated'] as const).includes(player.animation.kind) && Number.isFinite(player.animation.progress) && player.animation.progress >= 0 && player.animation.progress <= 1 && (player.animation.straightEntry === undefined || typeof player.animation.straightEntry === 'boolean')) &&
     (player.jump === undefined || validJump(player.jump)) &&
     (player.drowningTimer === undefined || (Number.isSafeInteger(player.drowningTimer) && player.drowningTimer >= 0)) &&
+    (player.killer === undefined || typeof player.killer === 'string') &&
+    (player.deathCause === undefined || ['weapon', 'run-over', 'explosion', 'fire', 'water'].includes(player.deathCause)) &&
     (player.movement === undefined || validPlayerMovement(player.movement)) &&
     typeof player.name === 'string' && player.name.length <= 32 && Number.isInteger(player.color) &&
     Number.isSafeInteger(player.score) && Number.isSafeInteger(player.kills) && Number.isSafeInteger(player.deaths) &&
@@ -236,7 +243,7 @@ export function parseServerMessage(value: unknown): ServerMessage {
   if (message.pickups !== undefined && (!Array.isArray(message.pickups) || !message.pickups.every(p => p && Number.isInteger(p.id) && Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z) && validCollisionLayer(p.collisionLayer) && Number.isInteger(p.weapon) && p.weapon >= 0 && p.weapon < weaponSlotCount && Number.isSafeInteger(p.ammo) && p.ammo >= 0 && typeof p.active === 'boolean'))) throw new ProtocolValidationError('Invalid server message');
   if (message.traffic !== undefined && (!Array.isArray(message.traffic) || !message.traffic.every(validTrafficState))) throw new ProtocolValidationError('Invalid server message');
   if (message.npcs !== undefined && (!Array.isArray(message.npcs) || !message.npcs.every(validNpcState))) throw new ProtocolValidationError('Invalid server message');
-  if (message.hazards !== undefined && (!Array.isArray(message.hazards) || !message.hazards.every(h => h && Number.isInteger(h.id) && [h.x, h.y, h.z, h.life].every(Number.isFinite) && validCollisionLayer(h.collisionLayer) && ['slick', 'mine', 'fire', 'blood', 'impact', 'skid', 'water'].includes(h.kind) && (h.owner === undefined || typeof h.owner === 'string') && (h.effect === undefined || h.effect === 'fire' || h.effect === 'explosion') && (h.explosionType === undefined || h.explosionType === 'small' || h.explosionType === 'item' || h.explosionType === 'large') && (h.sourceModel === undefined || Number.isInteger(h.sourceModel)) && (h.sourceTimer === undefined || Number.isInteger(h.sourceTimer)) && (h.rotation === undefined || Number.isFinite(h.rotation)) && (h.scale === undefined || Number.isFinite(h.scale)) && (h.variant === undefined || Number.isSafeInteger(h.variant))))) throw new ProtocolValidationError('Invalid server message');
+  if (message.hazards !== undefined && (!Array.isArray(message.hazards) || !message.hazards.every(h => h && Number.isInteger(h.id) && [h.x, h.y, h.z, h.life].every(Number.isFinite) && validCollisionLayer(h.collisionLayer) && ['slick', 'mine', 'fire', 'blood', 'impact', 'skid', 'water'].includes(h.kind) && (h.owner === undefined || typeof h.owner === 'string') && (h.effect === undefined || h.effect === 'fire' || h.effect === 'explosion') && (h.explosionType === undefined || h.explosionType === 'small' || h.explosionType === 'item' || h.explosionType === 'large') && (h.sourceModel === undefined || Number.isInteger(h.sourceModel)) && (h.sourceTimer === undefined || Number.isInteger(h.sourceTimer)) && (h.armingTimer === undefined || Number.isInteger(h.armingTimer)) && (h.vehicleId === undefined || Number.isSafeInteger(h.vehicleId)) && (h.rotation === undefined || Number.isFinite(h.rotation)) && (h.scale === undefined || Number.isFinite(h.scale)) && (h.variant === undefined || Number.isSafeInteger(h.variant))))) throw new ProtocolValidationError('Invalid server message');
   if (message.events !== undefined && (!Array.isArray(message.events) || !message.events.every(validWorldEvent))) throw new ProtocolValidationError('Invalid server message');
   if (message.type === 'snapshot' && message.removedPlayers !== undefined && (!Array.isArray(message.removedPlayers) || !message.removedPlayers.every(id => typeof id === 'string'))) throw new ProtocolValidationError('Invalid server message');
   if (message.type === 'snapshot' && message.removedNpcs !== undefined && (!Array.isArray(message.removedNpcs) || !message.removedNpcs.every(id => Number.isSafeInteger(id) && id >= 0))) throw new ProtocolValidationError('Invalid server message');

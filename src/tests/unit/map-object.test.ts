@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { GameWorld } from '../../shared/game/game-world';
 import { resolveMapObjectPlacement } from '../../shared/domain/physics/map-object-placement';
-import { authoredLocationToWorld, worldToPhysics } from '../../shared/domain/world/world';
+import { authoredLocationToWorld } from '../../shared/domain/world/world';
 import { mapFixture } from './fixtures';
 import { parseMap } from '../../shared/loader/map-parser';
 import { DEFAULT_MAP_OBJECT_DEFINITIONS } from '../../shared/loader/map-object-definitions';
@@ -22,12 +22,12 @@ it('places and blocks an MOBJ from its authored cube coordinate and floor', () =
   expect(staticObject?.getSprite(0)).toMatchObject({ atlas: 'objects', model: 7, frame: 0 });
   expect(staticObject?.getCollider()[0]).toMatchObject({ blockingWeight: 0, solid: true, box: { width: 30, height: 26 } });
   let hit = false;
-  game.physicsRuntime.rayCast(
-    { x: worldToPhysics(center.x - 64), y: -worldToPhysics(center.y) },
-    { x: worldToPhysics(center.x + 64), y: -worldToPhysics(center.y) },
+  game.physics.physicsWorld.rayCast(
+    { x: center.x - 64, y: center.y },
+    { x: center.x + 64, y: center.y },
     fixture => {
-      if ((fixture.getUserData() as { kind?: string } | undefined)?.kind === 'map-object') hit = true;
-      return 1;
+      if (((fixture as { getUserData?: () => unknown }).getUserData?.() as { kind?: string } | undefined)?.kind === 'map-object') hit = true;
+      return true;
     },
   );
   expect(hit).toBe(true);

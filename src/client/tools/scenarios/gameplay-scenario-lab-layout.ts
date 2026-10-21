@@ -1,10 +1,10 @@
 import type { Block, Face, GameMap, TrafficMapMetadata } from '../../../shared/loader/map-parser';
 import { GTA2GroundType, GTA2SlopeType } from '../../../shared/domain/world/gta2-enums';
 import { tileToWorld } from '../../../shared/domain/world/world';
-import { GAMEPLAY_SCENARIO_DEFINITIONS, type GameplayScenarioDefinition, type GameplayScenarioId } from '../../../shared/domain/scenario-definitions';
+import { GAMEPLAY_SCENARIO_DEFINITIONS, type GameplayScenarioDefinition, type GameplayScenarioId } from './scenario-definitions';
 import { SCENARIO_ROOM_RADIUS } from './scenario-view';
 
-export type { GameplayScenarioDefinition, GameplayScenarioId } from '../../../shared/domain/scenario-definitions';
+export type { GameplayScenarioDefinition, GameplayScenarioId } from './scenario-definitions';
 export type GameplayLevelId = 'road' | 'water';
 
 export interface GameplayWaterArea {

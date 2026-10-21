@@ -9,7 +9,10 @@
   "packageManager": "pnpm@11.25.0",
   "scripts": {
     "dev": "tsx src/server/dev.ts",
-    "build": "tsc --noEmit && vite build && tsup",
+    "build": "tsc --noEmit && vite build && tsup && node scripts/package-static.mjs",
+    "build:static": "tsc --noEmit && STATIC_BUILD=1 vite build && node scripts/package-static.mjs",
+    "deploy:ftp": "pnpm build:static && node scripts/upload-static-ftp.mjs",
+    "deploy:ftp:code": "pnpm build:static && node scripts/upload-static-ftp.mjs --skip-assets",
     "start": "node dist/server/main.js",
     "init": "node scripts/init.mjs",
     "check": "tsc --noEmit && node scripts/check-boundaries.mjs",
@@ -17,7 +20,7 @@
     "test:e2e": "playwright test",
     "test:e2e:scenarios": "playwright test src/tests/e2e/vehicle-scenarios.spec.ts",
     "assets:check": "tsx scripts/check-assets.ts",
-    "dev:fixture": "tsx scripts/fixture-server.ts"
+    "dev:fixture": "tsx src/tests/fixture-server.ts"
   },
   "dependencies": {
     "planck": "1.5.1",

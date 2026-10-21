@@ -379,6 +379,28 @@ canvas, button, #touch-controls { user-select: none; -webkit-user-select: none; 
   box-shadow: 2px 2px 0 #000a;
   color: #e8e0cd;
 }
+#local-menu {
+  position: fixed;
+  top: 63px;
+  left: max(10px, env(safe-area-inset-left));
+  z-index: 31;
+  display: grid;
+  gap: 9px;
+  min-width: 210px;
+  padding: 10px;
+  border: 1px solid #858b8c;
+  border-radius: 2px;
+  background: #151a1ded;
+  box-shadow: 2px 2px 0 #000a;
+  color: #e8e0cd;
+}
+#local-menu[hidden] { display: none !important; }
+#local-menu .local-menu-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+#local-menu label { display: grid; gap: 3px; color: #bcb7a6; font-size: 10px; text-transform: uppercase; }
+#local-menu select { width: 100%; height: 29px; box-sizing: border-box; padding: 3px 6px; border: 1px solid #7f878b; border-radius: 1px; background: #080b0d; color: #f7f0dc; font: 12px Consolas, "Courier New", monospace; }
+#local-menu button { min-height: 29px; padding: 4px 9px; border: 1px solid #92989a; border-radius: 1px; background: #2f373a; color: #f3e8cf; font-size: 11px; }
+#local-menu button:hover, #local-menu button:focus-visible { border-color: #e3af54; outline: none; }
+#local-menu #start-local-game { border-color: #d3a24e; background: linear-gradient(#6b4b20, #352611); }
 #lobby label { display: grid; gap: 3px; color: #bcb7a6; font-size: 10px; text-transform: uppercase; }
 #lobby input, #lobby select { width: 110px; height: 29px; box-sizing: border-box; padding: 3px 6px; border: 1px solid #7f878b; border-radius: 1px; background: #080b0d; color: #f7f0dc; font: 12px Consolas, "Courier New", monospace; }
 #lobby button, #ready { min-height: 29px; padding: 4px 9px; border: 1px solid #92989a; border-radius: 1px; background: #2f373a; color: #f3e8cf; font-size: 11px; }

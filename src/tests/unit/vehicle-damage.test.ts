@@ -3,7 +3,7 @@ import type { TrafficState } from '../../shared/protocol/types';
 import { GTA2_VEHICLE_DAMAGE, applyVehicleSourceDamage, ensureVehicleDamageState, sourceDamageForImpact, sourceDamageForObjectModel, sourceDamageForWeapon, tickVehicleDamage } from '../../shared/domain/combat/vehicle-damage';
 import { vehicleDamageSpeedFactor } from '../../shared/domain/physics/vehicle-kinematics';
 import { GTA2_CAR_FIRE_SPRITES, resolveWreckModel } from '../../shared/domain/world/gta2-sprites';
-import { VehicleDamageState } from '../../shared/game/gameobjects/vehicle-damage';
+import { VehicleDamageState } from '../../shared/game/gameobjects/vehicle/vehicle-damage';
 
 function vehicle(overrides: Partial<TrafficState> = {}): TrafficState {
   return {

@@ -17,6 +17,7 @@ dist/
 test-results/
 playwright-report/
 logs/
+.ftp-upload.json
 assets/*.gmp
 assets/*.sty
 assets/App_Executables/

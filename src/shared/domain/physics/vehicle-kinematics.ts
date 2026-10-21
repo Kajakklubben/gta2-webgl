@@ -1,6 +1,8 @@
 import { SOURCE_FIX16_ONE, WORLD, sourceFixedPerTickToWorld, tilesPerSecondToWorld } from '../world/world';
 import type { CarPhysics } from '../../loader/gci';
 import { directionFromRotation, type Vector2 } from './motion-vector';
+import { vehicleGear } from './vehicle-kinematics-gears';
+export { vehicleGear } from './vehicle-kinematics-gears';
 
 /** A speed-based turn rate keeps the vehicle's curvature consistent. */
 export function vehicleTurnRate(speed: number, physics?: CarPhysics, wheelBase?: number): number {
@@ -73,7 +75,7 @@ export interface VehicleControl {
 /**
  * CarInfo_808::ConvertMass_454680 applies the source's 1.1 conversion before
  * the physics object is created. Keep that conversion at one boundary so the
- * drivetrain, collision resolver, and Planck body all agree on weight.
+ * drivetrain, collision resolver, and native physics body all agree on weight.
  */
 export function vehicleMass(physics?: CarPhysics): number {
   return Math.max(.25, (physics?.mass ?? 12) * 1.1);
@@ -138,7 +140,7 @@ export interface VehicleGroundContact {
  *
  * The authoritative map body owns chassis translation and rotation.  Keeping
  * pose advancement optional lets the same force/stabilisation code be used by
- * both the direct motion helpers and the world runtime's Planck body without
+ * both the direct motion helpers and the world runtime's native physics body without
  * integrating an occupied car once before the physics sweep and once during
  * it.
  */
@@ -154,7 +156,7 @@ const DEFAULT_VEHICLE_GROUND: VehicleGroundContact = { grounded: true, surfaceTy
 /**
  * Apply the source's `StabilizeVelocityAtSpeed_562910` step without applying
  * engine input or advancing the chassis pose. This is used for an unoccupied
- * car after a collision impulse: Planck supplies the impulse, then the car's
+ * car after a collision impulse: the native solver supplies the impulse, then the car's
  * normal grounded/airborne damping brings that velocity back to rest.
  */
 export function stabilizeVehicleVelocity(state: VehicleDynamicsState, dt: number, ground: VehicleGroundContact = DEFAULT_VEHICLE_GROUND, applySlope = true) {
@@ -219,15 +221,6 @@ export function computePointVelocity(linear: Vector2, angularVelocity: number, p
   return { x: linear.x - angularVelocity * ry, y: linear.y + angularVelocity * rx };
 }
 
-/** Select the source gear multiplier from the full linear velocity length. */
-export function vehicleGear(linearSpeed: number, physics?: CarPhysics) {
-  const speed = Math.abs(linearSpeed);
-  const scale = (value: number) => sourceFixedPerTickToWorld(value);
-  if (speed > scale(physics?.gear3Speed ?? .165)) return physics?.gear3Multiplier ?? 1;
-  if (speed > scale(physics?.gear2Speed ?? .107)) return physics?.gear2Multiplier ?? .75;
-  return physics?.gear1Multiplier ?? .55;
-}
-
 /**
  * Source-shaped engine torque. `throttle` is the normalized control input,
  * while CarPhysics_B0 internally accumulates a 0..5 gas-pedal value. The
@@ -249,27 +242,5 @@ export function computeEngineTorque(linearSpeed: number, throttle: number, physi
   const torque = halfThrust + fifthThrust * pedal * turboMultiplier;
   return direction * torque * gear * WORLD.vehicle.gciAccelerationScale;
 }
-
-/** Apply a world force at a chassis point, returning its scalar torque. */
-export function applyForceAtPoint(force: Vector2, point: Vector2, center = { x: 0, y: 0 }) {
-  const rx = point.x - center.x, ry = point.y - center.y;
-  return { force, torque: rx * force.y - ry * force.x };
-}
-
-/** Apply a contact impulse at the actual chassis point (source impulse path). */
-export function applyVehicleImpulse(state: VehicleDynamicsState, impulse: Vector2, point: Vector2, geometry: VehicleGeometry = {}, physics?: CarPhysics, sign = 1) {
-  const mass = vehicleMass(physics), moment = vehicleMomentOfInertia(geometry.width ?? 36, geometry.height ?? 66, physics);
-  const vx = state.vx;
-  const vy = state.vy;
-  const ix = impulse.x * sign, iy = impulse.y * sign;
-  state.vx = vx + ix / mass; state.vy = vy + iy / mass;
-  // HandleCarCollision applies the impulse around the authored centre of mass,
-  // rather than the sprite's geometric centre.
-  const forward = directionFromRotation(state.rotation), centerOffset = vehicleCenterOfMassOffset(geometry.height ?? 66, physics);
-  const centerX = state.x + forward.x * centerOffset, centerY = state.y + forward.y * centerOffset;
-  const rx = point.x - centerX, ry = point.y - centerY;
-  state.angularVelocity = state.angularVelocity + (rx * iy - ry * ix) / moment;
-  state.speed = state.vx * forward.x + state.vy * forward.y;
-  return state;
-}
+export { applyForceAtPoint, applyVehicleImpulse } from './vehicle-kinematics-impulse';
 

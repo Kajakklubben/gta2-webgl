@@ -1,21 +1,22 @@
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createConnection } from 'node:net';
-import { assetDirectory, loadLevelBundle, loadMultiplayerMapBundle, loadPickupAssetFromDisk as readWeaponPickups, loadCarPhysicsFromDisk as readCarPhysics, loadTrafficCarModelsFromDisk, loadCarBoundsFromDisk, loadCarInfoFromDisk } from './assets';
+import { loadLevelBundle, loadMultiplayerMapBundle, loadPickupAssetFromDisk as readWeaponPickups, loadCarPhysicsFromDisk as readCarPhysics, loadTrafficCarModelsFromDisk, loadCarBoundsFromDisk, loadCarInfoFromDisk, type AssetConfig } from './assets';
 import { createHttpServer } from './http';
 import { attachMultiplayer, type MultiplayerMapRuntime } from './multiplayer';
 import { Gta2Game } from '../shared/game/gta2-game';
 import { MULTIPLAYER_MAPS, multiplayerMapForFiles, type MultiplayerMapDefinition } from '../shared/loader/multiplayer-maps';
-import { resolveServerPort, serverRuntimeConfig } from './runtime-config';
+import { createServerConfig, type ServerConfigOverrides } from './config';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { InlineConfig } from 'vite';
 
 export interface ServerInitOptions {
   /** The checkout root used for relative assets, Vite, and the default port. */
   readonly workingDirectory?: string;
-  /** Explicit port override; PORT still takes precedence when this is omitted. */
+  /** Explicit port override. */
   readonly port?: number;
   readonly host?: string;
+  readonly config?: ServerConfigOverrides;
 }
 
 export interface InitializedServer {
@@ -50,27 +51,29 @@ export async function init(developmentOrOptions: boolean | ServerInitOptions = f
   let options = suppliedOptions;
   if (typeof developmentOrOptions === 'boolean') development = developmentOrOptions;
   else options = developmentOrOptions;
-  const config = serverRuntimeConfig(options.workingDirectory ?? process.cwd());
+  const config = createServerConfig({ ...options.config, workingDirectory: options.workingDirectory ?? options.config?.workingDirectory ?? process.cwd(), ...(options.port === undefined ? {} : { port: options.port }), ...(options.host === undefined ? {} : { host: options.host }) });
   const workingDirectory = config.workingDirectory;
-  const port = options.port ?? config.port ?? resolveServerPort(workingDirectory);
-  const host = options.host ?? process.env['HOST'] ?? '0.0.0.0';
-  if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('PORT must be a valid port number');
+  const port = config.port;
+  const host = config.host;
   // A wildcard listener can coexist with a loopback listener on some hosts.
   // Check the loopback endpoint first so a configured port is never silently
   // split between two HTTP/WebSocket servers.
   await assertPortAvailable(port);
-  const assets = assetDirectory(workingDirectory);
-  const defaultBundle = await loadLevelBundle(assets);
+  const assets = config.assetDirectory;
+  const assetOptions: AssetConfig = config.pickupScript === undefined
+    ? { mapFile: config.mapFile, styleFile: config.styleFile }
+    : { mapFile: config.mapFile, styleFile: config.styleFile, pickupScript: config.pickupScript };
+  const defaultBundle = await loadLevelBundle(assets, assetOptions);
   const level = defaultBundle.map;
   const [pickups, carPhysics, trafficModels, carBounds, carInfo] = await Promise.all([
-    readWeaponPickups(assets),
-    readCarPhysics(assets),
-    loadTrafficCarModelsFromDisk(assets),
-    loadCarBoundsFromDisk(assets),
-    loadCarInfoFromDisk(assets),
+    readWeaponPickups(assets, assetOptions),
+    readCarPhysics(assets, assetOptions),
+    loadTrafficCarModelsFromDisk(assets, assetOptions),
+    loadCarBoundsFromDisk(assets, assetOptions),
+    loadCarInfoFromDisk(assets, assetOptions),
   ]);
-  const configuredMap = process.env['MAP_FILE'] ?? 'MP1-comp.gmp';
-  const configuredStyle = process.env['STYLE_FILE'] ?? 'bil.sty';
+  const configuredMap = config.mapFile;
+  const configuredStyle = config.styleFile;
   const defaultMapDefinition = multiplayerMapForFiles(configuredMap, configuredStyle);
   const defaultMapId = defaultMapDefinition?.id ?? 'default';
   const mapRuntimes: MultiplayerMapRuntime[] = [];
@@ -97,7 +100,7 @@ export async function init(developmentOrOptions: boolean | ServerInitOptions = f
     mapRuntimes.push(loaded.runtime);
     availableMaps.push(loaded.definition);
   }
-  const disableHmr = process.env['GTA2_DISABLE_HMR'] === '1';
+  const disableHmr = config.disableHmr;
   let vite: Awaited<ReturnType<(typeof import('vite'))['createServer']>> | undefined;
   try {
     const viteConfig: InlineConfig = {

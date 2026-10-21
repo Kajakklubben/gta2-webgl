@@ -1,0 +1,6 @@
+[MapFiles]
+GMPFile = bil-multi.gmp
+STYFile = bil.sty
+SCRFile = Industrial-6P.scr
+Description = Industrial 6Player
+PlayerCount = 6

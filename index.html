@@ -25,11 +25,19 @@
     </div>
     <ul class="game-menu-actions" aria-label="Game panels">
       <li><button id="menu-resume" type="button">Resume</button></li>
-      <li><button id="open-lobby" type="button" aria-expanded="false">Lobby</button></li>
+      <li><button id="open-single-player" type="button">Single player</button></li>
+      <li><button id="open-split-screen" type="button">Split screen</button></li>
+      <li><button id="open-lobby" type="button" aria-expanded="false">Multiplayer</button></li>
       <li><button id="open-scoreboard" type="button" aria-expanded="false">Scoreboard</button></li>
       <li><button id="open-chat" type="button" aria-expanded="false">Chat</button></li>
       <li><button id="open-debug" type="button" aria-expanded="false">Debug</button></li>
     </ul>
+  </aside>
+
+  <aside id="local-menu" hidden aria-label="Local game setup" role="dialog" aria-modal="false">
+    <div class="local-menu-header"><strong id="local-menu-title">Single player</strong><button id="close-local-menu" type="button">Back</button></div>
+    <label>Map <select id="local-map"></select></label>
+    <button id="start-local-game" type="button">Start</button>
   </aside>
 
   <aside id="debug-menu" hidden aria-label="Debug tools">
@@ -70,14 +78,14 @@
       <label>Camera mode <select id="debug-camera-mode"><option value="follow">Follow (1:1)</option><option value="detached">Detached (WASD / page keys)</option></select></label>
       <label><input id="debug-camera-speed-zoom" type="checkbox" checked> Speed zoom-out</label>
       <label><input id="debug-camera-lookahead" type="checkbox" checked> Look ahead at speed</label>
-      <label><input id="debug-sprite-frame-interpolation" type="checkbox"> Sprite frame interpolation</label>
+      <label><input id="debug-sprite-frame-interpolation" type="checkbox" checked> Sprite frame interpolation</label>
       <label><input id="debug-fps" type="checkbox"> FPS counter</label>
     </section>
 
   </aside>
 
   <div id="lobby" hidden>
-    <label>Mode <select id="mode"><option value="singleplayer">Single player</option><option value="online">Online multiplayer</option><option value="local">Local split-screen</option></select></label>
+    <label>Mode <select id="mode"><option value="singleplayer">Single player</option><option value="online">Multiplayer</option><option value="local">Local split-screen</option></select></label>
     <label>Name <input id="name" maxlength="32" placeholder="Random name"></label>
     <label>Room <input id="room" maxlength="24" value="main"></label>
     <label>Team <select id="team"><option value="0">Free for all</option><option value="1">Red</option><option value="2">Blue</option><option value="3">Green</option></select></label>

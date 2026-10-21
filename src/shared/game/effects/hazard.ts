@@ -1,7 +1,7 @@
 import type { HazardState, NpcState, PlayerState, TrafficState } from '../../protocol/types';
 import type { GameObjectSprite, GameObjectSpriteLayer, GameObjectUpdateContext, HazardCombatContext, SpriteSourceSequence } from '../gameobjects/gameobject';
 import { StatefulGameObject, type GameObjectUpdateHandler } from '../gameobjects/stateful';
-import { COLLISION_CATEGORY } from '../../domain/physics/collision';
+import { COLLISION_CATEGORY } from '../../domain/physics/collision-rules';
 import { WORLD } from '../../domain/world/world';
 import { GTA2_CAR_FIRE_FRAME_SEQUENCES, GTA2_CAR_FIRE_SPRITE_RANGES, GTA2_CAR_FIRE_SPRITES, GTA2_EXPLOSION_SPRITES, GTA2_EXPLOSION_VISUAL_TICKS, GTA2_LARGE_EXPLOSION_SPRITES, GTA2_SOURCE_EFFECT_SPRITES, GTA2_SOURCE_OBJECT_MODELS, GTA2_SOURCE_OBJECT_SPRITES, GTA2_WATER_SPLASH_VISUAL_TICKS } from '../../domain/world/gta2-sprites';
 import { GTA2_VEHICLE_DAMAGE, sourceDamageForFire } from '../../domain/combat/vehicle-damage';
@@ -73,6 +73,7 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
   tick() {
     this.mutableState.life = Math.max(0, this.mutableState.life - 1);
     if (this.mutableState.sourceTimer !== undefined) this.mutableState.sourceTimer = Math.max(0, this.mutableState.sourceTimer - 1);
+    if (this.mutableState.armingTimer !== undefined) this.mutableState.armingTimer = Math.max(0, this.mutableState.armingTimer - 1);
     this.animationAge++;
   }
   expire() { this.mutableState.life = 0; }
@@ -86,8 +87,11 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
    * from the hazard's stable id instead of Math.random so every client gets
    * the same burst shape from the replicated state. */
   private sourceBurstParticles(kind: 'blood' | 'impact' | 'water'): GameObjectSpriteLayer[] {
+    const sourceObjectRange = kind === 'impact' && this.mutableState.sourceModel !== undefined
+      ? GTA2_SOURCE_OBJECT_SPRITES[this.mutableState.sourceModel]
+      : undefined;
     const range = kind === 'blood' ? GTA2_SOURCE_EFFECT_SPRITES.bloodBurst
-      : kind === 'impact' ? GTA2_SOURCE_EFFECT_SPRITES.impactBurst
+      : kind === 'impact' ? sourceObjectRange ?? GTA2_SOURCE_EFFECT_SPRITES.impactBurst
         : GTA2_SOURCE_EFFECT_SPRITES.waterSplash;
     const sourceSequence: SpriteSourceSequence = kind === 'blood' ? 'blood-burst' : kind === 'impact' ? 'impact-burst' : 'water-splash';
     const lifetime = kind === 'impact' ? 7 : GTA2_WATER_SPLASH_VISUAL_TICKS;
@@ -107,7 +111,7 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
           : Math.min(range.count - 1, Math.max(0, age - 1));
       const opacity = this.mutableState.life <= 0 ? 0 : Math.max(.25, 1 - age / lifetime);
       particles.push({
-        atlas: 'codeObjects', model: range.start, sourceSequence, sourceModel: range.start,
+        atlas: 'codeObjects', model: range.start, sourceSequence, sourceModel: this.mutableState.sourceModel ?? range.start,
         definition: { bank: 'code-object', sourceId: range.start },
         animation: kind, frame, frameCount: range.count, frameTicks: 1, loop: false,
         placement: {
@@ -121,7 +125,7 @@ export class HazardObject extends StatefulGameObject<HazardState, number> {
         depthTest: true, depthWrite: false, alphaTest: .01,
         depthOffset: WORLD.render.projectileZOffset + index * .02,
         renderOrder: (kind === 'water' ? 5 : 8) + index,
-        fallbackColor: kind === 'blood' ? 0xc42d3d : kind === 'impact' ? 0xffc34a : 0x69d8ff,
+        fallbackColor: kind === 'blood' ? 0xc42d3d : kind === 'impact' ? (this.mutableState.variant === 2 ? 0xfff0a0 : 0xffc34a) : 0x69d8ff,
       });
     }
     return particles;
@@ -344,7 +348,7 @@ export class FireObject extends HazardObject {
         const player = combat.findPlayer(String(body.objectId));
         if (!player || player.combatState.health <= 0 || player.combatState.respawn > 0) continue;
         const damage = 4;
-        combat.damagePlayer(player, damage, this.mutableState.owner);
+        combat.damagePlayer(player, damage, this.mutableState.owner, 'fire');
         combat.emit({ type: 'hit', actor: this.mutableState.owner, target: player.id, damage, x: player.state.x, y: player.state.y, z: player.state.z });
       } else if (body.kind === 'vehicle') {
         const vehicle = combat.findVehicle(Number(body.objectId));
@@ -356,7 +360,7 @@ export class FireObject extends HazardObject {
         const npc = combat.findNpc(Number(body.objectId));
         if (!npc || npc.state.health <= 0) continue;
         const damage = 5;
-        combat.damageNpc(npc, damage, this.mutableState.owner, this.mutableState.sourceModel);
+        combat.damageNpc(npc, damage, this.mutableState.owner, this.mutableState.sourceModel, undefined, 'fire');
         combat.emit({ type: 'hit', actor: this.mutableState.owner, target: `npc:${npc.id}`, damage, x: npc.state.x, y: npc.state.y, z: npc.state.z });
       }
     }
@@ -374,6 +378,8 @@ export class ExplosionObject extends HazardObject {
     damage: number;
     pellets: number;
     selfDamage: boolean;
+    height?: number;
+    knockback?: number;
     sourceModel?: number | undefined;
   };
   private blastResolved = false;
@@ -381,7 +387,7 @@ export class ExplosionObject extends HazardObject {
   private readonly blastVehicleWindows = new Set<string>();
   constructor(state: HazardState, update?: GameObjectUpdateHandler<HazardState>) { super(state, update); }
 
-  armBlast(blast: { actor: string; weapon: number; radius: number; damage: number; pellets: number; selfDamage: boolean; sourceModel?: number | undefined }) {
+  armBlast(blast: { actor: string; weapon: number; radius: number; damage: number; pellets: number; selfDamage: boolean; height?: number; knockback?: number; sourceModel?: number | undefined }) {
     this.blast = blast;
     return this;
   }
@@ -411,16 +417,23 @@ export class ExplosionObject extends HazardObject {
     else if (timer > 80 && timer < 90) vehicleWindow = 'late';
     if (!sourceTimed) this.blastResolved = true;
     const blast = this.blast, owner = combat.findPlayer(blast.actor), ownerVehicleId = owner?.state.vehicleId;
+    const height = blast.height ?? 2;
     for (const body of combat.queryCircle({ x: this.mutableState.x, y: this.mutableState.y, z: this.mutableState.z, radius: blast.radius, kinds: ['player', 'npc'] })) {
       const targetKey = `${body.kind}:${String(body.objectId)}`;
       if (sourceTimed && (!pedDamageActive || this.blastDamagedTargets.has(targetKey))) continue;
+      if (Math.abs(body.z - this.mutableState.z) > height) continue;
       if (body.kind === 'npc') {
         const victim = combat.findNpc(Number(body.objectId));
         if (!victim || victim.state.health <= 0 || (!blast.selfDamage && `npc:${victim.id}` === blast.actor)) continue;
         const distance = Math.hypot(victim.state.x - this.mutableState.x, victim.state.y - this.mutableState.y);
         const npcDamage = combat.weaponSystem.get(blast.weapon).npcDamage ?? blast.damage;
-        const damage = Math.max(1, Math.round(npcDamage * blast.pellets * Math.max(.35, 1 - distance / blast.radius)));
-        combat.damageNpc(victim, damage, blast.actor, undefined, rotationFromDirection(victim.state.x - this.mutableState.x, victim.state.y - this.mutableState.y));
+        const falloff = Math.max(0, 1 - distance / blast.radius);
+        const damage = Math.max(1, Math.round(npcDamage * blast.pellets * Math.max(.35, falloff)));
+        if (blast.knockback) {
+          const length = Math.max(1, distance);
+          victim.applyExplosionImpulse((victim.state.x - this.mutableState.x) / length * blast.knockback * falloff, (victim.state.y - this.mutableState.y) / length * blast.knockback * falloff);
+        }
+        combat.damageNpc(victim, damage, blast.actor, undefined, rotationFromDirection(victim.state.x - this.mutableState.x, victim.state.y - this.mutableState.y), 'explosion');
         combat.emit({ type: 'hit', actor: blast.actor, target: `npc:${victim.id}`, weapon: blast.weapon, damage, lethal: victim.state.health <= 0, x: victim.state.x, y: victim.state.y, z: victim.state.z });
         if (sourceTimed) this.blastDamagedTargets.add(targetKey);
         continue;
@@ -429,25 +442,90 @@ export class ExplosionObject extends HazardObject {
       const sameTeam = owner?.state.team !== undefined && owner.state.team === victim?.state.team;
       if (!victim || victim.combatState.respawn > 0 || (!blast.selfDamage && victim.id === blast.actor) || (sameTeam && victim.id !== blast.actor)) continue;
       const distance = Math.hypot(victim.state.x - this.mutableState.x, victim.state.y - this.mutableState.y);
-      const damage = Math.max(1, Math.round(blast.damage * blast.pellets * Math.max(.35, 1 - distance / blast.radius)));
-    const currentHealth = victim.combatState.health, armor = Math.min(victim.state.armor, Math.ceil(damage * .5));
-      combat.damagePlayer(victim, damage, blast.actor);
+      const falloff = Math.max(0, 1 - distance / blast.radius);
+      const damage = Math.max(1, Math.round(blast.damage * blast.pellets * Math.max(.35, falloff)));
+      if (blast.knockback) {
+        const length = Math.max(1, distance);
+        victim.applyExplosionImpulse((victim.state.x - this.mutableState.x) / length * blast.knockback * falloff, (victim.state.y - this.mutableState.y) / length * blast.knockback * falloff);
+      }
+      const currentHealth = victim.combatState.health, armor = Math.min(victim.state.armor, Math.ceil(damage * .5));
+      combat.damagePlayer(victim, damage, blast.actor, 'explosion');
       combat.emit({ type: 'hit', actor: blast.actor, target: victim.id, weapon: blast.weapon, damage, lethal: currentHealth <= damage - armor, x: victim.state.x, y: victim.state.y, z: victim.state.z });
       if (sourceTimed) this.blastDamagedTargets.add(targetKey);
     }
     for (const body of combat.queryCircle({ x: this.mutableState.x, y: this.mutableState.y, z: this.mutableState.z, radius: blast.radius, kinds: ['vehicle'] })) {
       const vehicle = combat.findVehicle(Number(body.objectId));
       if (!vehicle || !vehicle.alive || (!blast.selfDamage && vehicle.id === ownerVehicleId) || vehicleWindow === undefined) continue;
+      if (Math.abs(body.z - this.mutableState.z) > height) continue;
       const vehicleKey = `${vehicle.id}:${vehicleWindow}`;
       if (sourceTimed && this.blastVehicleWindows.has(vehicleKey)) continue;
       const distance = Math.hypot(vehicle.state.x - this.mutableState.x, vehicle.state.y - this.mutableState.y);
       if (distance > blast.radius) continue;
+      if (blast.knockback) {
+        const length = Math.max(1, distance);
+        vehicle.applyExplosionImpulse((vehicle.state.x - this.mutableState.x) / length * blast.knockback, (vehicle.state.y - this.mutableState.y) / length * blast.knockback);
+      }
       // The original explosion path uses one full 32000-unit vehicle packet
       // for every car in range; unlike pedestrian/player damage it has no
       // distance falloff.
       combat.damageVehicle(vehicle, GTA2_VEHICLE_DAMAGE.maxDamage, vehicle.state.x, vehicle.state.y, blast.sourceModel, blast.actor);
       if (sourceTimed) this.blastVehicleWindows.add(vehicleKey);
     }
+  }
+}
+
+/** Normal Car_BC bombs are animated objects attached to the target chassis;
+ * the source only transitions them into a car explosion when that animation
+ * finishes. Keeping the armed object separate from ExplosionObject preserves
+ * the distinction from the instant large-bomb dispatch. */
+export class VehicleBombObject extends HazardObject {
+  constructor(state: HazardState, update?: GameObjectUpdateHandler<HazardState>) { super(state, update); }
+
+  override update(context: GameObjectUpdateContext) {
+    const combat = context.combat as HazardCombatContext | undefined;
+    const vehicle = combat?.findVehicle(this.mutableState.vehicleId ?? -1);
+    if (vehicle) {
+      this.mutableState.x = vehicle.state.x;
+      this.mutableState.y = vehicle.state.y;
+      this.mutableState.z = vehicle.state.z;
+      this.mutableState.collisionLayer = vehicle.state.collisionLayer;
+    }
+    super.update(context);
+    if (!vehicle || this.mutableState.life <= 0) {
+      this.expire();
+      this.deferDespawn();
+      return;
+    }
+    if (!combat?.authoritative || (this.mutableState.armingTimer ?? 0) > 0) return;
+    const explosion = createHazardObject({
+      id: combat.nextHazardId(), x: vehicle.state.x, y: vehicle.state.y, z: vehicle.state.z,
+      collisionLayer: vehicle.state.collisionLayer, kind: 'fire', life: GTA2_EXPLOSION_VISUAL_TICKS,
+      owner: this.mutableState.owner, effect: 'explosion', explosionType: 'item',
+      sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb,
+    });
+    if (explosion instanceof ExplosionObject) {
+      explosion.armBlast({
+        actor: this.mutableState.owner ?? `vehicle:${vehicle.id}`, weapon: WeaponId.CarBomb,
+        radius: 110, damage: GTA2_VEHICLE_DAMAGE.maxDamage, pellets: 1,
+        selfDamage: true, height: 2, knockback: 10, sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb,
+      });
+      this.spawn(explosion);
+      explosion.resolveBlast(combat);
+    }
+    combat.emit({ type: 'explosion', actor: this.mutableState.owner, weapon: WeaponId.CarBomb, damage: GTA2_VEHICLE_DAMAGE.maxDamage, x: vehicle.state.x, y: vehicle.state.y, z: vehicle.state.z });
+    this.expire();
+    this.deferDespawn();
+  }
+
+  override getSprite(_now: number): GameObjectSprite {
+    return {
+      atlas: 'codeObjects', sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb,
+      definition: { bank: 'code-object', sourceId: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb },
+      animation: 'projectile', frameCount: 1, loop: false, frameMs: 55,
+      placement: this.placement, opacity: this.mutableState.armingTimer === 0 ? 0 : 1,
+      depthTest: true, depthWrite: false, alphaTest: .01, depthOffset: WORLD.render.projectileZOffset,
+      fallbackColor: 0xff7040,
+    };
   }
 }
 
@@ -480,7 +558,7 @@ export class MineObject extends HazardObject {
       explosion.armBlast({
         actor: this.mutableState.owner ?? 'mine', weapon: WeaponId.LandMines, radius: 110,
         damage: weapon.damage, pellets: weapon.pellets,
-        selfDamage: false, sourceModel: this.mutableState.sourceModel,
+        selfDamage: false, height: 2, knockback: 8, sourceModel: this.mutableState.sourceModel,
       });
       this.spawn(explosion);
       explosion.resolveBlast(combat);
@@ -508,6 +586,7 @@ export function createHazardObject(state: HazardState, update?: GameObjectUpdate
   if (state.kind === 'blood' || state.kind === 'impact' || state.kind === 'skid' || state.kind === 'water') return new HazardObject(state, update);
   if (state.kind === 'mine') return new MineObject(state, update);
   if (state.kind === 'slick') return new OilSlickObject(state, update);
+  if (state.effect === 'fire' && state.sourceModel === GTA2_SOURCE_OBJECT_MODELS.movingCarBomb && state.armingTimer !== undefined) return new VehicleBombObject(state, update);
   if (state.effect === 'explosion' || (state.effect === undefined && state.sourceModel === undefined)) return new ExplosionObject(state, update);
   return new FireObject(state, update);
 }

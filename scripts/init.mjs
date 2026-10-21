@@ -16,8 +16,7 @@ if (!modulesLoaded) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-let assetDirectory = join(workingDirectory, 'assets');
-if (process.env.ASSET_DIR) assetDirectory = resolve(workingDirectory, process.env.ASSET_DIR);
+const assetDirectory = join(workingDirectory, 'assets');
 mkdirSync(assetDirectory, { recursive: true });
 
 let hash = 0x811c9dc5;
@@ -31,4 +30,4 @@ let dependencyStatus = 'installed';
 if (modulesLoaded) dependencyStatus = 'already loaded';
 console.log(`Dependencies: ${dependencyStatus}`);
 console.log(`Assets: ${assetDirectory}`);
-console.log(`Development server: http://127.0.0.1:${process.env.PORT ?? port}`);
+console.log(`Development server: http://127.0.0.1:${port}`);

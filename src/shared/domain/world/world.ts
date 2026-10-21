@@ -18,7 +18,7 @@ export const WORLD = {
   tickRate: TICK_RATE,
   /** GTA2's map and sprite coordinate grid. One tile is one 64px sprite unit. */
   tileSize: 64,
-  /** Box2D uses metres; gameplay coordinates stay in GTA2 world pixels. */
+  /** The native physics backend uses metres; gameplay coordinates stay in GTA2 world pixels. */
   physicsUnitsPerWorldUnit: 10,
   player: {
     /** Movement rates are authored in tiles per second; convert at the boundary. */
@@ -206,6 +206,10 @@ export const WORLD = {
     flameSpeed: 0x666 / SOURCE_FIX16_ONE * TICK_RATE,
     /** ObjectDefinitions_8CA8: rocket 128 and shotgun 192 use Fix16(0x1999). */
     rocketSpeed: 0x1999 / SOURCE_FIX16_ONE * TICK_RATE,
+    /** The electro baton object uses the source's intermediate object speed;
+     * keeping it between ordinary bullets and rockets preserves its short,
+     * but still moving, baton window. */
+    electroSpeed: 0x1333 / SOURCE_FIX16_ONE * TICK_RATE,
     /** Throwable objects start from the source's Fix16(0x666) base before
      * Weapon_30's charge formula replaces the launch speed. */
     thrownSpeed: 0x666 / SOURCE_FIX16_ONE * TICK_RATE,
@@ -222,6 +226,8 @@ export const WORLD = {
       molotovBase: 0x147,
       sharedRamp: 0x666,
       carriedVelocity: 0x340,
+      /** NewMovingObjUnlessBlocked receives dword_706CF0 as z speed. */
+      verticalSpeed: (0x666 / 0x4000) * TICK_RATE,
       /** Object_2C::gravity is -dword_706F64, dword_706F64=0x20. */
       // Object_2C::z is stored in map-layer units, unlike x/y which are
       // rendered pixels.  Do not apply the tile-size conversion here.
@@ -246,7 +252,7 @@ export const WORLD = {
     projectileZOffset: 8,
     labelZOffset: 6,
   },
-  /** Vertical support is solved separately from planar Planck movement. */
+  /** Vertical support is solved separately from planar engine physics movement. */
   vertical: {
     gravity: 18,
     terminalVelocity: 24,

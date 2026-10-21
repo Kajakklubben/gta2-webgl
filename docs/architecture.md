@@ -1,228 +1,174 @@
 # Runtime architecture
 
-The runtime has four layers. Dependencies point downward toward smaller, more
-stable contracts; the engine never imports GTA2 rules, asset formats, Three.js,
-Node.js, or the network protocol.
+The repository has a shared deterministic game core with thin platform
+adapters. Dependencies point toward smaller, more stable contracts:
 
 ```text
-platform adapters       src/client, src/server
+browser adapter       src/client
+server adapter        src/server
         │
-game implementation     src/shared/domain, src/shared/objects, src/shared/game, src/shared/loader, src/shared/protocol
+shared game           src/shared/game, src/shared/domain
+asset/protocol edges  src/shared/loader, src/shared/protocol
         │
-engine                  src/shared/engine
+generic engine        src/shared/engine
         │
-runtime libraries       Planck.js, Three.js, WebSocket, browser/Node APIs
+runtime libraries     Planck.js, Three.js, WebSocket, browser/Node APIs
 ```
 
-## Engine
+## Repository boundaries
 
-`src/shared/engine` contains reusable runtime mechanics:
+| Area | Owns | Must not own |
+| --- | --- | --- |
+| `src/shared/engine` | fixed-step clocks, generic runtime coordination, physics interfaces, native solver implementation | GTA2 rules, asset formats, UI, transport |
+| `src/shared/domain` | GTA2 combat, physics math, vehicles, pedestrians, world constants | browser APIs, server APIs, rendering |
+| `src/shared/game` | game composition, object lifecycle, effects, runtime phases, GTA2 physics adapters, snapshots | Three.js, WebSocket transport |
+| `src/shared/loader` | GMP/STY/GCI/SCR decoding and typed asset bundles | filesystem access and HTTP serving |
+| `src/shared/protocol` | wire shapes, DTO conversion, validation, protocol constants | UI and server-only implementation details |
+| `src/client` | browser sessions, input, UI, rendering, visual tools | server authority and filesystem access |
+| `src/server` | asset access, HTTP, WebSocket rooms, authority, snapshots | browser UI and rendering |
+| `src/tests` | unit, integration, and browser verification | production runtime behavior |
 
-- `fixed-clock.ts` accumulates real time and executes a bounded fixed step.
-- `game-engine.ts` drives a deterministic world and owns the fixed world tick.
-- future engine modules belong here when they are independent of GTA2 concepts:
-  object lifecycle contracts, generic broad-phase collision, physics adapters,
-  interpolation, and replay/rollback support.
+## Generic engine
+
+`src/shared/engine` contains infrastructure that can be reused by a game:
+
+- `fixed-clock.ts` accumulates real time and executes bounded fixed steps;
+- `game-engine.ts` drives a fixed-step world;
+- `world-runtime.ts` provides generic phase coordination; and
+- `physics-world.ts` defines the engine-facing physics boundary and the
+  solver-neutral `PhysicsBody` transfer port. `planck-physics.ts` contains the
+  native Planck implementation behind that boundary, including any internal
+  world split. Game code never imports Planck or relies on the number of native
+  worlds.
 
 The engine receives input through callbacks and does not decide what a weapon,
-car, player, map tile, or network packet means. `world-runtime.ts` provides the
-generic fixed-order phase runner used by the game implementation.
+car, player, map tile, or network packet means. GTA2-specific physics and
+contact behavior lives in `src/shared/game/physics`, using only the engine
+contracts.
 
-## Game implementation
+## Shared game
 
-`src/shared/game` is the public composition boundary for a game; `src/shared/domain` contains rules and `src/shared/objects` contains entity lifecycles. `Gta2Game` currently
-wraps the deterministic `GameWorld` while the systems are migrated
-incrementally. New GTA2 rules should enter through this boundary rather than
-being added to the engine.
+`src/shared/game/gta2-game.ts` is the public GTA2 composition boundary and
+extends `GameWorld` from `game-world.ts`. `GameWorld` owns the shared state and
+connects focused modules without making the platform adapters know about the
+internal system layout.
 
-The GTA2 implementation owns:
+### Game objects and effects
 
-- player, NPC, vehicle, pickup, projectile, hazard, and weapon rules;
-- GTA2 collision categories, map floors, slopes, and Box2D fixtures;
-- traffic graphs, car handling, SCR weapon points, and multiplayer state;
-- GTA2 map/style/SCR/GCI decoders and typed asset catalogs under `src/shared/loader`;
-- the versioned wire model in `src/shared/protocol`.
+`src/shared/game/gameobjects` contains the typed `GameObject` classes and
+`GameState` store:
 
-The shared implementation is organized by responsibility: `src/shared/objects` contains entity
-lifecycles, `src/shared/domain/combat` contains weapons and damage, `src/shared/domain/physics` contains collision
-and motion, `src/shared/domain/vehicles` contains traffic and occupancy, `src/shared/domain/world` contains GTA2
-world constants and sprite metadata, and `src/shared/game/runtime` contains fixed-order
-world runtime orchestration. Generic timing lives in `src/shared/engine`, while
-GTA2 timing policy is defined in `src/shared/domain/world`.
+- `game-state.ts` owns object identity, typed lookup, state views, and deferred
+  spawn/despawn operations;
+- `gameobject.ts` defines placement, collision descriptors, update contexts,
+  and engine-neutral draw commands;
+- `player/` and `vehicle/` contain multi-file actor families;
+- `npc.ts` and `map-object.ts` contain single-file object types; and
+- `src/shared/game/effects` contains pickups, projectiles, hazards, and car-fire
+  objects.
 
-## Shared object blocking
+The object store is flat. Vehicle occupancy, projectile ownership, and effect
+relationships stay in domain state and object actions rather than a generic
+parent/child registry. The client consumes draw commands; shared objects never
+import the renderer.
 
-`GameObject.collision` declares a circle or oriented box, whether it is solid
-or a sensor, and an optional movement weight (zero means immovable). The base
-`GameObject.getCollider()` and `block()` methods own collider construction and
-the normal blocking response. `CollisionWorld.resolveBlocking()` handles all
-shape pairs uniformly, separating solids and removing only velocity into the
-surface. Object kinds do not select a blocking algorithm; masks can explicitly
-exclude a contact. Sensors produce queries without blocking movement.
+### Runtime phases
 
-Cars get their box dimensions from the loaded style's CARI records, on both
-the server and client. Sprite padding does not affect their footprint. Every
-car, including parked and burned-out cars, remains a dynamic solid with its
-authored mass, so player and car contacts can push the chassis. Clients consume
-these authoritative poses for presentation; they do not displace simulated
-objects.
-Impact damage is a separate game rule consuming pre-blocking contact velocities.
-Authored map walls remain in the Box2D backend, whose poses are synchronized
-after generic entity blocking. These compatibility modules currently live in
-`src/shared/domain/physics/physics-world.ts` and `src/shared/domain/physics/collision.ts`; the game-facing
-`PhysicsWorld` facade also drains map contact events in the shared collision
-phase.
+`src/shared/game/runtime` advances a `GameWorld` in a fixed order:
 
-`GameObjectRegistry` owns object identity, lookup, iteration, and kind-based
-cleanup; the world runtime no longer manipulates a raw object map when entities
-are created, removed, or restored. Object behaviors receive a narrow
-`GameObjectWorld` host and can defer child lifecycle changes until the phase
-boundary instead of mutating the registry during iteration.
+```text
+lifecycle → AI → input → physics → collision → combat → replication
+```
 
-Vehicle lifecycle is keyed by vehicle id as well. `VehicleCatalog` resolves the
-GCI handling record and CARI chassis bounds together, so traffic, player entry,
-entity collision, and the Box2D wall adapter share one metadata decision. The
-the world runtime no longer relies on array position to find or remove a vehicle.
+`phases.ts`, `phase-runners.ts`, and `early-phases.ts` define the order. Focused
+controllers handle map collision, surfaces, vehicles, pedestrians, combat,
+projectiles, damage, prediction, reconciliation, and object operations. Domain
+rules remain in `src/shared/domain`; runtime modules coordinate them.
 
-Vehicle occupancy is a single authoritative state machine in
-`src/shared/domain/vehicles/vehicle-occupancy.ts`. CARI's passenger count creates seat 0 for
-the driver and numbered passenger seats, while each seat retains its authored
-door. `TrafficState.occupants` is the source of truth; `driver` and
-`passengers` remain synchronized aliases for older clients. Door state carries
-the source open/close phase, frame, hold timer, and current occupant. The
-the world runtime checks static-wall access before entry or exit, reserves the seat
-while a ped approaches, interpolates the ped through the door into the seat,
-and attaches seated players/NPCs to the vehicle pose. Exiting uses the same
-door path in reverse and is gated by the source low-speed rule. Player and NPC
-vehicle fields are replicated alongside the traffic state so clients can hide
-seated sprites and attach remote occupants without running a second vehicle
-the world runtime. `requestNpcEnterVehicle` and `requestNpcExitVehicle` expose the
-same path to AI behaviors.
+### Physics
 
-Traffic cars are spawned from authored road-arrow positions at the camera edge
-and remain parked until a player takes the driver seat. No route cursor, traffic
-light phase, waypoint steering, or ahead-of-car scan runs for spawned traffic;
-the road graph is used only to select valid spawn lanes. CARI door positions
-control entry/exit checks, while CARI emergency flags and remap indices are
-retained in replicated state.
+`src/shared/game/physics` owns GTA2-specific shape descriptors and contact
+handling. The shared domain supplies collision shapes, surface queries,
+vehicle integration, skid, impact, collision categories, and proximity
+calculations. The native Planck lifecycle and any internal world split belong
+to `src/shared/engine/planck-physics.ts`; game physics translates map metadata
+and GTA2 descriptors through the engine-facing ports. Map walls and dynamic
+entities therefore use the same engine abstraction without exposing the solver
+choice or world count to gameplay code.
 
-Vehicle integration follows the source force order: point velocity is sampled
-at each wheel, engine torque is split across driven axles, lateral grip and
-braking are applied at wheel points, and the resulting force/torque is divided
-by authored mass and chassis moment before integration. Box2D remains the map
-wall sweep; the shared collision world supplies oriented entity contacts and
-mass-weighted impulses. Wrecks transition through the authored countdown into
-a wreck sprite and a replicated fire effect.
+Vehicle metadata is resolved once from the loaded GCI/CARI catalog. Occupancy
+and door transitions use `src/shared/domain/vehicles/vehicle-occupancy.ts` and
+replicate the vehicle links needed by remote clients. The server remains the
+authority for traffic, vehicles, NPCs, effects, combat, and match state.
 
-Pedestrians build patrol loops from walkable map blocks instead of borrowing the
-vehicle road graph. Their replicated state includes path cursor, walking,
-panic/flee, knockdown, attack, and death states. Police react to wanted or
-recently firing players, while civilians flee from nearby threats.
+## Assets and protocol
 
-## Unified sprite draw model
+`src/shared/loader` is the typed asset boundary. Parsers decode source bytes;
+`asset-loaders.ts`, `bundle.ts`, and `cars.ts` compose map, style, pickup,
+weapon, and vehicle catalogs; `models/` contains the returned shapes.
 
-Every `GameObject` exposes a typed `GameObjectSprite` description from its
-`draw()` command. The description contains the atlas (`player`, `cars`,
-`codeObjects`, or `objects`), model/range, animation timing, a shared
-`GameObjectPlacement` value, opacity, and depth policy. Collision, movement,
-labels, and rendering all use that same placement value. The world runtime therefore describes presentation without
-depending on Three.js; the client renderer resolves the same command shape for
-players, NPCs, vehicles, pickups, projectiles, and hazards. Asset-specific
-frame lookup stays in [sprite-view.ts](/Users/kaspervidebaek/Documents/gta2-webgl/src/client/rendering/sprites/sprite-view.ts), the single dynamic sprite adapter, while gameplay objects remain authoritative and testable in the core. Static map geometry and transient impact effects remain separate because they have different lifetimes from simulated objects.
+`src/shared/protocol` is the wire boundary. `types.ts` defines messages and
+replicated state, `client-dto.ts` converts wire values, and `validation.ts`
+rejects malformed input. `src/shared/game/snapshot-codecs.ts` clones and
+applies nested state so authoritative restores do not accidentally share
+mutable arrays or objects.
 
-The client renderer accepts a named `RenderFrame` object rather than a long
-positional argument list. This keeps interpolation, authoritative snapshot
-state, and simulated object commands explicit as new presentation data is added.
+## Server adapter
 
-Transient labels, impact bursts, and shot effects are owned by
-`PresentationSystem`. `Renderer` coordinates map, sprites, presentation, and
-debug layers without retaining per-frame label and effect state itself.
+`src/server/main.ts` initializes typed assets, creates the initial game, and
+assembles HTTP and multiplayer adapters. `config.ts` and `runtime-config.ts`
+resolve the checkout-local port and asset/map/style/script configuration.
 
-Runtime values cross the network boundary through the typed codecs in
-`src/shared/game/snapshot-codecs.ts`. Server snapshots use cloned wire values, while
-restore paths apply them to retained runtime objects. Nested combat state and
-vehicle passenger arrays are copied at this boundary.
+`multiplayer.ts` owns WebSocket peers, rooms, input queues, ready/chat state,
+and the fixed tick. `snapshot-builder.ts` builds the initial and incremental
+client snapshots, including interest-filtered world state. The server creates
+one `Gta2Game` per room and drives it through `GameEngine`.
 
-`GameWorld.step()` is a coordinator over the ordered phases
-`lifecycle → ai → input → physics → collision → combat → replication`. Each
-phase receives a fixed-step context and a small per-tick state object, making
-the authoritative order visible and testable without moving GTA2 rules into
-the engine.
+## Client adapter
 
-## Architecture pass: ownership and presentation seams
+`src/client/app` owns browser lifecycle and session orchestration:
 
-The object model now has one ownership contract. `GameObjectRegistry` in
-`src/shared/objects/game-state.ts` owns typed lookup and lifecycle used by the world runtime,
-while each object can own transient child objects through `attachChild`,
-`detachChild`, `children`, and `walkChildren`.
-Children carry their parent key in draw commands, and registry removal cascades
-through the ownership tree. This gives effects, mounted weapons, vehicle
-occupants, and future sensors a place to live without adding special cases to
-every system. The registry remains flat for collision and rendering lookup;
-parentage describes lifetime, not spatial transforms.
+- `main.ts` is the thin browser entrypoint;
+- `game-client.ts` composes the session and UI integrations;
+- `game-client-frame.ts` advances local input, sends online input, and renders;
+- `game-client-network.ts` owns WebSocket connection and snapshot ingestion;
+- `game-client-hud.ts` maps player state to HUD elements;
+- `local-session.ts` and `multiplayer-session.ts` build the two game modes; and
+- `client-snapshot.ts` expands and restores authoritative snapshots.
 
-Authoritative snapshots are reconciled by id in
-`src/shared/game/runtime/reconciliation.ts`. Retained state objects are updated in
-place, new ids are created, and missing ids are removed. This preserves
-`GameObject`, collision-body, and renderer-mesh identity during multiplayer
-updates. The renderer receives authoritative poses through explicit
-`placementOverrides`, keyed by the same object key used by draw commands, so
-rendering does not mutate raw protocol state.
+`src/client/rendering` turns draw commands and authoritative state into Three.js
+presentation. `renderer.ts` coordinates cameras, map meshes, sprites,
+interpolation, transient presentation, and debug layers. `src/client/tools`
+contains the sprite viewer and deterministic scenario viewer; these tools reuse
+production loaders, game objects, and rendering without becoming alternate
+gameplay implementations.
 
-This pass implements the five requested seams. The remaining architectural
-risks are:
+## Tests
 
-1. `GameWorld` still owns the GTA2 systems and should eventually become a
-   thinner composition root around dedicated combat, traffic, and replication
-   services.
-2. Box2D and the entity broad phase remain separate implementations behind the
-   common facade; a later pass can replace the adapter with one authoritative
-   contact solver.
-3. Runtime state still uses protocol-shaped fields internally. The codecs now
-   isolate copying, but domain-specific runtime models and dirty replication
-   fields are still a worthwhile follow-up.
-4. Authority and replication diagnostics are not yet first-class object
-   services.
+Tests mirror the runtime boundaries:
 
-These are boundaries rather than new game rules: engine code stays generic,
-GTA2 rules stay in the game layer, and the client remains a presentation and
-input adapter.
+- `src/tests/unit` covers domain, loader, protocol, object, rendering, and
+  runtime behavior with synthetic fixtures;
+- `src/tests/integration` covers HTTP/WebSocket, configuration, rooms, and
+  server-side world activity; and
+- `src/tests/e2e` runs Playwright against the synthetic fixture server and
+  covers the game, sprite viewer, and scenario viewer.
 
-## Platform adapters
+## Change placement
 
-`src/server` owns filesystem loading, HTTP/WebSocket transport, room creation,
-rate limits, and snapshot delivery. It creates one `Gta2Game` per room and
-drives it with `GameEngine`.
+When adding a feature, use the narrowest owner:
 
-`src/server/main.ts:init()` is the server bootstrap boundary. It loads the
-typed assets, creates the initial `Gta2Game`, attaches HTTP and multiplayer
-adapters, and returns an unbound server runtime. `startServer()` only adds the
-listening socket and signal handlers. This keeps initialization reusable for
-tests and for tools that create more than one checkout-local runtime.
-
-When `PORT` is unset, `src/server/runtime-config.ts` hashes the absolute working
-directory into the `8000–8999` range. Separate Git worktrees therefore get
-stable, independent development ports; an explicit `PORT` still wins.
-
-`src/client/app` owns browser input, bootstrapping, audio, and authoritative
-snapshot application. `src/client/rendering` owns Three.js scene construction,
-sprite presentation, map rendering, and debug views. Rendering code may read
-game asset metadata but must not change authoritative game state.
-
-## Change placement rules
-
-When adding a feature, use the narrowest layer that can express it:
-
-| Feature | Layer |
+| Feature | Location |
 | --- | --- |
-| Fixed timestep and accumulator | Engine |
-| GTA2 weapon damage, car handling, slopes, pickup rules | Game |
-| GMP/STY/SCR/GCI decoding | Shared loader |
-| WebSocket validation, rooms, reconnects | Server adapter |
-| Three.js materials, depth ordering, touch controls | Client adapter |
-| A network-visible state shape | Shared protocol |
+| Fixed timestep or generic phase coordination | `src/shared/engine` |
+| GTA2 weapon, vehicle, pedestrian, collision, or world rule | `src/shared/domain` |
+| Game object, effect, runtime controller, or snapshot reconciliation | `src/shared/game` |
+| GMP/STY/SCR/GCI decoding or asset model | `src/shared/loader` |
+| Network-visible state shape or message validation | `src/shared/protocol` |
+| WebSocket rooms, HTTP, asset files, or authority | `src/server` |
+| Input, HUD, browser session, Three.js, or visual tools | `src/client` |
+| Verification of any of the above | `src/tests` |
 
-The server owns the deterministic game implementation and all authoritative
-mutation in multiplayer. Clients send sequenced inputs and apply snapshots for
-presentation.
-
+The server owns authoritative multiplayer mutation. Clients send sequenced
+inputs and apply snapshots for presentation; they do not run a second
+authoritative multiplayer world.

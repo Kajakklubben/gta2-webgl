@@ -2,7 +2,7 @@ import type { PickupState } from '../../protocol/types';
 import type { GameObjectSprite } from '../gameobjects/gameobject';
 import { StatefulGameObject, type GameObjectUpdateHandler } from '../gameobjects/stateful';
 import { PlayerObject } from '../gameobjects/player';
-import { COLLISION_CATEGORY } from '../../domain/physics/collision';
+import { COLLISION_CATEGORY } from '../../domain/physics/collision-rules';
 import { GTA2_PICKUP_SPRITES } from '../../domain/world/gta2-sprites';
 import { WORLD } from '../../domain/world/world';
 export class PickupObject extends StatefulGameObject<PickupState, number> {

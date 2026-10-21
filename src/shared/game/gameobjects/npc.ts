@@ -1,8 +1,8 @@
 import type { CombatShot, NpcState } from '../../protocol/types';
-import type * as planck from 'planck';
+import type { PhysicsBody } from '../../engine/physics-world';
 import { type GameObjectCombatContext, type GameObjectPlacement, type GameObjectSprite, type PhysicsReadOptions } from './gameobject';
 import { MobileGameObject, type GameObjectUpdateHandler, type MobilePose } from './stateful';
-import { COLLISION_CATEGORY } from '../../domain/physics/collision';
+import { COLLISION_CATEGORY } from '../../domain/physics/collision-rules';
 import { PED_DEATH_ANIMATION_TICKS, sourceAnimationDefinition, sourceAnimationFrame, sourceAnimationPosition } from '../../domain/animation';
 import { GTA2_SOURCE_OBJECT_MODELS, GTA2_WATER_SPLASH_VISUAL_TICKS } from '../../domain/world/gta2-sprites';
 import { WORLD } from '../../domain/world/world';
@@ -147,7 +147,7 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     else this.setBehavior('walk', 'walking');
   }
 
-  preparePhysics(body: planck.Body, start: { x: number; y: number }, dt: number, worldToPhysics: (value: number) => number, updateLayer: () => void, applySurface: () => void) {
+  preparePhysics(body: PhysicsBody, start: { x: number; y: number }, dt: number, worldToPhysics: (value: number) => number, updateLayer: () => void, applySurface: () => void) {
     if (this.mutableState.vehicleId === undefined) applySurface();
     updateLayer();
     const active = this.mutableState.health > 0 && this.mutableState.drowningTimer === undefined && this.mutableState.vehicleId === undefined;
@@ -164,7 +164,7 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     body.setAwake(true);
   }
 
-  override readPhysics(body: planck.Body, physicsToWorld: (value: number) => number, options: PhysicsReadOptions = {}) {
+  override readPhysics(body: PhysicsBody, physicsToWorld: (value: number) => number, options: PhysicsReadOptions = {}) {
     if (this.mutableState.health <= 0 || this.mutableState.vehicleId !== undefined) return;
     super.readPhysics(body, physicsToWorld, {
       ...options,
@@ -232,6 +232,16 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     this.mutableState.state = 'panic';
     this.mutableState.vx = 0; this.mutableState.vy = 0;
     if (this.mutableState.shockCounter >= WORLD.combat.electrocutionThreshold) this.mutableState.electrocuted = true;
+  }
+
+  addThreat(actor: string, duration = 45) {
+    this.mutableState.threatenedBy = actor;
+    this.mutableState.threatTimer = Math.max(this.mutableState.threatTimer ?? 0, duration);
+  }
+
+  applyExplosionImpulse(x: number, y: number) {
+    this.mutableState.vx += x;
+    this.mutableState.vy += y;
   }
 
   /** Source Ped::SetOnFire. The fire is an attached object (model 197), not a
@@ -319,12 +329,13 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
   /** Source Char_B4::HandlePedHitByObject entry point. Fire-stream objects
    * force the panic animation, baton objects electrocute without inventing a
    * new health packet, and ordinary objects use the authored NPC packet. */
-  receiveWeaponHit(damage: number, sourceModel?: number, killer?: string, combat?: Pick<GameObjectCombatContext, 'authoritative' | 'nextHazardId'>, impactRotation?: number) {
+  receiveWeaponHit(damage: number, sourceModel?: number, killer?: string, combat?: Pick<GameObjectCombatContext, 'authoritative' | 'nextHazardId'>, impactRotation?: number, cause: NpcState['deathCause'] = 'weapon') {
     if (sourceModel === 277) {
       let shockDamage = 5;
       if (damage > 0) shockDamage = damage;
       this.shock(shockDamage);
       if (damage > 0) this.applyDamage(damage, 'panic', 'walking');
+      if (this.mutableState.health <= 0) this.mutableState.deathCause = cause;
       return this.mutableState.health > 0;
     }
     if (sourceModel === GTA2_SOURCE_OBJECT_MODELS.fireHitting) {
@@ -333,6 +344,7 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     }
     if (sourceModel === GTA2_SOURCE_OBJECT_MODELS.flamethrowerImpact) {
       this.applyDamage(Math.max(1, damage), 'panic', 'walking');
+      if (this.mutableState.health <= 0) this.mutableState.deathCause = cause;
       this.mutableState.panicTimer = Math.max(this.mutableState.panicTimer ?? 0, 30);
       return this.mutableState.health > 0;
     }
@@ -351,7 +363,7 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
         this.mutableState.deathPose = 'lying';
       }
     }
-    if (!alive) this.mutableState.killer = killer;
+    if (!alive) { this.mutableState.killer = killer; this.mutableState.deathCause = cause; }
     return alive;
   }
 
@@ -392,6 +404,10 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
 
   override update(context: Parameters<NonNullable<GameObjectUpdateHandler<NpcState>>>[1]) {
     super.update(context);
+    if ((this.mutableState.threatTimer ?? 0) > 0) {
+      this.mutableState.threatTimer = Math.max(0, (this.mutableState.threatTimer ?? 0) - 1);
+      if (this.mutableState.threatTimer === 0) this.mutableState.threatenedBy = undefined;
+    }
     this.mutableState.shots = this.mutableState.shots.map(shot => ({ ...shot, life: shot.life - 1 })).filter(shot => shot.life > 0);
     const combat = context.combat;
     if (combat) this.tickStatus(combat);

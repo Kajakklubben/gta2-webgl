@@ -1,0 +1,6 @@
+[MapFiles]
+GMPFile = ste.gmp
+STYFile = ste.sty
+SCRFile = res-5p.scr
+Description = Residential 5Player
+PlayerCount = 5

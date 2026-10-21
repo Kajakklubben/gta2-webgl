@@ -4,7 +4,6 @@ import { WORLD } from '../world/world';
 import { GTA2_SHOCKER_CHAIN_RADIUS, GTA2_SHOCKER_HALF_ANGLE, GTA2_SHOCKER_INITIAL_RADIUS } from './weapons';
 import type { WeaponSystem } from './weapon-system';
 import { LagCompensation, type HistoryTick } from './lag-compensation';
-import { mapFixtureMatches } from '../physics/map-fixtures';
 
 export type WeaponRayTarget =
   | { readonly kind: 'player'; readonly state: PlayerState }
@@ -42,6 +41,7 @@ export interface WeaponRaycasterContext {
   readonly npcs: () => Iterable<NpcState>;
   readonly vehicles: () => Iterable<TrafficState>;
   readonly history: LagCompensation;
+  readonly mapFixtureMatches: (fixture: unknown, layer: number, mode: 'movement' | 'bullet') => boolean;
   readonly rayCast: (start: { x: number; y: number }, end: { x: number; y: number }, accept?: (fixture: unknown) => boolean) => number;
 }
 
@@ -58,13 +58,10 @@ export class WeaponRaycaster {
     const wallFraction = this.context.rayCast(
       { x: originX, y: originY },
       { x: originX + direction.x * distance, y: originY + direction.y * distance },
-      fixture => mapFixtureMatches(fixture, Math.max(0, Math.min(7, Math.ceil(actor.z))), 'bullet'),
+      fixture => this.context.mapFixtureMatches(fixture, Math.max(0, Math.min(7, Math.ceil(actor.z))), 'bullet'),
     );
     distance = Math.min(distance, weapon.range * wallFraction);
     const targets: WeaponRayTarget[] = [];
-    const historicalShooter = this.context.history.player(actor.id, clientTick, actor);
-    const historicalOriginX = historicalShooter.x;
-    const historicalOriginY = historicalShooter.y;
     const pickTarget = (ox: number, oy: number, radius: number, target: { x: number; y: number }) => {
       const dx = target.x - ox, dy = target.y - oy;
       const along = dx * direction.x + dy * direction.y;
@@ -75,7 +72,7 @@ export class WeaponRaycaster {
     for (const other of this.context.players()) {
       if (other.id === actor.id || other.combat.respawn || Math.abs(other.z - actor.z) > WORLD.interaction.sameFloor || (actor.team && other.team === actor.team)) continue;
       const historical = this.context.history.player(other.id, clientTick, other);
-      const hit = pickTarget(historicalOriginX, historicalOriginY, 10, { x: historical.x, y: historical.y });
+      const hit = pickTarget(originX, originY, 10, { x: historical.x, y: historical.y });
       if (hit < distance) { distance = hit; targets.splice(0, targets.length, { kind: 'player', state: other }); }
     }
     for (const other of this.context.npcs()) {
@@ -139,7 +136,7 @@ export class WeaponRaycaster {
       for (const candidate of candidates) {
         const wallFraction = this.context.rayCast(
           { x: startX, y: startY }, { x: candidate.x, y: candidate.y },
-          fixture => mapFixtureMatches(fixture, Math.max(0, Math.min(7, Math.ceil(startZ))), 'bullet'),
+          fixture => this.context.mapFixtureMatches(fixture, Math.max(0, Math.min(7, Math.ceil(startZ))), 'bullet'),
         );
         if (wallFraction < 0.999) continue;
         visited.add(candidate.key);

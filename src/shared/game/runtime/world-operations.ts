@@ -1,26 +1,16 @@
-import * as planck from 'planck';
-import type { Input, PlayerState, TrafficState, WorldEventInput } from '../../protocol/types';
+import type { Input, PlayerState, TrafficState } from '../../protocol/types';
 import { PlayerObject } from '../gameobjects/player';
 import { NpcObject } from '../gameobjects/npc';
 import { VehicleObject } from '../gameobjects/vehicle';
 import { directionFromRotation } from '../../domain/physics/motion-vector';
-import { tileToWorld, worldToPhysics, WORLD } from '../../domain/world/world';
+import { worldToPhysics, WORLD } from '../../domain/world/world';
 import { playerSnapshotCodec } from '../snapshot-codecs';
 import { occupantForPlayer } from '../../domain/vehicles/vehicle-occupancy';
-import type { CollisionContact } from '../../domain/physics/collision';
+import type { CollisionContact } from '../physics/collision-world';
 import { isLethalPedestrianImpact, sourcePedestrianImpact } from '../../domain/physics/pedestrian-impact';
+export { raiseWanted, syncBlockedBodies } from './world-operations-physics';
+export { emit, floor, input, spawnPoint, updateNpcJumps } from './world-operations-basic';
 
-export function spawnPoint(host: any, arrest = false) {
-    const zone = host.level.zones.find((item: { type: number; x: number; y: number; w: number; h: number }) => item.type === (arrest ? 20 : 16)) ??
-      host.level.zones.find((item: { type: number; x: number; y: number; w: number; h: number }) => item.type === 16);
-    let point = { x: tileToWorld(85), y: -tileToWorld(190) };
-    if (zone) point = { x: tileToWorld(zone.x + zone.w / 2), y: -tileToWorld(zone.y + zone.h / 2) };
-    const surface = host.surfaces.resolve(point);
-    const support = surface[0];
-    let result: { x: number; y: number; z: number; collisionLayer?: number } = { x: point.x, y: point.y, z: support?.height ?? 0 };
-    if (support) result = { ...result, collisionLayer: support.collisionLayer };
-    return result;
-  }
 export function addPlayer(host: any, id: string, state?: PlayerState) {
     const spawn = host.spawnPoint();
     let player: PlayerState;
@@ -51,42 +41,18 @@ export function addPlayer(host: any, id: string, state?: PlayerState) {
     // A local world keeps bodies for the player and the currently occupied
     // chassis so authoritative snapshots can restore their physics state.
     if (!host.localId || id === host.localId) {
-      const body = host.physicsRuntime.createBody({
-        type: 'dynamic',
-        position: { x: worldToPhysics(player.x), y: -worldToPhysics(player.y) },
-        allowSleep: false,
-        fixedRotation: true,
-      });
-      body.createFixture({
-        shape: new planck.CircleShape(1),
-        density: 1.3,
-        friction: 0,
-        restitution: 0,
-        filterCategoryBits: 1 << 15,
-        filterMaskBits: 1 << host.collisionLayer(player),
-      });
-      // Char_B4 movement is swept against map edges; keep the same continuous
-      // collision behavior for a fast ped crossing a thin wall.
-      body.setBullet(true);
+      const body = host.createPlayerPhysicsBody(player);
       host.bodies.set(id, body);
     }
     return player;
   }
 export function removePlayer(host: any, id: string) {
     const body = host.bodies.get(id);
-    if (body) host.physicsRuntime.destroyBody(body);
+    if (body) host.destroyPhysicsBody(body);
     for (const vehicle of host.gameObjects.vehicles) if (occupantForPlayer(vehicle.state, id)) host.detachVehicleOccupant(vehicle.state, id);
     host.bodies.delete(id); host.history.delete(id); host.recentVehicleEntries.delete(id);
     host.gameObjects.findPlayer(id)?.despawn();
     host.spawnProtection.delete(id); host.wantedDecay.delete(id);
-  }
-export function floor(host: any, player: PlayerState) {
-    return host.surfaceController.floor(player);
-  }
-export function input(_host: any, value: number | Input | undefined): Input {
-    if (typeof value === 'number') return { seq: 0, keys: value };
-    if (value) return value;
-    return { seq: 0, keys: 0 };
   }
   /** Start the source-style DoJump state. The ped stays on the map floor for
    * wall/slope physics; its airborne height is a replicated presentation
@@ -102,16 +68,6 @@ export function updatePlayerJumps(host: any, dt: number, playerOnly = false) {
       const object = host.gameObjects.findPlayer(player.id);
       if (object instanceof PlayerObject) object.updateJump(dt);
     }
-  }
-export function updateNpcJumps(host: any, dt: number) {
-  if (host.localId) return;
-  for (const npc of host.gameState.npcStates) {
-    const object = host.gameObjects.findNpc(npc.id);
-    if (object instanceof NpcObject) object.updateJump(dt);
-  }
-  }
-export function emit(host: any, event: WorldEventInput) {
-    host.events.push({ ...event, id: host.eventId++, tick: host.tick });
   }
 export function killPlayer(host: any, target: PlayerState, killer?: string) {
     const object = host.gameObjects.findPlayer(target.id);
@@ -135,10 +91,10 @@ export function killNpc(host: any, target: NpcObject) {
     }
     return target.killByWater();
   }
-export function damagePlayer(host: any, target: PlayerState, damage: number, killer?: string) {
+export function damagePlayer(host: any, target: PlayerState, damage: number, killer?: string, cause: PlayerState['deathCause'] = 'weapon') {
     const object = host.gameObjects.findPlayer(target.id);
     if (!(object instanceof PlayerObject)) return false;
-    if (object.takeDamage(damage)) host.killPlayer(target, killer);
+    if (object.takeDamage(damage, killer, cause)) host.killPlayer(target, killer);
     return true;
   }
 
@@ -184,7 +140,7 @@ export function applyVehicleImpacts(host: any, contacts: readonly CollisionConta
       const avx = a.vx, avy = a.vy, bvx = b.vx, bvy = b.vy;
       const relativeX = (contact.velocityA?.x ?? avx) - (contact.velocityB?.x ?? bvx), relativeY = (contact.velocityA?.y ?? avy) - (contact.velocityB?.y ?? bvy);
       const closing = Math.max(0, relativeX * nx + relativeY * ny);
-      // Planck's native fixture restitution, friction, and mass properties
+      // The native fixture restitution, friction, and mass properties
       // already produced the post-contact velocities in CollisionWorld. Keep
       // this phase limited to GTA2's damage event; applying a second gameplay
       // impulse here would double the bounce and diverge from the physics
@@ -230,7 +186,7 @@ export function applyPedestrianImpacts(host: any, contacts: readonly CollisionCo
       const linearX = carVelocity?.x ?? vehicle.vx;
       const linearY = carVelocity?.y ?? vehicle.vy;
       // CarPhysics_B0::ComputeRelativePointVelocity_561130 includes angular
-      // velocity at the collision point.  The Planck contact already gives us
+      // velocity at the collision point.  The engine contact already gives us
       // the point, so preserve that part before projecting the car's incoming
       // velocity onto the contact normal. The original car dispatch does not
       // turn a pedestrian walking into a stationary chassis into a car impact.
@@ -269,30 +225,5 @@ export function applyPedestrianImpacts(host: any, contacts: readonly CollisionCo
         otherBody.object.receiveVehicleImpact(sourceImpact, driverId, combat, { lethal, rotation, impulseX, impulseY });
       }
     }
-  }
-  /** Synchronize the map physics backend after shared GameObject blocking. */
-export function syncBlockedBodies(host: any) {
-    for (const [id, body] of host.bodies) {
-      const object = host.gameObjects.findPlayer(id);
-      if (!object) continue;
-      const pose = object.placement, velocity = object.readPhysicsVelocity();
-      body.setPosition({ x: worldToPhysics(pose.x), y: -worldToPhysics(pose.y) });
-      body.setLinearVelocity({ x: worldToPhysics(velocity.vx ?? 0), y: -worldToPhysics(velocity.vy ?? 0) });
-    }
-    for (const object of host.gameObjects.vehicles) {
-      const vehicle = object.state, body = host.vehicleBodies.get(object.id);
-      if (!body) continue;
-      body.setPosition({ x: worldToPhysics(vehicle.x), y: -worldToPhysics(vehicle.y) });
-      body.setLinearVelocity({ x: worldToPhysics(vehicle.vx), y: -worldToPhysics(vehicle.vy) });
-      body.setAngle(-vehicle.rotation); body.setAngularVelocity(-vehicle.angularVelocity);
-    }
-    host.syncNpcBodies();
-  }
-export function raiseWanted(host: any, player: PlayerState, amount = 1) {
-    const object = host.gameObjects.findPlayer(player.id);
-    if (!(object instanceof PlayerObject)) return false;
-    object.raiseWanted(amount);
-    host.wantedDecay.set(player.id, 900);
-    return true;
   }
 

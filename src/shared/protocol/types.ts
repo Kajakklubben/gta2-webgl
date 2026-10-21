@@ -126,6 +126,12 @@ export interface TrafficState {
   /** Public-transport service metadata. Ordinary traffic keeps this absent. */
   transport?: 'bus' | 'train' | undefined; serviceStop?: number | undefined; pursuitTarget?: string | undefined;
   brakeLights?: boolean | undefined; headlights?: boolean | undefined; emergencyLights?: boolean | undefined; horn?: boolean | undefined; doors?: number | undefined;
+  /** Optional source attachment pose used by turret-mounted weapons. */
+  turretRotation?: number | undefined;
+  /** Installed weapon slots; absent means the chassis has no optional weapon upgrade. */
+  mountedWeapons?: number[] | undefined;
+  /** Trailer cab link used by the source car-bomb dispatch. */
+  trailerId?: number | undefined;
   /** Ordered passenger references. Index 0 is the driver; when it leaves,
    * the next passenger shifts into the driver position. */
   passengers: string[];
@@ -174,6 +180,9 @@ export interface NpcState {
   crossingRoad?: boolean | undefined;
   /** Source gang/remap relationship. Zero is neutral; positive values are gang ids. */
   faction?: number | undefined;
+  /** Source-style short-lived threat target created by weapon-fired events. */
+  threatenedBy?: string | undefined;
+  threatTimer?: number | undefined;
   /** A dummy can keep the source jump arc while remote clients render it. */
   jump?: JumpState | undefined;
   /** Source Char_B4::sinking_20 countdown. The ped is still alive while it
@@ -182,7 +191,7 @@ export interface NpcState {
   deathCause?: 'weapon' | 'run-over' | 'explosion' | 'fire' | 'water' | undefined;
   vehicleId?: number | undefined;
 }
-export interface HazardState { id: number; x: number; y: number; z: number; kind: 'slick' | 'mine' | 'fire' | 'blood' | 'impact' | 'skid' | 'water'; life: number; owner?: string | undefined; collisionLayer?: number | undefined; /** Distinguishes one-shot blast visuals from persistent fire when no source model is present. */ effect?: 'fire' | 'explosion' | undefined; /** Source explosion family: 18/32 small, 19 item/car, or 20 large. */ explosionType?: 'small' | 'item' | 'large' | undefined; /** Authored code-object model for source-specific fire/explosion effects. */ sourceModel?: number | undefined; /** Remaining Explosion_30 timer when this is a source-timed blast. */ sourceTimer?: number | undefined; rotation?: number | undefined; scale?: number | undefined; variant?: number | undefined }
+export interface HazardState { id: number; x: number; y: number; z: number; kind: 'slick' | 'mine' | 'fire' | 'blood' | 'impact' | 'skid' | 'water'; life: number; owner?: string | undefined; collisionLayer?: number | undefined; /** Distinguishes one-shot blast visuals from persistent fire when no source model is present. */ effect?: 'fire' | 'explosion' | undefined; /** Source explosion family: 18/32 small, 19 item/car, or 20 large. */ explosionType?: 'small' | 'item' | 'large' | undefined; /** Authored code-object model for source-specific fire/explosion effects. */ sourceModel?: number | undefined; /** Remaining Explosion_30 timer when this is a source-timed blast. */ sourceTimer?: number | undefined; /** Countdown for an attached source object before it triggers its transition. */ armingTimer?: number | undefined; /** Vehicle that owns an attached source object such as a normal car bomb. */ vehicleId?: number | undefined; rotation?: number | undefined; scale?: number | undefined; variant?: number | undefined }
 export interface MatchState { room: string; status: 'lobby' | 'playing' | 'finished'; maxPlayers: number; elapsed: number; ready: number }
 export interface ChatMessage { id: number; sender: string; name: string; text: string; tick: number }
 interface WorldEventPosition { id: number; tick: number; x: number; y: number; z: number }
@@ -206,6 +215,7 @@ export interface PlayerState {
   /** Replicated Char_B4 sinking_20 countdown before a water death. */
   drowningTimer?: number | undefined;
   name: string; color: number; score: number; kills: number; deaths: number; ready: boolean; armor: number; money: number; wanted: number; team: number;
+  killer?: string | undefined; deathCause?: 'weapon' | 'run-over' | 'explosion' | 'fire' | 'water' | undefined;
 }
 export type { ClientCombatDto, ClientEventDto, ClientHazardDto, ClientNpcDto, ClientPickupDto, ClientPlayerDto, ClientServerMessage, ClientSnapshot, ClientTrafficDto, ClientWelcomeDto } from './client-dto';
 import type { ClientServerMessage, ClientSnapshot } from './client-dto';

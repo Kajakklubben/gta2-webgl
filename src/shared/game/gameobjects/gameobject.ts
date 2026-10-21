@@ -1,7 +1,7 @@
-import { collisionId, defaultCollisionCategory, type CollisionBody, type CollisionQuery } from '../../domain/physics/collision';
-import type * as planck from 'planck';
+import { collisionId, defaultCollisionCategory, type CollisionBody, type CollisionQuery } from '../physics/collision-world';
+import type { PhysicsBody } from '../../engine/physics-world';
 import type { SurfaceResult } from '../../domain/physics/map-surface';
-import type { HazardState, WorldEventInput } from '../../protocol/types';
+import type { HazardState, NpcState, PlayerState, WorldEventInput } from '../../protocol/types';
 import type { WeaponSystem } from '../../domain/combat/weapon-system';
 import type { GameState } from './game-state';
 import type { HazardObject } from '../effects/hazard';
@@ -18,7 +18,7 @@ export interface GameObjectCollision {
   readonly solid?: boolean;
   /** Zero is immovable; positive weights share separation between movable objects. */
   readonly weight?: number;
-  /** Native Planck contact response. Defaults match GTA2's non-bouncy ped objects. */
+  /** Native solver contact response. Defaults match GTA2's non-bouncy ped objects. */
   readonly restitution?: number;
   readonly friction?: number;
   /** Keep circles/ped bodies upright; vehicle boxes may opt into native yaw. */
@@ -206,9 +206,9 @@ export interface GameObjectCombatContext {
   findNpc(id: number): NpcObject | undefined;
   /** Finalize a source-style drowning death, including vehicle detachment. */
   killNpc(target: NpcObject): void;
-  damagePlayer(target: PlayerObject, damage: number, killer?: string): void;
+  damagePlayer(target: PlayerObject, damage: number, killer?: string, cause?: PlayerState['deathCause']): void;
   damageVehicle(target: VehicleObject, damage: number, x?: number, y?: number, sourceModel?: number, attacker?: string): void;
-  damageNpc(target: NpcObject, damage: number, killer?: string, sourceModel?: number, impactRotation?: number): void;
+  damageNpc(target: NpcObject, damage: number, killer?: string, sourceModel?: number, impactRotation?: number, cause?: NpcState['deathCause']): void;
   readonly isWaterAt: (point: { x: number; y: number; z: number }) => boolean;
   raiseWanted(player: PlayerObject): void;
   emit(event: WorldEventInput): void;
@@ -222,7 +222,7 @@ export type ProjectileCombatContext = Pick<GameObjectCombatContext,
   'findVehicle' | 'findNpc' | 'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'raiseWanted' | 'queryCircle' | 'emit'>;
 export type ProjectileImpactContext = Pick<GameObjectCombatContext,
   'authoritative' | 'weaponSystem' | 'findPlayer' | 'findVehicle' | 'findNpc' |
-  'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'raiseWanted' | 'emit' | 'nextHazardId'>;
+  'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'raiseWanted' | 'emit' | 'nextHazardId' | 'spawnEffect'>;
 export type HazardCombatContext = Pick<GameObjectCombatContext,
   'authoritative' | 'weaponSystem' | 'nextHazardId' | 'spawnEffect' | 'queryCircle' | 'findPlayer' | 'findVehicle' | 'findNpc' |
   'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'emit'>;
@@ -346,11 +346,11 @@ export abstract class GameObject<TState extends object, TId extends GameObjectId
     if ('vy' in state) state.vy = vy;
   }
 
-  /** Read a native Planck result into the object's canonical placement and
+  /** Read an adapter body result into the object's canonical placement and
    * velocity. Surface resolution and other object-specific consequences are
    * supplied as a callback after the common transfer is complete. */
   readPhysics(
-    body: planck.Body,
+    body: PhysicsBody,
     physicsToWorld: (value: number) => number,
     options: PhysicsReadOptions = {},
   ) {

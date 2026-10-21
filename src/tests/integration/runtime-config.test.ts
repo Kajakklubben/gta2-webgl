@@ -23,10 +23,14 @@ it('keeps explicit ports as an override', () => {
 });
 
 it('describes the checkout-local initial runtime directories', () => {
-  expect(serverRuntimeConfig('/tmp/gta2-worktree')).toEqual({
+  expect(serverRuntimeConfig('/tmp/gta2-worktree')).toMatchObject({
     workingDirectory: '/tmp/gta2-worktree',
     assetDirectory: '/tmp/gta2-worktree/assets',
     port: portForWorkingDirectory('/tmp/gta2-worktree'),
+    host: '0.0.0.0',
+    mapFile: 'MP1-comp.gmp',
+    styleFile: 'bil.sty',
+    disableHmr: false,
   });
 });
 

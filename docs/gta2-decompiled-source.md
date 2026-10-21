@@ -1,5 +1,11 @@
 # GTA2 reverse-engineering references
 
+This document records source-derived behavior used by the current shared
+implementation. Gameplay rules live under `src/shared/domain` and
+`src/shared/game`; loaders and protocol adapters consume the decoded values,
+while client rendering remains a separate presentation layer. The references
+below are research inputs, not runtime dependencies.
+
 The public decompiled/reimplementation source used to cross-check GTA2 object
 models, weapon projectiles, and sprite definitions is:
 

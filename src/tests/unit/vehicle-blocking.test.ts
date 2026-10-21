@@ -4,7 +4,7 @@ import { decodeFace, parseMap } from '../../shared/loader/map-parser';
 import { loadVehicleBounds } from '../../shared/loader/vehicle-bounds';
 import { VehicleObject } from '../../shared/game/gameobjects/vehicle';
 import { PlayerObject } from '../../shared/game/gameobjects/player';
-import { CollisionWorld, shapeContact, type CollisionBody } from '../../shared/domain/physics/collision';
+import { CollisionWorld, shapeContact, type CollisionBody } from '../../shared/game/physics/collision-world';
 import { loadCarCatalog } from '../../shared/loader/cars';
 import { parseStyle } from '../../shared/loader/style-parser';
 import type { TrafficState } from '../../shared/protocol/types';

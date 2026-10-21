@@ -1,0 +1,6 @@
+[MapFiles]
+GMPFile = wil-multi.gmp
+STYFile = wil.sty
+SCRFile = downtown-6P.scr
+Description = Downtown 6Player
+PlayerCount = 6

@@ -1,4 +1,3 @@
-import * as planck from 'planck';
 import { WeaponSystem } from '../domain/combat/weapon-system';
 import type { GameMap } from '../loader/map-parser';
 import { MapSurfaceResolver, type SurfaceResult } from '../domain/physics/map-surface';
@@ -6,7 +5,7 @@ import { STEP } from '../protocol/constants';
 import type { Input, PlayerState, PickupState, TrafficState, HazardState, WorldEvent, WorldEventInput, NpcState } from '../protocol/types';
 import { createHazardObject, HazardObject } from './effects/hazard';
 import { PickupObject } from './effects/pickup';
-import { PlayerObject, type PlayerCombatContext } from './gameobjects/player';
+import { PlayerObject } from './gameobjects/player';
 import { NpcObject } from './gameobjects/npc';
 import { VehicleObject } from './gameobjects/vehicle';
 import { createStaticMapObject } from './gameobjects/map-object';
@@ -23,30 +22,27 @@ import { DEFAULT_MAP_OBJECT_DEFINITIONS } from '../loader/map-object-definitions
 import { CarTrafficSpawner } from '../domain/vehicles/car-traffic';
 import type { VehicleBounds } from '../loader/vehicle-bounds';
 import { VehicleCatalog } from '../domain/vehicles/vehicle-catalog';
-import { CollisionWorld, type CollisionBody, type CollisionContact, type CollisionObject, type CollisionQuery, type CollisionStart } from '../domain/physics/collision';
-import { PlanckPhysicsRuntime } from '../engine/physics-runtime';
-import { PhysicsWorld } from '../engine/physics-world';
+import type { CollisionContact } from './physics/collision-world';
+import { GameWorldPhysics } from './physics/game-world-physics';
+import { mapFixtureMatches } from './physics/map-fixtures';
 import { clonePickupSnapshot } from './snapshot-codecs';
 import type { WorldRuntime } from '../engine/world-runtime';
 import { beginVehicleEntry as runBeginVehicleEntry, beginVehicleExit as runBeginVehicleExit, tickPlayerStatus as runTickPlayerStatus, updateVehicleOccupancyTransitions as runUpdateVehicleOccupancyTransitions, vehicleDoorPosition as runVehicleDoorPosition, vehicleMetadata as runVehicleMetadata, vehicleObjectContext as runVehicleObjectContext } from './runtime/vehicle-operations';
 
-import { addMapWallBodies } from './runtime/map-collision';
 import { createWorldRuntime } from './runtime/runtime';
 import type { WorldStepOptions, WorldTickState } from './runtime/types';
 import { SurfaceController } from './runtime/surface-controller';
 import { VehicleDamageController } from './runtime/vehicle-damage-controller';
 import { ProjectileController } from './runtime/projectile-controller';
 import { WeaponRaycaster } from '../domain/combat/weapon-raycaster';
-import { directionFromRotation, rotationFromDirection } from '../domain/physics/motion-vector';
-import { WeaponId } from '../domain/combat/weapons';
-import { HitscanImpactObject, type ProjectileStateInput } from './effects/projectile';
 import { LagCompensation } from '../domain/combat/lag-compensation';
+import { runCombatPhase as runCombatPhaseModule } from './runtime/combat-phase';
 import { runAiPhase as runAiPhaseModule, runLifecyclePhase as runLifecyclePhaseModule } from './runtime/early-phases';
 import { runCollisionPhase as runCollisionPhaseModule, runInputPhase as runInputPhaseModule, runPhysicsPhase as runPhysicsPhaseModule, runReplicationPhase as runReplicationPhaseModule } from './runtime/phases';
 import { createNpcBody as runCreateNpcBody, createNpcObject as runCreateNpcObject, destroyNpcBody as runDestroyNpcBody, prepareNpcBodies as runPrepareNpcBodies, readNpcBodies as runReadNpcBodies, syncNpcBodies as runSyncNpcBodies } from './runtime/npc-runtime';
 import { PedestrianNavigation } from '../domain/pedestrians/pedestrian-navigation';
-import { updatePedestrianAi } from '../domain/pedestrians/pedestrian-ai';
-import { PEDESTRIAN_DESPAWN_DISTANCE, PEDESTRIAN_PER_PLAYER, PEDESTRIAN_POPULATION_LIMIT, PedestrianSpawner } from '../domain/pedestrians/pedestrian-spawner';
+import { PedestrianSpawner } from '../domain/pedestrians/pedestrian-spawner';
+import { arrestPlayer as runArrestPlayer, maintainNpcs as runMaintainNpcs, setPoliceAttackPlayer as runSetPoliceAttackPlayer, updateNpcAi as runUpdateNpcAi } from './runtime/pedestrian-runtime';
 import { createVehicleBody as runCreateVehicleBody, createVehicleObject as runCreateVehicleObject, destroyVehicleBody as runDestroyVehicleBody, maintainTraffic as runMaintainTraffic, prepareVehicleBodies as runPrepareVehicleBodies, readVehicleBodies as runReadVehicleBodies, updateUnoccupiedVehicleDynamics as runUpdateUnoccupiedVehicleDynamics, updateVehicleBodyLayer as runUpdateVehicleBodyLayer, updateVehicleFloor as runUpdateVehicleFloor } from './runtime/vehicle-runtime';
 import { addPlayer as runAddPlayer, applyPedestrianImpacts as runApplyPedestrianImpacts, applyVehicleImpacts as runApplyVehicleImpacts, beginPlayerJump as runBeginPlayerJump, damagePlayer as runDamagePlayer, detachVehicleOccupant as runDetachVehicleOccupant, ejectVehicleOccupants as runEjectVehicleOccupants, emit as runEmit, floor as runFloor, input as runInput, killNpc as runKillNpc, killPlayer as runKillPlayer, raiseWanted as runRaiseWanted, removePlayer as runRemovePlayer, removeVehicleFireHazards as runRemoveVehicleFireHazards, spawnPoint as runSpawnPoint, spawnVehicleFireHazard as runSpawnVehicleFireHazard, syncBlockedBodies as runSyncBlockedBodies, syncVehicleFireHazards as runSyncVehicleFireHazards, updateNpcJumps as runUpdateNpcJumps, updatePlayerJumps as runUpdatePlayerJumps, vehicleDamage as runVehicleDamage } from './runtime/world-operations';
 import { reconcileHazardObjects as runReconcileHazardObjects, reconcileNpcObjects as runReconcileNpcObjects, reconcilePickupObjects as runReconcilePickupObjects, reconcileVehicleObjects as runReconcileVehicleObjects, reconcileVehicleOccupancyLinks as runReconcileVehicleOccupancyLinks, restore as runRestore, restoreVehicleBody as runRestoreVehicleBody, restoreWorld as runRestoreWorld, snapshot as runSnapshot, snapshotWorld as runSnapshotWorld, step as runStep } from './runtime/reconciliation';
@@ -70,13 +66,11 @@ export class GameWorld {
   readonly projectileController: ProjectileController;
   readonly weaponRaycaster: WeaponRaycaster;
   readonly lagCompensation: LagCompensation;
-  bodies = new Map<string, planck.Body>();
-  /** Server-side Planck bodies for vehicles, using the same wall/slope fixtures as players. */
-  vehicleBodies = new Map<number, planck.Body>();
-  /** Incoming vehicle velocities captured before the map physics response. */
-  private readonly vehicleStepVelocities = new Map<number, { x: number; y: number }>();
-  npcBodies = new Map<number, planck.Body>();
-  readonly physicsRuntime = new PlanckPhysicsRuntime({ gravity: { x: 0, y: 0 }, allowSleep: true, continuousPhysics: true });
+  readonly physics: GameWorldPhysics;
+  get bodies() { return this.physics.bodies; }
+  get vehicleBodies() { return this.physics.vehicleBodies; }
+  get npcBodies() { return this.physics.npcBodies; }
+  private get vehicleStepVelocities() { return this.physics.vehicleStepVelocities; }
   readonly weaponSystem = new WeaponSystem();
   readonly playerSystem = new PlayerSystem(this.weaponSystem);
   /** Room-local debug switch for the source-style police combat phase. */
@@ -88,9 +82,7 @@ export class GameWorld {
   readonly pedestrianSpawner: PedestrianSpawner;
   private readonly surfaces: MapSurfaceResolver;
   private readonly surfaceController: SurfaceController;
-  /** Shared broad-phase and circle-contact model for all moving/sensor objects. */
-  readonly collisionWorld = new CollisionWorld();
-  private readonly physicsWorld: PhysicsWorld<CollisionObject, CollisionBody, CollisionQuery, CollisionContact, CollisionStart>;
+  private get physicsWorld() { return this.physics.physicsWorld; }
   readonly runtime: WorldRuntime<WorldTickState>;
   readonly vehicleCatalog: VehicleCatalog;
   readonly vehicleDamageController: VehicleDamageController;
@@ -98,27 +90,11 @@ export class GameWorld {
   nextTrafficId = 1;
   nextNpcId = 1;
   constructor(readonly level: GameMap, readonly localId?: string, initialPickups: PickupState[] = [], readonly carPhysics: ReadonlyMap<number, CarPhysics> = new Map(), trafficModels: readonly number[] = [], readonly carBounds: ReadonlyMap<number, VehicleBounds> = new Map(), readonly carInfo: ReadonlyMap<number, CarInfo> = new Map(), readonly mapObjectDefinitions: ReadonlyMap<number, MapObjectDefinition> = DEFAULT_MAP_OBJECT_DEFINITIONS) {
+    this.physics = new GameWorldPhysics(localId);
     this.surfaces = new MapSurfaceResolver(level);
     this.surfaceController = new SurfaceController(this.surfaces);
     this.pedestrianNavigation = new PedestrianNavigation(level);
     this.pedestrianSpawner = new PedestrianSpawner(this.pedestrianNavigation);
-    this.physicsWorld = new PhysicsWorld({
-      sync: objects => this.collisionWorld.rebuild(objects),
-      queryCircle: query => this.collisionWorld.queryCircle(query),
-      contacts: filter => this.collisionWorld.contacts(filter),
-      resolveBlocking: (dt, starts) => this.collisionWorld.resolveBlocking(dt, starts),
-    }, {
-      step: dt => this.physicsRuntime.step(dt, 10, 10),
-      rayCast: (start, end, accept) => {
-        let fraction = 1;
-        this.physicsRuntime.rayCast({ x: worldToPhysics(start.x), y: -worldToPhysics(start.y) }, { x: worldToPhysics(end.x), y: -worldToPhysics(end.y) }, (fixture: planck.Fixture, _point: planck.Vec2, _normal: planck.Vec2, value: number) => {
-          if (!fixture.getBody().isStatic()) return -1;
-          if (accept && !accept(fixture)) return -1;
-          fraction = Math.min(fraction, value); return value;
-        });
-        return fraction;
-      },
-    });
     this.projectileController = new ProjectileController({
       weaponSystem: this.weaponSystem,
       projectiles: () => this.gameState.projectiles,
@@ -137,6 +113,7 @@ export class GameWorld {
       npcs: () => this.gameState.npcStates,
       vehicles: () => this.gameState.vehicleStates,
       history: this.lagCompensation,
+      mapFixtureMatches,
       rayCast: (start, end, accept) => this.physicsWorld.rayCast(start, end, accept),
     });
     this.runtime = createWorldRuntime({
@@ -165,73 +142,6 @@ export class GameWorld {
       emit: event => this.emit(event),
     });
     this.trafficSpawner = new CarTrafficSpawner(level, carPhysics, this.trafficModels, carInfo);
-    this.physicsRuntime.onPostSolve((contact: planck.Contact) => {
-      const left = contact.getFixtureA().getBody().getUserData?.() as { kind?: string; id?: number } | undefined;
-      const right = contact.getFixtureB().getBody().getUserData?.() as { kind?: string; id?: number } | undefined;
-      let vehicleData: typeof left | undefined;
-      if (left?.kind === 'vehicle') vehicleData = left;
-      else if (right?.kind === 'vehicle') vehicleData = right;
-      if (!vehicleData) return;
-      let body = contact.getFixtureB().getBody();
-      if (left?.kind === 'vehicle') body = contact.getFixtureA().getBody();
-
-      // Map walls are one-sided static edges in the source collision pass.
-      // Planck's mixed restitution can leave a small rebound velocity after
-      // the chassis has been stopped at the edge. Remove the complete normal
-      // component (both inward and reflected) while preserving tangent motion
-      // so a car can still slide along the wall and cannot keep driving into it.
-      let other = contact.getFixtureA().getBody();
-      if (body === contact.getFixtureA().getBody()) other = contact.getFixtureB().getBody();
-      if (other.isStatic()) {
-        const manifold = contact.getWorldManifold(null);
-        const normal = manifold?.normal;
-        if (normal) {
-          const vehicleIsA = body === contact.getFixtureA().getBody();
-          // Keep the established Planck response orientation here; the
-          // incoming velocity is used separately for damage so post-solve
-          // separation cannot erase the impact magnitude.
-          const vehicleId = vehicleData.id;
-          if (vehicleId === undefined) return;
-          const incoming = this.vehicleStepVelocities.get(vehicleId) ?? {
-            x: physicsToWorld(body.getLinearVelocity().x), y: -physicsToWorld(body.getLinearVelocity().y),
-          };
-          let towardOther = { x: normal.x, y: normal.y };
-          if (vehicleIsA) towardOther = { x: -normal.x, y: -normal.y };
-          const velocity = body.getLinearVelocity();
-          const normalVelocity = velocity.x * towardOther.x + velocity.y * towardOther.y;
-          if (normalVelocity > 0) {
-            body.setLinearVelocity({ x: velocity.x - normalVelocity * towardOther.x, y: velocity.y - normalVelocity * towardOther.y });
-          }
-
-          if (this.localId) return;
-          // The old code derives wall damage from the incoming impulse. The
-          // post-solve velocity is no longer suitable because the normal
-          // component has just been removed by the wall response.
-          const incomingPhysics = { x: worldToPhysics(incoming.x), y: -worldToPhysics(incoming.y) };
-          // `towardOther` is the response/outward direction used by the
-          // existing solver. The incoming velocity points against it.
-          const impact = Math.max(0, -(incomingPhysics.x * towardOther.x + incomingPhysics.y * towardOther.y)) * WORLD.physicsUnitsPerWorldUnit;
-          if (impact >= WORLD.vehicle.source.impactDamageVelocity) {
-            const point = manifold?.points[0];
-            const mapContact: { bodyId: string; impact: number; pointX?: number; pointY?: number } = {
-              bodyId: `vehicle:${vehicleId}`,
-              impact,
-            };
-            if (point) {
-              mapContact.pointX = physicsToWorld(point.x);
-              mapContact.pointY = -physicsToWorld(point.y);
-            }
-            this.physicsWorld.recordMapContact(mapContact);
-          }
-          return;
-        }
-      }
-
-      if (this.localId) return;
-      const velocity = body.getLinearVelocity(), impact = Math.hypot(velocity.x, velocity.y) * WORLD.physicsUnitsPerWorldUnit;
-      if (impact < WORLD.vehicle.source.impactDamageVelocity) return;
-      this.physicsWorld.recordMapContact({ bodyId: `vehicle:${vehicleData.id}`, impact });
-    });
     this.pickupSystem = new PickupSystem(this.gameState.pickupStates, this.weaponSystem);
     this.pickupSystem.replace(initialPickups, pickup => this.normalizePickup(pickup));
     for (const [id, object] of level.objects.entries()) {
@@ -241,7 +151,7 @@ export class GameWorld {
       this.registerObject(createStaticMapObject(id, placement, object.rotation, object.type, definition));
     }
     for (const pickup of this.gameState.pickupStates) this.registerObject(new PickupObject(pickup));
-    addMapWallBodies(level, this.physicsRuntime, this.gameState.mapObjects);
+    this.physics.addMapWallBodies(level, this.gameState.mapObjects);
   }
   /** Pickup data has already crossed the tile-to-world boundary in the asset
    * loader. Preserve all three authored coordinates when it enters the
@@ -332,6 +242,8 @@ export class GameWorld {
     // them out of the dynamic entity backend so they cannot be solved twice.
     this.physicsWorld.sync([...this.gameObjects.values()].filter(object => object.kind !== 'map-object'));
   }
+  createPlayerPhysicsBody(player: PlayerState) { return this.physics.createPlayerBody(player, this.collisionLayer(player)); }
+  destroyPhysicsBody(body: Parameters<GameWorldPhysics['destroyBody']>[0]) { return this.physics.destroyBody(body); }
   /** Services supplied to effect game objects during their own update pass. */
   gameObjectCombatContext(): GameObjectCombatContext {
     return {
@@ -350,9 +262,9 @@ export class GameWorld {
       findVehicle: id => this.gameObjects.findVehicle(id),
       findNpc: id => this.gameObjects.findNpc(id),
       killNpc: target => this.killNpc(target),
-      damagePlayer: (target, damage, killer) => this.damagePlayer(target.state, damage, killer),
+      damagePlayer: (target, damage, killer, cause) => this.damagePlayer(target.state, damage, killer, cause),
       damageVehicle: (target, damage, x, y, sourceModel, attacker) => { this.vehicleDamage(target.state, damage, x, y, sourceModel, attacker); },
-      damageNpc: (target, damage, killer, sourceModel, impactRotation) => { target.receiveWeaponHit(damage, sourceModel, killer, this.gameObjectCombatContext(), impactRotation); },
+      damageNpc: (target, damage, killer, sourceModel, impactRotation, cause) => { target.receiveWeaponHit(damage, sourceModel, killer, this.gameObjectCombatContext(), impactRotation, cause); },
       isWaterAt: point => this.pedestrianNavigation.isWaterAt(point),
       raiseWanted: player => this.raiseWanted(player.state),
       emit: event => this.emit(event),
@@ -372,6 +284,7 @@ export class GameWorld {
   }
   createVehicleObject(vehicle: TrafficState) { return runCreateVehicleObject(this, vehicle); }
   createNpcObject(npc: NpcState) { return runCreateNpcObject(npc); }
+  createNpcPhysicsBody(npc: NpcState) { return this.physics.createNpcBody(npc, this.collisionLayer(npc)); }
   createNpcBody(npc: NpcState) { return runCreateNpcBody(this, npc); }
   destroyNpcBody(id: number) { return runDestroyNpcBody(this, id); }
   prepareNpcBodies(starts: ReadonlyMap<string, { x: number; y: number }>, dt = STEP) { return runPrepareNpcBodies(this, starts, dt); }
@@ -392,6 +305,7 @@ export class GameWorld {
       body.setLinearVelocity({ x: worldToPhysics(player.state.vx), y: -worldToPhysics(player.state.vy) });
     }
   }
+  createVehiclePhysicsBody(vehicle: TrafficState) { return this.physics.createVehicleBody(vehicle, this.vehicleCatalog, state => this.collisionLayer(state)); }
   createVehicleBody(vehicle: TrafficState) { return runCreateVehicleBody(this, vehicle); }
   destroyVehicleBody(id: number) { return runDestroyVehicleBody(this, id); }
   updateVehicleBodyLayer(vehicle: TrafficState, body = this.vehicleBodies.get(vehicle.id)) { return runUpdateVehicleBodyLayer(this, vehicle, body); }
@@ -409,167 +323,10 @@ export class GameWorld {
   }
   readVehicleBodies(dt = STEP) { return runReadVehicleBodies(this, dt); }
   maintainTraffic() { return runMaintainTraffic(this); }
-  maintainNpcs() {
-    if (this.localId || !this.gameState.playerStates.size || !this.pedestrianNavigation.nodes.length) return;
-    const players = [...this.gameState.playerStates.values()];
-    const npcs = [...this.gameState.npcStates];
-    for (const npc of npcs) {
-      if (players.some(player => Math.hypot(npc.x - player.x, npc.y - player.y) <= PEDESTRIAN_DESPAWN_DISTANCE)) continue;
-      this.destroyNpcBody(npc.id);
-      this.unregisterObject(this.gameObjects.findNpc(npc.id));
-    }
-    const desired = Math.min(PEDESTRIAN_POPULATION_LIMIT, players.length * PEDESTRIAN_PER_PLAYER);
-    if (this.gameState.npcStates.length >= desired) return;
-    const occupied = [
-      ...this.gameState.playerStates.values(),
-      ...this.gameState.vehicleStates,
-      ...this.gameState.npcStates,
-    ].map(item => ({ x: item.x, y: item.y, z: item.z }));
-    for (const player of players) {
-      while (this.gameState.npcStates.length < desired) {
-        const spawned = this.pedestrianSpawner.spawnAround(player, this.nextNpcId, occupied, this.tick);
-        if (!spawned.length) break;
-        for (const npc of spawned) {
-          this.nextNpcId++;
-          occupied.push({ x: npc.x, y: npc.y, z: npc.z });
-          this.registerObject(this.createNpcObject(npc));
-          this.createNpcBody(npc);
-        }
-      }
-      if (this.gameState.npcStates.length >= desired) break;
-    }
-  }
-  updateNpcAi(dt = STEP) {
-    if (this.localId) return;
-    this.updateNpcVehicleAi();
-    this.updatePoliceAndGangAi();
-    updatePedestrianAi({
-      npcs: this.gameState.npcStates,
-      players: this.gameState.playerStates.values(),
-      navigation: this.pedestrianNavigation,
-      traffic: this.gameState.vehicleStates,
-      vehicleBounds: vehicle => this.vehicleCatalog.get(vehicle.model).bounds,
-      vehicleCanJumpOver: vehicle => !this.vehicleMetadata(vehicle).info?.infoFlags?.pedJump,
-      dt,
-      tick: this.tick,
-    });
-  }
-  private updatePoliceAndGangAi() {
-    const players = [...this.gameState.playerStates.values()];
-    for (const npc of this.gameState.npcStates) {
-      if (npc.health <= 0) continue;
-      const isPolice = npc.kind === 'police';
-      const isGang = npc.kind === 'civilian' && (npc.faction ?? 0) > 0;
-      if (!isPolice && !isGang) continue;
-      const vehicle = npc.vehicleId === undefined ? undefined : this.gameObjects.findVehicle(npc.vehicleId);
-      // Keep the existing debug/runtime contract: police remain ordinary
-      // walkers until the police combat switch is enabled. Clear any stale
-      // pursuit state as well, so turning the switch off cannot leave a car
-      // steering at a former target.
-      if (isPolice && !this.policeAttackPlayer) {
-        npc.target = undefined;
-        if (vehicle) delete (vehicle.state as TrafficState).pursuitTarget;
-        continue;
-      }
-      const origin = vehicle?.state ?? npc;
-      const target = players
-        .filter(player => player.combat.health > 0 && player.combat.respawn <= 0 && Math.abs(player.z - npc.z) <= WORLD.interaction.sameFloor)
-        .filter(player => isPolice ? player.wanted > 0 || player.combat.attacking || player.combat.shots.some(shot => shot.projectile && !shot.impact) : player.combat.attacking || player.combat.shots.some(shot => shot.projectile && !shot.impact))
-        .map(player => ({ player, distance: Math.hypot(player.x - origin.x, player.y - origin.y) }))
-        .filter(item => item.distance <= (isPolice ? WORLD.traffic.policePursuitRadius : WORLD.traffic.policeAttackRadius))
-        .sort((a, b) => a.distance - b.distance)[0]?.player;
-      if (!target) {
-        if (npc.state === 'attack') { npc.state = 'walk'; npc.animation = 'walking'; }
-        npc.target = undefined;
-        if (vehicle) delete (vehicle.state as TrafficState).pursuitTarget;
-        continue;
-      }
-      if (isPolice && target.wanted > 0 && !target.combat.attacking && Math.hypot(target.x - origin.x, target.y - origin.y) <= WORLD.traffic.policeArrestRadius) {
-        this.arrestPlayer(target, npc.id);
-        if (vehicle && vehicle.state.occupants.some(occupant => occupant.id === `npc:${npc.id}`)) this.detachVehicleOccupant(vehicle.state, `npc:${npc.id}`, 0);
-        npc.target = undefined;
-        if (vehicle) delete (vehicle.state as TrafficState).pursuitTarget;
-        npc.state = 'walk'; npc.animation = 'walking';
-        continue;
-      }
-      npc.target = target.id;
-      if (vehicle) {
-        (vehicle.state as TrafficState).pursuitTarget = target.id;
-        continue;
-      }
-      npc.state = 'attack'; npc.animation = 'armedRunning';
-    }
-  }
-  arrestPlayer(target: PlayerState, officerId?: number) {
-    const object = this.gameObjects.findPlayer(target.id);
-    if (!(object instanceof PlayerObject) || target.combat.health <= 0) return false;
-    if (target.vehicleId !== undefined) {
-      const vehicle = this.gameObjects.findVehicle(target.vehicleId);
-      if (vehicle && vehicle.state.occupants.some(occupant => occupant.id === target.id)) this.detachVehicleOccupant(vehicle.state, target.id, 0);
-    }
-    const spawn = runSpawnPoint(this, true);
-    object.setPose({ ...spawn, rotation: 0, vx: 0, vy: 0 });
-    target.combat.health = 100;
-    target.combat.respawn = 0;
-    target.combat.attacking = false;
-    target.combat.shots = [];
-    target.wanted = 0;
-    target.jump = undefined;
-    target.animation = undefined;
-    this.bodies.get(target.id)?.setPosition({ x: worldToPhysics(target.x), y: -worldToPhysics(target.y) });
-    this.emit({ type: 'hit', actor: officerId === undefined ? undefined : `npc:${officerId}`, target: target.id, damage: 0, lethal: false, x: target.x, y: target.y, z: target.z });
-    return true;
-  }
-  /** Source CarThief_AI reduced to the same deterministic route/occupancy
-   * surface as players: a small subset of civilian dummies claims a nearby
-   * enterable car, becomes its driver, and is then advanced by traffic AI. */
-  private updateNpcVehicleAi() {
-    const vehicles = this.gameState.vehicleStates;
-    for (const vehicle of vehicles.filter(item => item.transport !== undefined && item.serviceStop !== undefined && Math.hypot(item.vx, item.vy) < 25)) {
-      const object = this.gameObjects.findVehicle(vehicle.id);
-      if (!object) continue;
-      const passenger = this.gameState.npcStates
-        .filter(npc => npc.health > 0 && npc.vehicleId === undefined && npc.kind === 'civilian' && npc.state !== 'flee')
-        .map(npc => ({ npc, object: this.gameObjects.findNpc(npc.id), distance: Math.hypot(npc.x - vehicle.x, npc.y - vehicle.y) }))
-        .filter(item => item.object && item.distance < 96)
-        .sort((a, b) => a.distance - b.distance)[0];
-      if (passenger?.object) object.beginNpcEntry(passenger.object, this.vehicleObjectContext(object));
-    }
-    for (const npc of this.gameState.npcStates) {
-      const policeDriver = npc.kind === 'police' && npc.target !== undefined;
-      if (npc.health <= 0 || npc.vehicleId !== undefined || (!policeDriver && npc.kind !== 'civilian') || (!policeDriver && npc.state === 'flee') || (!policeDriver && npc.id % 11 !== this.tick % 11)) continue;
-      const object = this.gameObjects.findNpc(npc.id);
-      if (!(object instanceof NpcObject)) continue;
-      const candidate = vehicles
-        .map(vehicle => ({ vehicle, object: this.gameObjects.findVehicle(vehicle.id), distance: Math.hypot(vehicle.x - npc.x, vehicle.y - npc.y) }))
-        // CarThief_AI selects an available/parked chassis. A moving traffic
-        // car is already owned by its driver and must remain a collision
-        // threat rather than becoming an instant NPC boarding target.
-        .filter(item => item.object && item.object.alive && !item.object.isDriven() && item.vehicle.transport !== 'train' && Math.hypot(item.vehicle.vx, item.vehicle.vy) < 8 && item.distance < WORLD.vehicle.enterDistance)
-        .sort((a, b) => a.distance - b.distance)[0];
-      if (!candidate?.object) continue;
-      if (candidate.object.beginNpcEntry(object, this.vehicleObjectContext(candidate.object))) {
-        npc.state = 'driving'; npc.animation = 'idle';
-        if (policeDriver) candidate.vehicle.pursuitTarget = npc.target;
-      }
-    }
-  }
-  setPoliceAttackPlayer(enabled: boolean) {
-    this.policeAttackPlayer = enabled;
-    if (enabled) return;
-    for (const npc of this.gameState.npcStates) {
-      if (npc.kind !== 'police') continue;
-      if (npc.state === 'attack') {
-        npc.state = 'walk';
-        npc.animation = 'walking';
-      }
-      npc.target = undefined;
-      if (npc.vehicleId !== undefined) {
-        const vehicle = this.gameObjects.findVehicle(npc.vehicleId);
-        if (vehicle) delete (vehicle.state as TrafficState).pursuitTarget;
-      }
-    }
-  }
+  maintainNpcs() { return runMaintainNpcs(this); }
+  updateNpcAi(dt = STEP) { return runUpdateNpcAi(this, dt); }
+  arrestPlayer(target: PlayerState, officerId?: number) { return runArrestPlayer(this, target, officerId); }
+  setPoliceAttackPlayer(enabled: boolean) { return runSetPoliceAttackPlayer(this, enabled); }
   spawnPoint(arrest = false) { return runSpawnPoint(this, arrest); }
   addPlayer(id: string, state?: PlayerState) { return runAddPlayer(this, id, state); }
   removePlayer(id: string) { return runRemovePlayer(this, id); }
@@ -596,7 +353,7 @@ export class GameWorld {
       delete (vehicle.state as TrafficState).aiState;
     }
     const body = this.bodies.get(id);
-    if (body) this.physicsRuntime.destroyBody(body);
+    if (body) this.physics.destroyBody(body);
     this.bodies.delete(id); this.history.delete(id); this.recentVehicleEntries.delete(id);
     playerObject.despawn();
     this.spawnProtection.delete(id); this.wantedDecay.delete(id);
@@ -612,11 +369,11 @@ export class GameWorld {
   emit(event: WorldEventInput) { return runEmit(this, event); }
   killPlayer(target: PlayerState, killer?: string) { return runKillPlayer(this, target, killer); }
   killNpc(target: NpcObject) { return runKillNpc(this, target); }
-  damagePlayer(target: PlayerState, damage: number, killer?: string) { return runDamagePlayer(this, target, damage, killer); }
-  damageNpc(target: NpcState, damage: number, killer?: string, sourceModel?: number) {
+  damagePlayer(target: PlayerState, damage: number, killer?: string, cause?: PlayerState['deathCause']) { return runDamagePlayer(this, target, damage, killer, cause); }
+  damageNpc(target: NpcState, damage: number, killer?: string, sourceModel?: number, impactRotation?: number, cause?: NpcState['deathCause']) {
     const object = this.gameObjects.findNpc(target.id);
     if (!(object instanceof NpcObject)) return false;
-    return object.receiveWeaponHit(damage, sourceModel, killer, this.gameObjectCombatContext());
+    return object.receiveWeaponHit(damage, sourceModel, killer, this.gameObjectCombatContext(), impactRotation, cause);
   }
   detachVehicleOccupant(vehicle: TrafficState, id: string, damage = 0) { return runDetachVehicleOccupant(this, vehicle, id, damage); }
   ejectVehicleOccupants(vehicle: TrafficState, damage = 0) { return runEjectVehicleOccupants(this, vehicle, damage); }
@@ -633,96 +390,7 @@ export class GameWorld {
   runInputPhase(context: any) { return runInputPhaseModule(this, context); }
   runPhysicsPhase(context: any) { return runPhysicsPhaseModule(this, context); }
   runCollisionPhase(context: any) { return runCollisionPhaseModule(this, context); }
-  runCombatPhase(context: any) {
-    if (context.state.playerOnly) return;
-    for (const [id] of this.bodies) {
-      const player = this.gameObjects.findPlayer(id);
-      if (!player) continue;
-      const combat: PlayerCombatContext = {
-        input: this.input(context.state.inputs.get(id)),
-        weaponSystem: this.weaponSystem,
-        traceWeaponRay: (actor, weaponId, originX, originY, angle, clientTick) => this.weaponRaycaster.trace(actor, weaponId, originX, originY, angle, clientTick),
-        traceShockerWeapon: (actor, originX, originY, angle, clientTick) => this.weaponRaycaster.traceShocker(actor, originX, originY, angle, clientTick),
-        spawnWeaponVisual: (actor, weaponId, originX, originY, z, angle, distance, explosive, collision) => this.projectileController.spawnVisual(actor, weaponId, originX, originY, z, angle, distance, explosive, collision),
-        combat: this.gameObjectCombatContext(),
-        emit: event => this.emit(event),
-      };
-      player.updateCombat(combat);
-    }
-    this.runNpcCombatPhase();
-  }
-  /** Police use the same pedestrian locomotion as civilians, but their
-   * Weapon_30 dispatch is a normal combat emission.  Keeping it here means
-   * they share the exact ray/projectile/NPC collision path with players. */
-  private runNpcCombatPhase() {
-    if (!this.policeAttackPlayer) return;
-    const players = [...this.gameState.playerStates.values()];
-    const combat = this.gameObjectCombatContext();
-    for (const npc of this.gameState.npcStates) {
-      const gangHostile = npc.kind === 'civilian' && (npc.faction ?? 0) > 0 && npc.state === 'attack';
-      if ((npc.kind !== 'police' && !gangHostile) || npc.health <= 0 || npc.vehicleId !== undefined) continue;
-      if (npc.kind === 'police' && !this.policeAttackPlayer) continue;
-      const weaponId = npc.weapon ??= npc.kind === 'police' ? WeaponId.SilencedGun : WeaponId.Pistol;
-      npc.weaponAmmo ??= this.weaponSystem.sourceDefaultAmmo(weaponId);
-      npc.weaponCooldown ??= 0;
-      npc.weaponCooldown = Math.max(0, npc.weaponCooldown - 1);
-      const target = players
-        .filter(player => player.combat.health > 0 && player.combat.respawn <= 0 && Math.abs(player.z - npc.z) <= WORLD.interaction.sameFloor)
-        .filter(player => gangHostile ? player.combat.attacking || player.combat.shots.some(shot => shot.projectile && !shot.impact) : player.wanted > 0 || player.combat.attacking || player.combat.shots.some(shot => shot.projectile && !shot.impact))
-        .map(player => ({ player, distance: Math.hypot(player.x - npc.x, player.y - npc.y) }))
-        .filter(item => item.distance <= WORLD.traffic.policeAttackRadius)
-        .sort((a, b) => a.distance - b.distance)[0]?.player;
-      if (!target) {
-        if (npc.state === 'attack') { npc.state = 'walk'; npc.animation = 'walking'; }
-        npc.target = undefined;
-        continue;
-      }
-      npc.target = target.id;
-      npc.rotation = rotationFromDirection(target.x - npc.x, target.y - npc.y, npc.rotation);
-      npc.state = 'attack'; npc.animation = 'armed';
-      if (npc.weaponCooldown > 0 || npc.weaponAmmo <= 0) continue;
-      const weapon = this.weaponSystem.get(weaponId);
-      if (weapon.vehicleOnly) continue;
-      const direction = directionFromRotation(npc.rotation);
-      const originX = npc.x + direction.x * 8, originY = npc.y + direction.y * 8;
-      const actor = { id: `npc:${npc.id}`, x: npc.x, y: npc.y, z: npc.z, vx: npc.vx, vy: npc.vy, rotation: npc.rotation };
-      let rays = this.weaponRaycaster.traceShocker(actor, originX, originY, npc.rotation);
-      if (weapon.kind !== 'stun') rays = [this.weaponRaycaster.trace(actor, npc.weapon, originX, originY, npc.rotation)];
-      let fired = false;
-      if (weapon.kind === 'stun') {
-        for (const ray of rays) {
-          const target = ray.targets[0];
-          if (!target) continue;
-          const targetState: NonNullable<ProjectileStateInput['impactTarget']> = { kind: target.kind, id: target.state.id };
-          const impactState: ProjectileStateInput = {
-            actor: actor.id, weapon: npc.weapon, x: ray.startX, y: ray.startY, endX: ray.endX, endY: ray.endY,
-            z: npc.z, life: 1, rotation: ray.rotation, impact: true, beam: true, impactTarget: targetState,
-            projectileType: 'shock',
-          };
-          if (typeof weapon.sourceModel === 'number') impactState.sourceModel = weapon.sourceModel;
-          const impact = new HitscanImpactObject(`npc:${npc.id}:hitscan:${this.eventId}`, impactState);
-          this.registerObject(impact);
-          impact.resolveHitscan(combat);
-          this.unregisterObject(impact);
-          this.gameObjects.findNpc(npc.id)?.recordShot({ x: ray.startX, y: ray.startY, endX: ray.endX, endY: ray.endY, z: npc.z, life: 4, weapon: npc.weapon, projectile: true, impact: true, beam: true });
-          fired = true;
-        }
-      } else {
-        const ray = rays[0]!;
-        const projectile = this.projectileController.spawnVisual(actor, npc.weapon, ray.startX, ray.startY, npc.z, ray.rotation, ray.distance, weapon.kind === 'rocket', true);
-        const npcObject = this.gameObjects.findNpc(npc.id);
-        if (npcObject) {
-          const sequence = npcObject.recordProjectileShot({ x: projectile.state.x, y: projectile.state.y, endX: projectile.state.endX, endY: projectile.state.endY, z: projectile.state.z, life: projectile.lifeRemaining, vx: projectile.state.vx, vy: projectile.state.vy, weapon: npc.weapon, projectile: true });
-          projectile.setShotSequence(sequence);
-        }
-        fired = true;
-      }
-      if (!fired) continue;
-      npc.weaponAmmo = Math.max(0, npc.weaponAmmo - 1);
-      npc.weaponCooldown = weapon.interval;
-      this.emit({ type: 'shot', actor: actor.id, weapon: npc.weapon, x: originX, y: originY, z: npc.z });
-    }
-  }
+  runCombatPhase(context: any) { return runCombatPhaseModule(this, context); }
   runReplicationPhase(context: any) { return runReplicationPhaseModule(this, context); }
   step(inputs: ReadonlyMap<string, number | Input>, options: WorldStepOptions = {}) { return runStep(this, inputs, options); }
   restore(state: PlayerState) { return runRestore(this, state); }

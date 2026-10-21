@@ -8,11 +8,11 @@ import { PlayerSystem } from '../../shared/game/player-system';
 import { sourceAngleToRadians } from '../../shared/domain/physics/motion-vector';
 import { PlayerObject } from '../../shared/game/gameobjects/player';
 import { BulletObject, ProjectileObject, RocketObject } from '../../shared/game/effects/projectile';
-import { ExplosionObject, FireObject } from '../../shared/game/effects/hazard';
+import { createHazardObject, ExplosionObject, FireObject, VehicleBombObject } from '../../shared/game/effects/hazard';
 import { GTA2_CAR_FIRE_FRAME_SEQUENCES, GTA2_SOURCE_EFFECT_SPRITES, GTA2_SOURCE_OBJECT_MODELS } from '../../shared/domain/world/gta2-sprites';
 import { SOURCE_FIX16_ONE, WORLD } from '../../shared/domain/world/world';
 import { GTA2_VEHICLE_DAMAGE, sourceDamageForObjectModel, sourceDamageForWeapon } from '../../shared/domain/combat/vehicle-damage';
-import type { NpcState } from '../../shared/protocol/types';
+import type { NpcState, TrafficState } from '../../shared/protocol/types';
 import type { GameObjectSprite } from '../../shared/game/gameobjects/gameobject';
 
 const makeGame = () => new GameWorld(parseMap(mapFixture()));
@@ -70,6 +70,7 @@ it('keeps the public slots while exposing the source Weapon_30 dispatch table', 
   expect(WEAPONS[WeaponId.Shotgun]).toMatchObject({ sourceType: 6, sourceModel: 192, interval: 40, pellets: 5 });
   expect(WEAPONS[WeaponId.ElectroShock]).toMatchObject({ sourceType: 7, sourceModel: 277, interval: 20 });
   expect(WEAPONS[WeaponId.MachineGunCar]).toMatchObject({ sourceType: 18, vehicleOnly: true, pellets: 2 });
+  expect(WEAPONS[WeaponId.MachineGunCar]).toMatchObject({ hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerFire });
   expect(WEAPONS[WeaponId.Grenade]).toMatchObject({ sourceType: 5, throwable: true, sourceModel: 183 });
   expect(WEAPONS[WeaponId.OilSlicks]).toMatchObject({ sourceType: 16, sourceModel: 8, spriteModel: 216 });
   expect(WEAPONS[WeaponId.LandMines]).toMatchObject({ sourceType: 17, sourceModel: 10, spriteModel: 217 });
@@ -77,6 +78,7 @@ it('keeps the public slots while exposing the source Weapon_30 dispatch table', 
   expect(WEAPONS[WeaponId.Molotov]!.interval).toBe(4);
   expect(WEAPONS[WeaponId.Grenade]!.interval).toBe(4);
   expect(WEAPONS[WeaponId.FireTruckGun]!.interval).toBe(1);
+  expect(WEAPONS[WeaponId.FireTruckGun]).toMatchObject({ hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.impactChild, consumesAmmo: false });
   expect(WEAPONS[WeaponId.Pistol]!.playerDamage).toBe(20);
   expect(WEAPONS[WeaponId.MachineGun]!.playerDamage).toBe(10);
   expect(WEAPONS[WeaponId.Shotgun]!.playerDamage).toBe(10);
@@ -187,6 +189,22 @@ it('keeps rockets in flight before their source projectile lifetime expires', ()
   }
   expect(exploded).toBe(true);
   expect(player.wanted).toBe(1);
+});
+
+it('reports ordinary fire but keeps silenced fire out of wanted/crime state', () => {
+  const ordinary = makeGame();
+  const shooter = ordinary.addPlayer('ordinary');
+  shooter.combat!.weapon = WeaponId.Pistol;
+  shooter.combat!.ammo[WeaponId.Pistol] = 2;
+  ordinary.step(new Map([['ordinary', 16]]));
+  expect(shooter.wanted).toBe(1);
+
+  const silenced = makeGame();
+  const quiet = silenced.addPlayer('quiet');
+  quiet.combat!.weapon = WeaponId.SilencedGun;
+  quiet.combat!.ammo[WeaponId.SilencedGun] = 2;
+  silenced.step(new Map([['quiet', 16]]));
+  expect(quiet.wanted).toBe(0);
 });
 
 it('uses the source rocket blast radius and delayed self-damage phase', () => {
@@ -367,4 +385,56 @@ it('does not substitute unrelated art for a source object with no sprite', () =>
   });
 
   expect(carBomb.isRenderable).toBe(false);
+});
+
+it('separates the armed normal car bomb from the instant large-bomb path', () => {
+  const game = makeGame();
+  const driver = game.addPlayer('driver');
+  const vehicle: TrafficState = {
+    id: 7, model: 0, x: driver.x, y: driver.y, z: driver.z, rotation: 0,
+    speed: 0, vx: 0, vy: 0, angularVelocity: 0, throttle: 0, brakePressure: 1,
+    handbrakeForce: 0, color: 0, passengers: ['driver'],
+    occupants: [{ id: 'driver', door: 0, state: 'seated', progress: 1 }], doorStates: [], health: 100,
+  };
+  game.restoreWorld([], [vehicle]);
+  game.restore({ ...driver, vehicleId: vehicle.id, animation: { kind: 'seated', progress: 1 } });
+  const car = game.gameObjects.findVehicle(vehicle.id)!, player = game.gameObjects.findPlayer(driver.id)!;
+
+  expect(car.fireCarBomb(player, false, game.gameObjectCombatContext())).toBe(true);
+  expect(game.gameState.hazardStates).toContainEqual(expect.objectContaining({ sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb, armingTimer: 50, vehicleId: vehicle.id, effect: 'fire' }));
+  expect(game.events).not.toContainEqual(expect.objectContaining({ type: 'explosion', weapon: WeaponId.CarBomb }));
+  expect(car.fireCarBomb(player, true, game.gameObjectCombatContext())).toBe(true);
+  expect(game.events).toContainEqual(expect.objectContaining({ type: 'explosion', actor: driver.id, weapon: WeaponId.SpecialVehicleBomb }));
+});
+
+it('gates mounted weapons by source chassis and installed car-SMG state', () => {
+  const game = makeGame();
+  const driver = game.addPlayer('mounted-driver');
+  const vehicle: TrafficState = {
+    id: 11, model: 54, x: driver.x, y: driver.y, z: driver.z, rotation: 0,
+    speed: 0, vx: 0, vy: 0, angularVelocity: 0, throttle: 0, brakePressure: 1,
+    handbrakeForce: 0, color: 0, passengers: [driver.id],
+    occupants: [{ id: driver.id, door: 0, state: 'seated', progress: 1 }], doorStates: [], health: 100,
+  };
+  game.restoreWorld([], [vehicle]);
+  game.restore({ ...driver, vehicleId: vehicle.id, animation: { kind: 'seated', progress: 1 } });
+  const car = game.gameObjects.findVehicle(vehicle.id)!;
+
+  expect(car.canFireWeapon(19, driver.id)).toBe(true);
+  expect(car.canFireWeapon(20, driver.id)).toBe(false);
+  expect(car.canFireWeapon(18, driver.id)).toBe(false);
+  car.mutableVehicleState.mountedWeapons = [18];
+  expect(car.canFireWeapon(18, driver.id)).toBe(true);
+  expect(car.weaponOrigins(19, driver.id)[0]).toMatchObject({ angle: 0 });
+});
+
+it('reifies a normal car bomb as an attached source object', () => {
+  const bomb = createHazardObject({
+    id: 8, x: 0, y: 0, z: 0, kind: 'fire', life: 52, owner: 'driver',
+    effect: 'fire', sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb,
+    armingTimer: 50, vehicleId: 7,
+  });
+  expect(bomb).toBeInstanceOf(VehicleBombObject);
+  expect(bomb.state.armingTimer).toBe(50);
+  expect(bomb.isRenderable).toBe(true);
 });

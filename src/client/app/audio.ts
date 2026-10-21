@@ -1,15 +1,18 @@
+import { staticAssetUrl } from './assets';
+
 const files: Record<string, string> = {
-  shot: 'App_Executables/data/Audio/Vocals/Pistolp.wav',
-  pickup: 'App_Executables/data/Audio/Vocals/Health.wav',
-  enter: 'App_Executables/data/Audio/Vocals/CarJacker.wav',
-  wasted: 'App_Executables/data/Audio/Vocals/Wasted.wav',
-  explosion: 'App_Executables/data/Audio/Vocals/Molotovs.wav',
+  shot: 'Audio/Vocals/Pistolp.wav',
+  pickup: 'Audio/Vocals/Health.wav',
+  enter: 'Audio/Vocals/CarJacker.wav',
+  wasted: 'Audio/Vocals/Wasted.wav',
+  explosion: 'Audio/Vocals/Molotovs.wav',
 };
 const weaponFiles = [
   'Pistolp.wav', 'MacGun.wav', 'FlameT.wav', 'RocketL.wav', 'Molotovs.wav',
   'SilentMG.wav', 'OilSlick.wav', 'VehMacgun.wav', 'Grenades.wav', 'Electro.wav',
   'Shotgun.wav', 'VehMines.wav', 'Electro.wav', 'DualPist.wav',
-].map(file => `App_Executables/data/Audio/Vocals/${file}`);
+  'VehBomb.wav', 'RocketL.wav', 'VehMacgun.wav', 'FlameT.wav', 'VehMacgun.wav', 'VehBomb2.wav',
+].map(file => `Audio/Vocals/${file}`);
 
 export class AudioBus {
   private readonly sounds = new Map<string, HTMLAudioElement>();
@@ -31,7 +34,7 @@ export class AudioBus {
     this.last.set(key, now);
     let sound = this.sounds.get(key);
     if (!sound) {
-      sound = new Audio(`/assets/${path}`); sound.preload = 'auto'; sound.volume = this.volume; this.sounds.set(key, sound);
+      sound = new Audio(staticAssetUrl(path).toString()); sound.preload = 'auto'; sound.volume = this.volume; this.sounds.set(key, sound);
     }
     sound.currentTime = 0;
     void sound.play().catch(() => undefined);

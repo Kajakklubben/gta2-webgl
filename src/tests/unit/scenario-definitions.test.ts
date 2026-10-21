@@ -4,7 +4,7 @@ import {
   SCENARIO_DEFINITIONS,
   VEHICLE_ENTRY_SCENARIO_DEFINITIONS,
   VEHICLE_EXIT_SCENARIO_DEFINITIONS,
-} from '../../shared/domain/scenario-definitions';
+} from '../../client/tools/scenarios/scenario-definitions';
 
 describe('unified scenario definitions', () => {
   test('stores vehicle and gameplay cases in one registry shape', () => {

@@ -4,8 +4,8 @@ import { PlayerObject } from '../gameobjects/player';
 import type { WorldPhaseContext } from '../../engine/world-runtime';
 import type { WorldTickState } from './types';
 import { occupantForPlayer } from '../../domain/vehicles/vehicle-occupancy';
-import { withinCollisionRadius } from '../../domain/physics/collision';
-import { setBodyCollisionLayer } from './body-factory';
+import { withinCollisionRadius } from '../../domain/physics/collision-rules';
+import { setBodyCollisionLayer } from '../physics/body-factory';
 import { runCollisionPhase as executeCollisionPhase, runPhysicsPhase as executePhysicsPhase, runReplicationPhase as executeReplicationPhase, type CollisionPhaseHost, type PhysicsPhaseHost, type ReplicationPhaseHost } from './phase-runners';
 
 export function runInputPhase(world: any, _context: WorldPhaseContext<WorldTickState>) {

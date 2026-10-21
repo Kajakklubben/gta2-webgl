@@ -2,9 +2,9 @@ import type { PlayerState, TrafficState } from '../../protocol/types';
 import type { PlayerObject } from '../gameobjects/player';
 import type { VehicleObject } from '../gameobjects/vehicle';
 import type { GameObjectCombatContext, GameObjectPlacement } from '../gameobjects/gameobject';
-import * as planck from 'planck';
+import type { PhysicsBody } from '../../engine/physics-world';
 import type { WorldPhaseContext } from '../../engine/world-runtime';
-import type { CollisionContact, CollisionStart } from '../../domain/physics/collision';
+import type { CollisionContact, CollisionStart } from '../physics/collision-world';
 import type { WorldTickState } from './types';
 import type { SurfaceResult } from '../../domain/physics/map-surface';
 import { physicsToWorld } from '../../domain/world/world';
@@ -13,7 +13,7 @@ import type { HazardState, WorldEvent } from '../../protocol/types';
 import type { PendingProjectile } from './types';
 
 export type PhysicsPhaseHost = {
-  readonly bodies: Map<string, planck.Body>;
+  readonly bodies: Map<string, PhysicsBody>;
   readonly players: Map<string, PlayerState>;
   readonly playerObjectFor: (id: string) => PlayerObject | undefined;
   readonly preparePlayerBodies: () => void;
@@ -25,7 +25,7 @@ export type PhysicsPhaseHost = {
   applySurface: (state: PlayerState, surface: SurfaceResult, dt: number, allowFall: boolean) => void;
   surfaceFor: (state: PlayerState) => SurfaceResult;
   collisionLayer: (state: PlayerState) => number;
-  setPlayerCollisionLayer: (player: PlayerState, body: planck.Body) => void;
+  setPlayerCollisionLayer: (player: PlayerState, body: PhysicsBody) => void;
 };
 
 export function runPhysicsPhase(host: PhysicsPhaseHost, context: WorldPhaseContext<WorldTickState>) {
@@ -41,7 +41,7 @@ export function runPhysicsPhase(host: PhysicsPhaseHost, context: WorldPhaseConte
     const position = body.getPosition();
     // Entry motion is an authored ped transition toward a door. The source
     // state machine owns that pose until it reaches the outside marker; do
-    // not let Planck integration overwrite it mid-step.
+    // not let engine physics integration overwrite it mid-step.
     if ((player.vehicleId !== undefined && player.animation === undefined) || player.animation?.kind === 'entering' || player.animation?.kind === 'exiting') continue;
     const linear = body.getLinearVelocity();
     const pose: GameObjectPlacement = { x: physicsToWorld(position.x), y: -physicsToWorld(position.y), z: player.z, rotation: player.rotation };

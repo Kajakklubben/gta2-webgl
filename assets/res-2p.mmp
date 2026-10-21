@@ -1,0 +1,6 @@
+[MapFiles]
+GMPFile = ste.gmp
+STYFile = ste.sty
+SCRFile = res-2p.scr
+Description = Residential 2Player
+PlayerCount = 2

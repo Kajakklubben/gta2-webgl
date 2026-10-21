@@ -190,7 +190,7 @@ function integrateVehicleSlice(state: VehicleDynamicsState, control: VehicleCont
  * Integrate one source physics frame.  CarPhysics_B0 calculates wheel forces,
  * updates velocity, stabilizes and clamps it once per 33 ms frame.  Its eight
  * movement slices belong to the map collision sweep after this update; the
- * the world runtime's Planck body performs that sweep, so repeating drivetrain forces
+ * the world runtime's native physics body performs that sweep, so repeating drivetrain forces
  * here would accelerate the car multiple times per source frame.
  */
 export function integrateVehicle(state: VehicleDynamicsState, control: VehicleControl, physics: CarPhysics | undefined, dt: number, wheelBase?: number, geometry: VehicleGeometry = {}, ground: VehicleGroundContact = DEFAULT_VEHICLE_GROUND, options: VehicleIntegrationOptions = {}) {

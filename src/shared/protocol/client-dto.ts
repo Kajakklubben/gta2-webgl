@@ -29,7 +29,7 @@ export type ClientPlayerDto = Omit<WirePick<PlayerState,
   'id' | 'x' | 'y' | 'z' | 'rotation' | 'vx' | 'vy' | 'collisionLayer' |
   'grounded' | 'verticalVelocity' | 'vehicleId' | 'animation' | 'jump' |
   'movement' | 'drowningTimer' | 'name' | 'color' | 'score' | 'kills' | 'deaths' | 'ready' |
-  'armor' | 'money' | 'wanted' | 'team' | 'combat'>, 'combat'> & { combat: ClientCombatDto };
+  'armor' | 'money' | 'wanted' | 'team' | 'killer' | 'deathCause' | 'combat'>, 'combat'> & { combat: ClientCombatDto };
 
 export type ClientPickupDto = WirePick<PickupState, 'id' | 'x' | 'y' | 'z' | 'weapon' | 'ammo' | 'active' | 'collisionLayer'>;
 
@@ -39,16 +39,16 @@ export type ClientTrafficDto = WirePick<TrafficState,
   'throttle' | 'brakePressure' | 'handbrakeForce' |
   'damageFrame' | 'damageMask' | 'wrecked' | 'wreckModel' | 'paint' | 'damagePhase' |
   'aiState' | 'routeNode' | 'targetNode' | 'junction' | 'signal' | 'transport' | 'serviceStop' | 'pursuitTarget' | 'brakeLights' |
-  'headlights' | 'emergencyLights' | 'horn' | 'passengers' | 'occupants' |
+  'headlights' | 'emergencyLights' | 'horn' | 'turretRotation' | 'mountedWeapons' | 'trailerId' | 'passengers' | 'occupants' |
   'doorStates' | 'doorLock'>;
 
 export type ClientNpcDto = WirePick<NpcState,
   'id' | 'x' | 'y' | 'z' | 'rotation' | 'vx' | 'vy' | 'health' | 'kind' | 'remap' |
   'collisionLayer' | 'grounded' | 'verticalVelocity' | 'state' | 'animation' |
   'animationProgress' | 'animationStraightEntry' | 'target' | 'weapon' | 'weaponAmmo' | 'weaponCooldown' | 'pathIndex' | 'path' | 'pathPointIndex' | 'pathGoal' |
-  'patrolRoute' | 'patrolPointIndex' | 'waitTimer' | 'panicTimer' | 'deathTimer' | 'deathPose' | 'killer' | 'shockCounter' | 'electrocuted' | 'shots' | 'onFire' | 'fireTimer' | 'crossingRoad' | 'faction' | 'jump' | 'drowningTimer' | 'deathCause' | 'vehicleId'>;
+  'patrolRoute' | 'patrolPointIndex' | 'waitTimer' | 'panicTimer' | 'deathTimer' | 'deathPose' | 'killer' | 'shockCounter' | 'electrocuted' | 'shots' | 'onFire' | 'fireTimer' | 'crossingRoad' | 'faction' | 'threatenedBy' | 'threatTimer' | 'jump' | 'drowningTimer' | 'deathCause' | 'vehicleId'>;
 
-export type ClientHazardDto = WirePick<HazardState, 'id' | 'x' | 'y' | 'z' | 'kind' | 'life' | 'owner' | 'collisionLayer' | 'effect' | 'explosionType' | 'sourceModel' | 'sourceTimer' | 'rotation' | 'scale' | 'variant'>;
+export type ClientHazardDto = WirePick<HazardState, 'id' | 'x' | 'y' | 'z' | 'kind' | 'life' | 'owner' | 'collisionLayer' | 'effect' | 'explosionType' | 'sourceModel' | 'sourceTimer' | 'armingTimer' | 'vehicleId' | 'rotation' | 'scale' | 'variant'>;
 export type ClientEventDto = WorldEvent;
 
 export interface ClientSnapshot {
@@ -111,7 +111,7 @@ export function toClientTraffic(vehicle: TrafficState): ClientTrafficDto {
     wrecked: vehicle.wrecked, wreckModel: vehicle.wreckModel, paint: vehicle.paint, damagePhase: vehicle.damagePhase,
     aiState: vehicle.aiState, routeNode: vehicle.routeNode, targetNode: vehicle.targetNode, junction: vehicle.junction,
     signal: vehicle.signal, brakeLights: vehicle.brakeLights, headlights: vehicle.headlights,
-    emergencyLights: vehicle.emergencyLights, horn: vehicle.horn, transport: vehicle.transport, serviceStop: vehicle.serviceStop, pursuitTarget: vehicle.pursuitTarget, passengers: [...vehicle.passengers],
+    emergencyLights: vehicle.emergencyLights, horn: vehicle.horn, turretRotation: vehicle.turretRotation, mountedWeapons: vehicle.mountedWeapons ? [...vehicle.mountedWeapons] : undefined, trailerId: vehicle.trailerId, transport: vehicle.transport, serviceStop: vehicle.serviceStop, pursuitTarget: vehicle.pursuitTarget, passengers: [...vehicle.passengers],
     occupants: vehicle.occupants.map(occupant => ({ ...occupant })), doorStates: vehicle.doorStates.map(door => ({ ...door })), doorLock: vehicle.doorLock,
   };
 }

@@ -2,9 +2,19 @@ import type { AssetName } from '../../shared/loader/asset-loaders';
 import { MULTIPLAYER_MAPS, type MultiplayerMapDefinition } from '../../shared/loader/multiplayer-maps';
 
 /** Browser asset transport. Parsing remains in shared typed loaders. */
-export async function fetchAsset(name: AssetName): Promise<Uint8Array> {
+export function staticAssetUrl(name: string): URL {
+  if (!name) throw new Error('Cannot build an asset URL without an asset name.');
   const path = name.split('/').map(part => encodeURIComponent(part)).join('/');
-  const response = await fetch(`/assets/${path}`);
+  // Derive the static root from the actual bundled script. This works at the
+  // domain root and below a subdirectory, without Vite rewriting a variable
+  // URL into a request such as /static/undefined.
+  const bundle = [...document.scripts].find(script => script.src.includes('/static/'));
+  const assetRoot = bundle?.src ? new URL('../assets/', bundle.src) : new URL('assets/', document.baseURI);
+  return new URL(path, assetRoot);
+}
+
+export async function fetchAsset(name: AssetName): Promise<Uint8Array> {
+  const response = await fetch(staticAssetUrl(name));
   if (!response.ok) throw new Error(`Cannot load ${name} (HTTP ${response.status}). Place your GTA2 files in assets/ and restart.`);
   return new Uint8Array(await response.arrayBuffer());
 }

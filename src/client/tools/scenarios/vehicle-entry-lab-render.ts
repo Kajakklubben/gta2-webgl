@@ -2,7 +2,7 @@ import { VEHICLE_DOOR_ANIMATION_FRAMES, ensureVehicleOccupancy } from '../../../
 import type { EntryLayout } from './vehicle-entry-lab-layout';
 import { doorLabel, doorSide } from './vehicle-entry-lab-layout';
 import { makePreviewVehicle } from './vehicle-entry-lab-layout';
-import type { VehicleEntryScenario, VehicleExitScenario } from '../../../shared/domain/vehicles/vehicle-entry-scenarios';
+import type { VehicleEntryScenario, VehicleExitScenario } from './vehicle-entry-scenarios';
 import { setTopDownCamera } from '../../rendering/world-projection';
 import { VehicleObject } from '../../../shared/game/gameobjects/vehicle';
 import type { GameObjectDrawCommand } from '../../../shared/game/gameobjects/gameobject';

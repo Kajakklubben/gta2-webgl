@@ -12,9 +12,9 @@ export type SurfaceState = {
   verticalVelocity?: number | undefined;
 };
 
-/** Owns the GTA2 height/layer rules shared by every mobile entity. Planck
- * handles horizontal collision; this service supplies the authored support
- * surface and vertical fall/landing step. */
+/** Owns the GTA2 height/layer rules shared by every mobile entity. The engine
+ * physics adapter handles horizontal collision; this service supplies the
+ * authored support surface and vertical fall/landing step. */
 export class SurfaceController {
   constructor(readonly resolver: MapSurfaceResolver) {}
 

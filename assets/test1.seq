@@ -1,0 +1,86 @@
+MainOrBonus = MAIN
+GMPFile = wil.gmp
+STYFile = wil.sty
+SCRFile = wil.scr
+Description = City 1 Map
+
+
+MainOrBonus = BONUS
+GMPFile = lorne2e.gmp
+STYFile = wil.sty
+SCRFile = lorne2e.scr
+Description = City 1 Bonus 1
+
+
+MainOrBonus = BONUS
+GMPFile = lorne2m.gmp
+STYFile = wil.sty
+SCRFile = lorne2m.scr
+Description = City 1 Bonus 2
+
+
+MainOrBonus = BONUS
+GMPFile = lorne2h.gmp
+STYFile = wil.sty
+SCRFile = lorne2h.scr
+Description = City 1 Bonus 3
+
+
+
+
+
+MainOrBonus = MAIN
+GMPFile = ste.gmp
+STYFile = ste.sty
+SCRFile = ste.scr
+Description = City 2 Map 
+
+
+MainOrBonus = BONUS
+GMPFile = mike1e.gmp
+STYFile = ste.sty
+SCRFile = mike1e.scr
+Description = City 2 Map Bonus 1
+
+
+MainOrBonus = BONUS
+GMPFile = mike1m.gmp
+STYFile = ste.sty
+SCRFile = mike1m.scr
+Description = City 2 Map Bonus 2
+
+MainOrBonus = BONUS
+GMPFile = mike1h.gmp
+STYFile = ste.sty
+SCRFile = mike1h.scr
+Description = City 2 Map Bonus 3
+
+
+
+
+MainOrBonus = MAIN
+GMPFile = bil.gmp
+STYFile = bil.sty
+SCRFile = bil.scr
+Description = City 3 Map
+
+
+MainOrBonus = BONUS
+GMPFile = mike2e.gmp
+STYFile = bil.sty
+SCRFile = mike2e.scr
+Description = City 3 Map Bonus 1
+
+
+MainOrBonus = BONUS
+GMPFile = mike2m.gmp
+STYFile = bil.sty
+SCRFile = mike2m.scr
+Description = City 3 Map Bonus 2
+
+
+MainOrBonus = BONUS
+GMPFile = mike2h.gmp
+STYFile = bil.sty
+SCRFile = mike2h.scr
+Description = City 3 Map Bonus 3

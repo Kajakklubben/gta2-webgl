@@ -25,6 +25,10 @@ export interface WeaponDefinition {
   sourceModel?: number;
   spriteModel?: number;
   impactModel?: number;
+  /** Object model emitted when the source ray already has a target. */
+  hitSourceModel?: number;
+  /** Object model used for an authored no-target transition, when one exists. */
+  missSourceModel?: number;
   spread: readonly number[];
   silent?: boolean;
   vehicleOnly?: boolean;
@@ -33,4 +37,12 @@ export interface WeaponDefinition {
   /** Moving objects of this family are destroyed by a water column before
    * they can resolve a hit or explosion. */
   waterDeath?: boolean;
+  /** Vehicle-mounted sources do not all consume the driver's ammo pool. */
+  consumesAmmo?: boolean;
+  /** Source weapons report a weapon-fired crime/threat event when emitted. */
+  reportsCrime?: boolean;
+  /** Valid chassis models for built-in mounted weapons. */
+  vehicleModels?: readonly number[];
+  /** Car-SMG is an installed upgrade rather than a model-wide capability. */
+  requiresInstalledVehicleWeapon?: boolean;
 }

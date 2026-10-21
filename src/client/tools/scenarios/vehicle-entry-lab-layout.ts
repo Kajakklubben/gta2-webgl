@@ -6,7 +6,7 @@ import type { PlayerState, TrafficState, VehicleSeatRole } from "../../../shared
 import { vehicleDoorDefinitions, vehicleSeatDefinitions, type VehicleDoorPoint } from "../../../shared/domain/vehicles/vehicle-occupancy";
 import { tileToWorld } from "../../../shared/domain/world/world";
 import { newCombat } from "../../../shared/domain/combat/weapons";
-import { scenarioWorldPlacement, type VehicleEntryApproach, type VehicleEntryScenarioId, type VehicleExitScenarioId } from "../../../shared/domain/vehicles/vehicle-entry-scenarios";
+import { scenarioWorldPlacement, type VehicleEntryApproach, type VehicleEntryScenarioId, type VehicleExitScenarioId } from "./vehicle-entry-scenarios";
 import type { VehicleBounds } from "../../../shared/loader/vehicle-bounds";
 import { SCENARIO_ROOM_RADIUS } from './scenario-view';
 

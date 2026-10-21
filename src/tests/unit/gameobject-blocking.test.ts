@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { GameObject, type GameObjectCollision, type GameObjectKind } from '../../shared/game/gameobjects/gameobject';
 import { GameState } from '../../shared/game/gameobjects/game-state';
-import { CollisionWorld, shapeContact, type CollisionBody } from '../../shared/domain/physics/collision';
+import { CollisionWorld, shapeContact, type CollisionBody } from '../../shared/game/physics/collision-world';
 
 const requireCollider = (value: readonly CollisionBody[]) => {
   if (value.length !== 1) throw new Error('Expected one collision body');

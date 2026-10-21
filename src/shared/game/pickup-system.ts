@@ -1,7 +1,7 @@
 import type { PickupState, PlayerState, WorldEventInput } from '../protocol/types';
 import { WeaponSystem } from '../domain/combat/weapon-system';
 import { WORLD } from '../domain/world/world';
-import { withinCollisionRadius } from '../domain/physics/collision';
+import { withinCollisionRadius } from '../domain/physics/collision-rules';
 import { pickupSnapshotCodec } from './snapshot-codecs';
 import type { PickupObject } from './effects/pickup';
 import type { PlayerObject } from './gameobjects/player';

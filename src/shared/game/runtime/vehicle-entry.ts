@@ -1,6 +1,6 @@
 import type { PlayerState, TrafficState } from '../../protocol/types';
 import { WORLD } from '../../domain/world/world';
-import { mapFixtureMatches } from '../../domain/physics/map-fixtures';
+import { mapFixtureMatches } from '../physics/map-fixtures';
 import type { VehicleCatalog } from '../../domain/vehicles/vehicle-catalog';
 import { ensureVehicleOccupancy, occupantForPlayer, vehicleDoorDefinitions, vehicleDoorPoint, vehiclePassengerIndex, vehicleSeatDefinitions } from '../../domain/vehicles/vehicle-occupancy';
 

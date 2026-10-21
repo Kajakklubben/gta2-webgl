@@ -1,0 +1,6 @@
+[MapFiles]
+GMPFile = MP2-comp.gmp
+STYFile = wil.sty
+SCRFile = MP2-2P.scr
+Description = Hidden surprise 2player
+PlayerCount = 2

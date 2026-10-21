@@ -1,5 +1,5 @@
 import type { Input } from '../../protocol/types';
-import type { CollisionContact, CollisionStart } from '../../domain/physics/collision';
+import type { CollisionContact, CollisionStart } from '../physics/collision-world';
 import type { ProjectileObject } from '../effects/projectile';
 
 /** Transitional name retained for phase APIs; projectiles are now owned by

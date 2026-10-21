@@ -47,8 +47,18 @@ export function attachMultiplayer(server: Server, baseGame: Gta2Game, options: M
   runtimes.set(defaultMapId, defaultRuntime);
   const roomKey = (id: string, mapId: string) => `${mapId}\u0000${id}`;
   const makeRoom = (id: string, mapId: string, game: Gta2Game, runtime: MultiplayerMapRuntime): Room => {
-    const room = { key: roomKey(id, mapId), id, mapId, game, createGame: runtime.createGame, engine: undefined as unknown as GameEngine<Map<string, Input>>, peers: new Set<Peer>(), tick: 0, chats: [], nextChat: 0 };
-    room.engine = new GameEngine(inputs => room.game.step(inputs), DEFAULT_STEP_SECONDS);
+    const room: Room = {
+      key: roomKey(id, mapId),
+      id,
+      mapId,
+      game,
+      createGame: runtime.createGame,
+      engine: new GameEngine(inputs => room.game.step(inputs), DEFAULT_STEP_SECONDS),
+      peers: new Set<Peer>(),
+      tick: 0,
+      chats: [],
+      nextChat: 0,
+    };
     return room;
   };
   const defaultRoom = makeRoom('main', defaultMapId, baseGame, defaultRuntime);

@@ -15,6 +15,13 @@ const openMenu = document.querySelector<HTMLButtonElement>('#open-menu')!;
 const menuResume = document.querySelector<HTMLButtonElement>('#menu-resume')!;
 const gameMenu = document.querySelector<HTMLElement>('#game-menu')!;
 const menuBackdrop = document.querySelector<HTMLDivElement>('#menu-backdrop')!;
+const localMenu = document.querySelector<HTMLElement>('#local-menu')!;
+const localMenuTitle = document.querySelector<HTMLElement>('#local-menu-title')!;
+const closeLocalMenu = document.querySelector<HTMLButtonElement>('#close-local-menu')!;
+const openSinglePlayer = document.querySelector<HTMLButtonElement>('#open-single-player')!;
+const openSplitScreen = document.querySelector<HTMLButtonElement>('#open-split-screen')!;
+const localMapInput = document.querySelector<HTMLSelectElement>('#local-map')!;
+const startLocalGame = document.querySelector<HTMLButtonElement>('#start-local-game')!;
 const openLobby = document.querySelector<HTMLButtonElement>('#open-lobby')!;
 const openScoreboard = document.querySelector<HTMLButtonElement>('#open-scoreboard')!;
 const openChat = document.querySelector<HTMLButtonElement>('#open-chat')!;
@@ -115,23 +122,34 @@ if (storedName.toLocaleLowerCase() === 'player') nameInput.value = '';
 else nameInput.value = storedName;
 roomInput.value = localStorage.getItem('gta2-room') || roomInput.value;
 
-export function setMapOptions(maps: readonly MultiplayerMapDefinition[], selectedId = mapInput.value || DEFAULT_MULTIPLAYER_MAP_ID) {
+function replaceMapOptions(input: HTMLSelectElement, maps: readonly MultiplayerMapDefinition[], selectedId: string) {
   const available = maps.length ? maps : MULTIPLAYER_MAPS;
-  mapInput.replaceChildren(...available.map(map => {
+  input.replaceChildren(...available.map(map => {
     const option = new Option(map.label, map.id);
     option.title = `${map.map} · ${map.style}`;
     return option;
   }));
-  if (available.some(map => map.id === selectedId)) mapInput.value = selectedId;
-  else if (available[0]) mapInput.value = available[0].id;
+  if (available.some(map => map.id === selectedId)) input.value = selectedId;
+  else if (available[0]) input.value = available[0].id;
+}
+export function setMapOptions(maps: readonly MultiplayerMapDefinition[], selectedId = mapInput.value || DEFAULT_MULTIPLAYER_MAP_ID) {
+  replaceMapOptions(mapInput, maps, selectedId);
+}
+export function setLocalMapOptions(maps: readonly MultiplayerMapDefinition[], selectedId = localMapInput.value || DEFAULT_MULTIPLAYER_MAP_ID) {
+  replaceMapOptions(localMapInput, maps, selectedId);
 }
 setMapOptions(MULTIPLAYER_MAPS, localStorage.getItem('gta2-map') || DEFAULT_MULTIPLAYER_MAP_ID);
+setLocalMapOptions(MULTIPLAYER_MAPS, localStorage.getItem('gta2-map') || DEFAULT_MULTIPLAYER_MAP_ID);
 
 export const setLobbyOpen = (open: boolean) => {
   lobby.hidden = !open;
   openLobby.setAttribute('aria-expanded', String(open));
-  if (open) openLobby.textContent = 'Close lobby';
-  else openLobby.textContent = 'Lobby';
+  if (open) openLobby.textContent = 'Close multiplayer';
+  else openLobby.textContent = 'Multiplayer';
+};
+export const setLocalMenuOpen = (open: boolean, mode: 'singleplayer' | 'split-screen' = 'singleplayer') => {
+  localMenu.hidden = !open;
+  if (open) localMenuTitle.textContent = mode === 'split-screen' ? 'Split screen' : 'Single player';
 };
 export const setScoreboardOpen = (open: boolean) => {
   scoreboard.hidden = !open;
@@ -158,12 +176,12 @@ export const setGameMenuOpen = (open: boolean) => {
   }
 };
 export const isGameMenuOpen = () => gameMenuOpen;
-setLobbyOpen(false); setScoreboardOpen(false); setChatOpen(false);
+setLobbyOpen(false); setLocalMenuOpen(false); setScoreboardOpen(false); setChatOpen(false);
 setGameMenuOpen(false);
 openMenu.onclick = () => setGameMenuOpen(!gameMenuOpen);
 menuResume.onclick = () => setGameMenuOpen(false);
 menuBackdrop.onclick = () => setGameMenuOpen(false);
-const menuButtons = [menuResume, openLobby, openScoreboard, openChat, openDebug];
+const menuButtons = [menuResume, openSinglePlayer, openSplitScreen, openLobby, openScoreboard, openChat, openDebug];
 gameMenu.addEventListener('keydown', event => {
   if (!gameMenuOpen || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) return;
   event.preventDefault();
@@ -172,6 +190,9 @@ gameMenu.addEventListener('keydown', event => {
   menuButtons[(current + direction + menuButtons.length) % menuButtons.length]!.focus({ preventScroll: true });
 });
 openLobby.onclick = () => { setLobbyOpen(Boolean(lobby.hidden)); setGameMenuOpen(false); };
+openSinglePlayer.onclick = () => { setLocalMenuOpen(true, 'singleplayer'); setGameMenuOpen(false); };
+openSplitScreen.onclick = () => { setLocalMenuOpen(true, 'split-screen'); setGameMenuOpen(false); };
+closeLocalMenu.onclick = () => setLocalMenuOpen(false);
 openScoreboard.onclick = () => { setScoreboardOpen(Boolean(scoreboard.hidden)); setGameMenuOpen(false); };
 openChat.onclick = () => { setChatOpen(Boolean(chat.hidden)); setGameMenuOpen(false); };
 
@@ -195,7 +216,7 @@ export function drawHudWeaponIcon(style: Awaited<ReturnType<typeof loadClientAss
 }
 
 export const ui = {
-  message, reconnect, status, lobby, openMenu, menuResume, gameMenu, menuBackdrop, openLobby, openScoreboard, openChat, openDebug, debugMenu, closeDebug,
+  message, reconnect, status, lobby, openMenu, menuResume, gameMenu, menuBackdrop, localMenu, localMenuTitle, closeLocalMenu, openSinglePlayer, openSplitScreen, localMapInput, startLocalGame, openLobby, openScoreboard, openChat, openDebug, debugMenu, closeDebug,
   debugTabGraphs, debugTabPlayer, debugTabCamera, debugPlayer, debugCamera, debugGraphs,
   debugGiveAllWeapons,
   debugPedestrianGraph, debugTraffic, debugCar, debugZones, debugPoliceAttack, debugVehicleDoors, debugClosestDoor, debugShowCoordinates, debugCoordinates, debugCoordinateOverlay, debugShowPlayerState, debugPlayerStateOverlay, debugResetWorld, debugCameraMode, debugCameraSpeedZoom, debugCameraLookahead, debugSpriteFrameInterpolation, debugFps,

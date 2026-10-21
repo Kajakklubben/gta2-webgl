@@ -1,0 +1,6 @@
+[MapFiles]
+GMPFile = MP5-comp.gmp
+STYFile = ste.sty
+SCRFile = MP5-3P.scr
+Description = Face Off 3player
+PlayerCount = 3

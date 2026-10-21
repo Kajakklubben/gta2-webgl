@@ -1,6 +1,6 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { isAbsolute, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { ASSET_NAMES, loadMapAsset, loadPickupAsset, loadStyleAsset, type AssetName } from '../shared/loader/asset-loaders';
 import type { MultiplayerMapDefinition } from '../shared/loader/multiplayer-maps';
 import type { PickupState } from '../shared/protocol/types';
@@ -10,15 +10,16 @@ import type { MapObjectDefinition } from '../shared/loader/models/style';
 import { parseCarPhysics } from '../shared/loader/gci';
 import type { CarPhysics } from '../shared/loader/gci';
 import { loadVehicleBounds, type VehicleBounds } from '../shared/loader/vehicle-bounds';
+export interface AssetConfig { readonly assetDirectory?: string; readonly mapFile?: string; readonly styleFile?: string; readonly pickupScript?: string; }
 
-export async function loadCarBoundsFromDisk(directory = assetDirectory()) {
-  const name = process.env['STYLE_FILE'] ?? ASSET_NAMES[1];
+export async function loadCarBoundsFromDisk(directory = assetDirectory(), config: AssetConfig = {}) {
+  const name = config.styleFile ?? ASSET_NAMES[1];
   const style = loadStyleAsset(name, await readAsset(name, directory));
   return loadVehicleBounds(style.style.cars);
 }
 
-export async function loadCarInfoFromDisk(directory = assetDirectory()) {
-  const name = process.env['STYLE_FILE'] ?? ASSET_NAMES[1];
+export async function loadCarInfoFromDisk(directory = assetDirectory(), config: AssetConfig = {}) {
+  const name = config.styleFile ?? ASSET_NAMES[1];
   try {
     const style = loadStyleAsset(name, await readAsset(name, directory));
     return new Map(style.style.cars.map(car => [car.model, car] as const));
@@ -28,23 +29,16 @@ export async function loadCarInfoFromDisk(directory = assetDirectory()) {
 }
 
 export const assetDirectory = (workingDirectory = process.cwd()) => {
-  const configured = process.env['ASSET_DIR'];
-  if (!configured) {
-    const root = resolve(workingDirectory, 'assets');
-    const nested = resolve(root, 'App_Executables', 'data');
-    const mapName = process.env['MAP_FILE'] ?? ASSET_NAMES[0];
-    const styleName = process.env['STYLE_FILE'] ?? ASSET_NAMES[1];
-    if (existsSync(resolve(root, mapName)) && existsSync(resolve(root, styleName))) return root;
-    if (existsSync(resolve(nested, mapName)) && existsSync(resolve(nested, styleName))) return nested;
-    return root;
-  }
-  if (isAbsolute(configured)) return resolve(configured);
-  return resolve(workingDirectory, configured);
+  const root = resolve(workingDirectory, 'assets');
+  const nested = resolve(root, 'App_Executables', 'data');
+  if (existsSync(resolve(root, ASSET_NAMES[0])) && existsSync(resolve(root, ASSET_NAMES[1]))) return root;
+  if (existsSync(resolve(nested, ASSET_NAMES[0])) && existsSync(resolve(nested, ASSET_NAMES[1]))) return nested;
+  return root;
 };
 
 export async function readAsset(name: AssetName, directory = assetDirectory()): Promise<Uint8Array> {
   try { return new Uint8Array(await readFile(resolve(directory, name))); }
-  catch { throw new Error(`Cannot read ${name}. Copy your GTA2 ${ASSET_NAMES.join(' and ')} files into ${directory}, or set ASSET_DIR.`); }
+  catch { throw new Error(`Cannot read ${name}. Copy your GTA2 ${ASSET_NAMES.join(' and ')} files into ${directory}, or update the server configuration.`); }
 }
 
 export async function loadLevelAsset(directory = assetDirectory()): Promise<GameMap> {
@@ -58,9 +52,9 @@ export interface ServerLevelBundle {
 
 /** Load the configured default map and retain the style-derived MOBJ
  * definitions for the authoritative collision world. */
-export async function loadLevelBundle(directory = assetDirectory()): Promise<ServerLevelBundle> {
-  const mapName = process.env['MAP_FILE'] ?? ASSET_NAMES[0];
-  const styleName = process.env['STYLE_FILE'] ?? ASSET_NAMES[1];
+export async function loadLevelBundle(directory = assetDirectory(), config: AssetConfig = {}): Promise<ServerLevelBundle> {
+  const mapName = config.mapFile ?? ASSET_NAMES[0];
+  const styleName = config.styleFile ?? ASSET_NAMES[1];
   const [mapBytes, styleBytes] = await Promise.all([readAsset(mapName, directory), readAsset(styleName, directory)]);
   const mapAsset = loadMapAsset(mapName, mapBytes);
   const style = loadStyleAsset(styleName, styleBytes, mapAsset.map).style;
@@ -110,14 +104,14 @@ async function firstFile(roots: string[], names: string[]): Promise<FileLookup> 
 }
 
 /** Load authored vehicle handling values used by deterministic game. */
-export async function loadCarPhysicsFromDisk(directory = assetDirectory()): Promise<ReadonlyMap<number, CarPhysics>> {
+export async function loadCarPhysicsFromDisk(directory = assetDirectory(), _config: AssetConfig = {}): Promise<ReadonlyMap<number, CarPhysics>> {
   const roots = [directory, resolve(directory, 'App_Executables', 'data')];
   try { return parseCarPhysics((await firstFile(roots, ['nyc.gci', 'NYC.GCI'])).bytes); }
   catch { return new Map(); }
 }
 
-export async function loadTrafficCarModelsFromDisk(directory = assetDirectory()): Promise<readonly number[]> {
-  const styleName = process.env['STYLE_FILE'] ?? ASSET_NAMES[1];
+export async function loadTrafficCarModelsFromDisk(directory = assetDirectory(), config: AssetConfig = {}): Promise<readonly number[]> {
+  const styleName = config.styleFile ?? ASSET_NAMES[1];
   try {
     const style = loadStyleAsset(styleName, await readAsset(styleName, directory));
     // RECY is the authored traffic pool. CARI also contains wrecks, mission
@@ -145,8 +139,8 @@ export function defaultPickupScriptForMap(mapName: string) {
   return 'bil.scr';
 }
 
-export async function loadPickupAssetFromDisk(directory = assetDirectory(), options: { mapName?: string; scriptName?: string } = {}): Promise<PickupState[]> {
-  const configured = options.scriptName ?? (process.env['SCR_FILE'] || defaultPickupScriptForMap(options.mapName ?? process.env['MAP_FILE'] ?? ASSET_NAMES[0]));
+export async function loadPickupAssetFromDisk(directory = assetDirectory(), options: { mapName?: string; scriptName?: string } & AssetConfig = {}): Promise<PickupState[]> {
+  const configured = options.scriptName ?? options.pickupScript ?? defaultPickupScriptForMap(options.mapName ?? options.mapFile ?? ASSET_NAMES[0]);
   const baseName = configured.split(/[\\/]/).pop() ?? 'bil.scr';
   const district = baseName.replace(/\.scr$/i, '');
   const roots = [directory, resolve(directory, 'App_Executables', 'data')];

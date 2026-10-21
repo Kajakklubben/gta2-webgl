@@ -110,14 +110,14 @@ export class Gta2Camera {
   /** Small presentation filter for replicated velocity used by follow lookahead. */
   private static readonly VELOCITY_LOOKAHEAD_THRESHOLD = 180;
 
-  private current: CameraPose = { x: 0, y: 0, z: 1, zoom: Gta2Camera.DEFAULT_ZOOM };
+  current: CameraPose = { x: 0, y: 0, z: 1, zoom: Gta2Camera.DEFAULT_ZOOM };
   private previous: CameraPose = { ...this.current };
-  private target: CameraPose = { ...this.current };
-  private pending: CameraPose = { ...this.current };
+  target: CameraPose = { ...this.current };
+  pending: CameraPose = { ...this.current };
   velocity: CameraVelocity = { x: 0, y: 0, z: 0, zoom: 0 };
   private initialized = false;
   private mode: CameraMode = 'follow';
-  private targetElevation = 0;
+  targetElevation = 0;
   /** Subject speed in world pixels per fixed game tick. */
   followSpeed = 0;
   private speedZoomEnabled = true;

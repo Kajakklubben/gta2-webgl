@@ -3,7 +3,7 @@ import type { TrafficState } from '../../protocol/types';
 import { VehicleObject } from '../gameobjects/vehicle';
 import { WORLD, physicsToWorld, worldToPhysics } from '../../domain/world/world';
 import { RECYCLED_TRAFFIC_LIMIT } from '../../domain/vehicles/car-traffic';
-import { createVehicleBody as createVehiclePhysicsBody, updateVehicleBodyLayer as updateVehiclePhysicsBodyLayer } from './body-factory';
+import { updateVehicleBodyLayer as updateVehiclePhysicsBodyLayer } from '../physics/body-factory';
 import { locallyDrivenVehicle } from './prediction';
 
 export function createVehicleObject(host: any, vehicle: TrafficState) {
@@ -23,13 +23,13 @@ export function createVehicleObject(host: any, vehicle: TrafficState) {
 export function createVehicleBody(host: any, vehicle: TrafficState) {
     const driven = locallyDrivenVehicle(host);
     if ((host.localId && !driven.some(item => item.id === vehicle.id)) || host.vehicleBodies.has(vehicle.id)) return host.vehicleBodies.get(vehicle.id);
-    const body = createVehiclePhysicsBody(vehicle, host.physicsRuntime, host.vehicleCatalog, state => host.collisionLayer(state));
+    const body = host.createVehiclePhysicsBody(vehicle);
     host.vehicleBodies.set(vehicle.id, body);
     return body;
   }
 export function destroyVehicleBody(host: any, id: number) {
     const body = host.vehicleBodies.get(id);
-    if (body) host.physicsRuntime.destroyBody(body);
+    if (body) host.destroyPhysicsBody(body);
     host.vehicleBodies.delete(id);
   }
 export function updateVehicleBodyLayer(host: any, vehicle: TrafficState, body = host.vehicleBodies.get(vehicle.id)) {
@@ -46,7 +46,7 @@ export function updateVehicleBodyLayer(host: any, vehicle: TrafficState, body = 
    * Run the same source drivetrain pass for every unoccupied car.  A neutral
    * control is the source's parked/coasting input: it applies tyre damping,
    * slope gravity, angular stabilisation, and residual-velocity clamping while
-   * Planck remains the only integrator that advances the chassis pose.
+   * The engine physics runtime remains the only integrator that advances the chassis pose.
    */
 export function updateUnoccupiedVehicleDynamics(host: any, dt: number) {
     for (const vehicle of host.gameState.vehicleStates) {

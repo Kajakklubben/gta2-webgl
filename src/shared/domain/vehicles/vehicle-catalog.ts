@@ -13,7 +13,7 @@ export interface VehicleRuntimeMetadata {
 /**
  * Resolves the complete runtime description for a model at one boundary.
  * Keeping physics and CARI dimensions together prevents a car object, traffic,
- * and Planck from silently selecting different fallback metadata.
+ * and the native physics adapter from silently selecting different fallback metadata.
  */
 export class VehicleCatalog {
   private readonly cache = new Map<number, VehicleRuntimeMetadata>();

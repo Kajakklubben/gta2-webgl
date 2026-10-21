@@ -1,5 +1,5 @@
 import type { MapObjectDefinition } from '../../loader/models/style';
-import { COLLISION_CATEGORY } from '../../domain/physics/collision';
+import { COLLISION_CATEGORY } from '../../domain/physics/collision-rules';
 import type { GameObjectSprite, GameObjectUpdateContext } from './gameobject';
 import type { MapObjectPlacement } from '../../domain/physics/map-object-placement';
 import { StaticGameObject } from './stateful';

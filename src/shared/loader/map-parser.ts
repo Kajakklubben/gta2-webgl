@@ -39,7 +39,7 @@ const zoneTypeNames: Record<number, string> = {
 
 /** Expand the loaded map faces into the same world-pixel segments used by
  * movement and projectile collision. This is diagnostic/query data only; the
- * authoritative Planck fixtures remain owned by GameWorld. */
+ * authoritative native fixtures remain owned by the engine physics adapter. */
 export function mapWallSegments(level: GameMap): MapWallSegment[] {
   const segments: MapWallSegment[] = [];
   const add = (x: number, y: number, z: number, points: readonly [number, number, number, number], movement: boolean, bullet: boolean) => {

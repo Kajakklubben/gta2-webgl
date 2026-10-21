@@ -1,0 +1,6 @@
+[MapFiles]
+GMPFile = MP1-comp.gmp
+STYFile = bil.sty
+SCRFile = MP1-5P.scr
+Description = Tiny Town 5player
+PlayerCount = 5

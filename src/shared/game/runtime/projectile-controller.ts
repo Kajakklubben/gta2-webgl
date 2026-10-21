@@ -1,7 +1,7 @@
 import type { PlayerState } from '../../protocol/types';
 import { createProjectileObject, projectileTypeForWeapon, type ProjectileObject, type ProjectileStateInput } from '../effects/projectile';
-import type { CollisionBody, CollisionQuery } from '../../domain/physics/collision';
-import { mapFixtureMatches } from '../../domain/physics/map-fixtures';
+import type { CollisionBody, CollisionQuery } from '../physics/collision-world';
+import { mapFixtureMatches } from '../physics/map-fixtures';
 import { segmentPointDistanceSquared } from './helpers';
 import { directionFromRotation } from '../../domain/physics/motion-vector';
 import { tilesPerSecondToWorld, WORLD } from '../../domain/world/world';
@@ -35,14 +35,16 @@ export interface ProjectileControllerContext {
 export class ProjectileController {
   constructor(readonly context: ProjectileControllerContext) {}
 
-  spawnVisual(actor: WeaponRayActor | PlayerState, weaponId: number, originX: number, originY: number, z: number, angle: number, distance: number, explosive = false, collision = true): ProjectileSpawnResult {
+  spawnVisual(actor: WeaponRayActor | PlayerState, weaponId: number, originX: number, originY: number, z: number, angle: number, distance: number, explosive = false, collision = true, sourceModelOverride?: number): ProjectileSpawnResult {
     const weapon = this.context.weaponSystem.get(weaponId);
     if (!Number.isFinite(distance) || distance <= 0.5) throw new RangeError(`Projectile distance must be greater than 0.5, received ${distance}`);
     let speed = tilesPerSecondToWorld(WORLD.projectile.bulletSpeed);
-    if (weapon.sourceModel === GTA2_SOURCE_OBJECT_MODELS.shotgunBullet || weapon.kind === 'rocket') speed = tilesPerSecondToWorld(WORLD.projectile.rocketSpeed);
+    if (weapon.kind === 'shock') speed = tilesPerSecondToWorld(WORLD.projectile.electroSpeed);
+    else if (weapon.sourceModel === GTA2_SOURCE_OBJECT_MODELS.shotgunBullet || weapon.kind === 'rocket') speed = tilesPerSecondToWorld(WORLD.projectile.rocketSpeed);
     else if (weapon.kind === 'explosive') speed = tilesPerSecondToWorld(WORLD.projectile.thrownSpeed);
     else if (weapon.kind === 'flame') speed = tilesPerSecondToWorld(WORLD.projectile.flameSpeed);
     const direction = directionFromRotation(angle);
+    const sourceModel = sourceModelOverride ?? weapon.sourceModel;
     const life = Math.max(WORLD.projectile.minimumTravelTicks, Math.ceil(distance / Math.max(1, speed) * WORLD.tickRate));
     const projectileType = projectileTypeForWeapon(weaponId);
     const pending: ProjectileStateInput = {
@@ -52,7 +54,7 @@ export class ProjectileController {
       explosive, collision: collision && typeof weapon.sourceModel === 'number', projectileType,
       waterDeath: weapon.waterDeath ?? false,
     };
-    if (typeof weapon.sourceModel === 'number') pending.sourceModel = weapon.sourceModel;
+    if (typeof sourceModel === 'number') pending.sourceModel = sourceModel;
     const object = createProjectileObject(`${actor.id}:${this.context.tick()}:${this.context.projectiles().length}`, pending);
     this.context.register(object);
     return object;
@@ -61,6 +63,7 @@ export class ProjectileController {
   resolveCollisions() {
     for (const object of this.context.projectiles()) {
       const projectile = object.state;
+      if (projectile.destroyedByWater) continue;
       if (!projectile.collision) continue;
       const previousX = projectile.prevX, previousY = projectile.prevY;
       const dx = projectile.x - previousX, dy = projectile.y - previousY;

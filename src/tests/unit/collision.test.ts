@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { COLLISION_CATEGORY, CollisionWorld, circleContact, withinCollisionRadius, type CollisionBody } from '../../shared/domain/physics/collision';
+import { CollisionWorld, circleContact, type CollisionBody } from '../../shared/game/physics/collision-world';
+import { COLLISION_CATEGORY, withinCollisionRadius } from '../../shared/domain/physics/collision-rules';
 import { NpcObject } from '../../shared/game/gameobjects/npc';
 import { npcDefaults } from './fixtures';
 

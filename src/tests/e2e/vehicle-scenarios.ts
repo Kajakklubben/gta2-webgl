@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
-export { VEHICLE_PROPERTY_CASES } from '../../shared/domain/vehicles/vehicle-property-cases';
-export { ENTRY_APPROACHES, ENTRY_SCENARIO_APPROACHES, ENTRY_SCENARIO_IDS as ENTRY_SCENARIOS, EXIT_SCENARIO_IDS as EXIT_SCENARIOS, VEHICLE_ENTRY_SCENARIOS, VEHICLE_EXIT_SCENARIOS } from '../../shared/domain/vehicles/vehicle-entry-scenarios';
-import { ENTRY_APPROACHES, ENTRY_SCENARIO_APPROACHES, ENTRY_SCENARIO_IDS as ENTRY_SCENARIOS, EXIT_SCENARIO_IDS as EXIT_SCENARIOS } from '../../shared/domain/vehicles/vehicle-entry-scenarios';
+export { VEHICLE_PROPERTY_CASES } from '../../client/tools/scenarios/vehicle-property-cases';
+export { ENTRY_APPROACHES, ENTRY_SCENARIO_APPROACHES, ENTRY_SCENARIO_IDS as ENTRY_SCENARIOS, EXIT_SCENARIO_IDS as EXIT_SCENARIOS, VEHICLE_ENTRY_SCENARIOS, VEHICLE_EXIT_SCENARIOS } from '../../client/tools/scenarios/vehicle-entry-scenarios';
+import { ENTRY_APPROACHES, ENTRY_SCENARIO_APPROACHES, ENTRY_SCENARIO_IDS as ENTRY_SCENARIOS, EXIT_SCENARIO_IDS as EXIT_SCENARIOS } from '../../client/tools/scenarios/vehicle-entry-scenarios';
 
 export type EntryScenarioId = typeof ENTRY_SCENARIOS[number];
 export type ExitScenarioId = typeof EXIT_SCENARIOS[number];
