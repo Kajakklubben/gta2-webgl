@@ -7,6 +7,7 @@ import {
   type AiPhaseHost,
   type LifecyclePhaseHost,
 } from './phase-runners';
+import { runNpcCombatPhase } from './combat-phase';
 
 export function runLifecyclePhase(world: any, _context: WorldPhaseContext<WorldTickState>) {
   const host: LifecyclePhaseHost = {
@@ -22,6 +23,7 @@ export function runLifecyclePhase(world: any, _context: WorldPhaseContext<WorldT
     wreckFireTicks: GTA2_VEHICLE_DAMAGE.wreckFireTicks,
     vehicleObjectFor: (id: number) => world.gameObjects.findVehicle(id),
     updateGameObjects: (dt, playerOnly) => world.updateGameObjects(dt, playerOnly),
+    runNpcCombatPhase: () => runNpcCombatPhase(world),
     updatePlayerJumps: (dt, playerOnly) => world.updatePlayerJumps(dt, playerOnly),
     updateNpcJumps: dt => world.updateNpcJumps(dt),
     updateVehicleOccupancyTransitions: dt => world.updateVehicleOccupancyTransitions(dt),

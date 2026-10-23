@@ -8,6 +8,8 @@ implementation directory keeps its own focused `README.md` beside the code.
 
 - [Architecture](architecture.md) — current boundaries between the engine,
   shared game, loaders, protocol, client, server, and tests.
+- [Rendering requirements](rendering-requirements.md) — the canonical 2.5D
+  composition, semantic draw-order, spatial-depth, and occlusion contract.
 - [Data integration notes](data-integration-notes.md) — how GTA2 map, style,
   mission-script, and related source data enter the runtime.
 - [GTA2 decompiled source notes](gta2-decompiled-source.md) — reverse-

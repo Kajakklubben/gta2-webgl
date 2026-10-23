@@ -1,4 +1,4 @@
-import type { GameMap, MapObject } from '../../loader/map-parser';
+import type { GameMap, MapObject } from '../../engine/loader/map-parser';
 import { MapSurfaceResolver } from './map-surface';
 import { authoredLocationToWorld } from '../world/world';
 

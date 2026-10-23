@@ -2,25 +2,29 @@ import type { NpcState } from '../../protocol/types';
 import { NpcObject } from '../gameobjects/npc';
 import { physicsToWorld, worldToPhysics, WORLD } from '../../domain/world/world';
 import { updateNpcPhysicsBodyLayer } from '../physics/npc-bodies';
+import { initializeNpcWeaponState } from './npc-weapon-runtime';
 
 export function createNpcObject(npc: NpcState) {
+  initializeNpcWeaponState(npc);
   return new NpcObject(npc);
 }
 
 export function createNpcBody(host: any, npc: NpcState) {
-  if (host.localId || host.npcBodies.has(npc.id)) return host.npcBodies.get(npc.id);
+  const object = host.gameObjects.findNpc(npc.id);
+  if (host.localId || !object) return object?.physicsBody;
+  if (object.physicsBody) return object.physicsBody;
   const body = host.createNpcPhysicsBody(npc);
-  host.npcBodies.set(npc.id, body);
+  object.attachPhysicsBody(body);
   return body;
 }
 
 export function destroyNpcBody(host: any, id: number) {
-  const body = host.npcBodies.get(id);
+  const object = host.gameObjects.findNpc(id);
+  const body = object?.detachPhysicsBody();
   if (body) host.destroyPhysicsBody(body);
-  host.npcBodies.delete(id);
 }
 
-export function updateNpcBodyLayer(host: any, npc: NpcState, body = host.npcBodies.get(npc.id)) {
+export function updateNpcBodyLayer(host: any, npc: NpcState, body = host.gameObjects.findNpc(npc.id)?.physicsBody) {
   updateNpcPhysicsBodyLayer(body, host.collisionLayer(npc));
 }
 
@@ -39,7 +43,7 @@ export function prepareNpcBodies(host: any, starts: ReadonlyMap<string, { x: num
 
 export function readNpcBodies(host: any) {
   for (const npc of host.gameState.npcStates) {
-    const body = host.npcBodies.get(npc.id);
+    const body = host.gameObjects.findNpc(npc.id)?.physicsBody;
     const object = host.gameObjects.findNpc(npc.id);
     if (!body || !(object instanceof NpcObject)) continue;
     object.readPhysics(body, physicsToWorld, { afterRead: () => host.applySurface(npc, host.surfaceFor(npc)) });
@@ -48,7 +52,7 @@ export function readNpcBodies(host: any) {
 
 export function syncNpcBodies(host: any) {
   for (const object of host.gameObjects.npcs) {
-    const body = host.npcBodies.get(object.id);
+    const body = object.physicsBody;
     if (!body) continue;
     const pose = object.placement;
     body.setPosition({ x: worldToPhysics(pose.x), y: -worldToPhysics(pose.y) });

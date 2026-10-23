@@ -1,15 +1,15 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { ASSET_NAMES, loadMapAsset, loadPickupAsset, loadStyleAsset, type AssetName } from '../shared/loader/asset-loaders';
-import type { MultiplayerMapDefinition } from '../shared/loader/multiplayer-maps';
+import { ASSET_NAMES, loadMapAsset, loadPickupAsset, loadStyleAsset, type AssetName } from '../shared/engine/loader/asset-loaders';
+import type { MultiplayerMapDefinition } from '../shared/engine/loader/multiplayer-maps';
 import type { PickupState } from '../shared/protocol/types';
-import type { GameMap } from '../shared/loader/map-parser';
-import type { CarInfo } from '../shared/loader/style-parser';
-import type { MapObjectDefinition } from '../shared/loader/models/style';
-import { parseCarPhysics } from '../shared/loader/gci';
-import type { CarPhysics } from '../shared/loader/gci';
-import { loadVehicleBounds, type VehicleBounds } from '../shared/loader/vehicle-bounds';
+import type { GameMap } from '../shared/engine/loader/map-parser';
+import type { CarInfo } from '../shared/engine/loader/style-parser';
+import type { MapObjectDefinition } from '../shared/engine/loader/models/style';
+import { parseCarPhysics } from '../shared/engine/loader/gci';
+import type { CarPhysics } from '../shared/engine/loader/gci';
+import { loadVehicleBounds, type VehicleBounds } from '../shared/engine/loader/vehicle-bounds';
 export interface AssetConfig { readonly assetDirectory?: string; readonly mapFile?: string; readonly styleFile?: string; readonly pickupScript?: string; }
 
 export async function loadCarBoundsFromDisk(directory = assetDirectory(), config: AssetConfig = {}) {

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { vehicleBounds } from '../../shared/loader/vehicle-bounds';
-import type { GameMap } from '../../shared/loader/map-parser';
+import { vehicleBounds } from '../../shared/engine/loader/vehicle-bounds';
+import type { GameMap } from '../../shared/engine/loader/map-parser';
 import type { NpcState, PlayerState, TrafficState } from '../../shared/protocol/types';
 import { rotateVehicleLocal, vehicleDoorDefinitions, vehicleDoorPoint } from '../../shared/domain/vehicles/vehicle-occupancy';
 import { WORLD, tileToWorld, worldZ } from '../../shared/domain/world/world';
@@ -67,7 +67,7 @@ function thickSegments(renderer: any, points: readonly number[], color: number, 
   }
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-  const material = new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, side: THREE.DoubleSide, depthTest: false });
+  const material = new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, side: THREE.DoubleSide });
   return new THREE.Mesh(geometry, material);
 }
 
@@ -97,7 +97,7 @@ export function buildPedestrianDebug(renderer: any, level: GameMap) {
   linkLines.renderOrder = 80; renderer.debugPedestrianGraph.add(linkLines);
   const addNodeMesh = (points: readonly number[], color: number) => {
     const nodeGeometry = new THREE.BufferGeometry(); nodeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-    const nodeMeshes = new THREE.Mesh(nodeGeometry, new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthTest: false }));
+    const nodeMeshes = new THREE.Mesh(nodeGeometry, new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
     nodeMeshes.renderOrder = 81; renderer.debugPedestrianGraph.add(nodeMeshes);
   };
   addNodeMesh(nodes, PEDESTRIAN_NODE_COLOR);
@@ -140,7 +140,7 @@ export function buildRoadDebug(renderer: any, level: GameMap) {
     const specialArrows = thickSegments(renderer, specialArrowSegments, 0xff5c7a);
     specialArrows.renderOrder = 81; renderer.debugSpecialRoutes.add(specialArrows);
     const waypointGeometry = new THREE.BufferGeometry(); waypointGeometry.setAttribute('position', new THREE.Float32BufferAttribute(waypointTriangles, 3));
-    const waypointCircles = new THREE.Mesh(waypointGeometry, new THREE.MeshBasicMaterial({ color: 0xffd166, side: THREE.DoubleSide, transparent: false, opacity: 1, blending: THREE.NoBlending, depthTest: false }));
+    const waypointCircles = new THREE.Mesh(waypointGeometry, new THREE.MeshBasicMaterial({ color: 0xffd166, side: THREE.DoubleSide, transparent: false, opacity: 1, blending: THREE.NoBlending }));
     waypointCircles.renderOrder = 81; renderer.debugWaypoints.add(waypointCircles);
     // Keep the overlay below the camera's source-facing plane so diagnostics
     // stay in front of the map without changing the authored wall depth.
@@ -201,7 +201,7 @@ function updatePedestrianLabels(renderer: any, pedestrianStates: readonly NpcSta
     const text = `ped ${npc.id} · ${npc.kind}\nstate: ${npc.state}${goalSuffix}`;
     let label = labels.get(npc.id);
     if (!label) {
-      label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, depthWrite: false }));
+      label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true }));
       label.scale.set(126, 20, 1);
       label.renderOrder = 82;
       labels.set(npc.id, label);
@@ -319,7 +319,7 @@ function updateTrafficLabels(renderer: any, trafficStates: readonly TrafficState
     const text = trafficDebugLabelText(vehicle).join('\n');
     let label = labels.get(vehicle.id);
     if (!label) {
-      label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest: false, depthWrite: false }));
+      label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true }));
       label.scale.set(192, 32, 1);
       label.renderOrder = 83;
       labels.set(vehicle.id, label);

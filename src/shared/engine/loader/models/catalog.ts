@@ -1,7 +1,9 @@
 import type { WeaponDefinition } from './weapons';
 import type { CarPhysics, VehicleBounds } from './vehicles';
 import type { GameMap } from './map';
-import type { CarInfo, Pixels, Style } from './style';
+import type { CarInfo, Style } from './style';
+import type { Pixels } from '../../assets/pixels';
+import type { SourcePresentationValidation } from '../source-presentation-validation';
 
 /** Decoded SCR pickup record before it enters the network/game state model. */
 export interface DecodedPickup {
@@ -34,6 +36,8 @@ export interface MapAsset {
 export interface StyleAsset {
   readonly name: string;
   readonly style: Style;
+  /** Non-fatal retail source-art audit produced at the asset boundary. */
+  readonly presentationValidation?: SourcePresentationValidation | undefined;
 }
 
 export interface CarAsset {

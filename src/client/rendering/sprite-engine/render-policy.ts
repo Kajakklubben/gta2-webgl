@@ -1,71 +1,27 @@
 import type { GameObjectDrawCommand, GameObjectSpriteLayer } from '../../../shared/game/gameobjects/gameobject';
-import type { SpatialRenderBand } from '../../../shared/engine/spatial-depth';
+import { resolveGta2Presentation, type ResolvedGta2PresentationSlot } from '../../../shared/domain/world/presentation-order';
+import { mapLevelFromGameObject } from '../spatial-depth';
 
 export interface SpriteRenderPolicy {
-  readonly renderOrder: number;
-  readonly depthTest: boolean;
-  readonly depthWrite: boolean;
+  readonly presentation: ResolvedGta2PresentationSlot;
   readonly alphaTest: number;
 }
 
-const SOURCE_EFFECT_BANDS: Readonly<Record<string, number>> = {
-  'rocket-trail': 18,
-  'electric-arc': 18,
-  'fire-trail': 7,
-  'water-splash': 5,
-  'blood-burst': 8,
-  'impact-burst': 8,
-  'explosion-small': 20,
-  'explosion-large': 20,
-  'car-fire-small': 16,
-  'car-fire-large': 16,
-  'car-fire-wreck': 16,
-  'ped-fire': 6,
-};
-
-function defaultBand(command: GameObjectDrawCommand): SpatialRenderBand {
-  if (command.kind === 'map-object') return 'map';
-  if (command.kind === 'vehicle') return 'vehicle';
-  if (command.kind === 'player' || command.kind === 'npc') return 'actor';
-  if (command.kind === 'pickup') return 'ground';
-  if (command.kind === 'projectile' || command.kind === 'hazard') return 'effect';
-  return 'ground';
+/** Resolve semantic GTA2 presentation before the Three.js backend runs. */
+export function presentationSlot(command: GameObjectDrawCommand, sprite: GameObjectSpriteLayer) {
+  return resolveGta2Presentation({
+    kind: command.kind,
+    mapLevel: mapLevelFromGameObject(command, sprite),
+    animation: sprite.animation,
+    sourceSequence: sprite.sourceSequence,
+    slot: sprite.presentation,
+  });
 }
 
-/** Resolve semantic presentation intent to an internal renderer pass. */
-export function renderPass(command: GameObjectDrawCommand, sprite: GameObjectSpriteLayer): number {
-  const hint = sprite.renderDepth;
-  if (hint?.sourceLayer !== undefined) return hint.sourceLayer;
-  if (hint?.relation === 'behind-vehicle') return 13;
-  if (hint?.relation === 'above-vehicle') return 16;
-
-  const sourceSequence = sprite.sourceSequence;
-  if (sourceSequence !== undefined) {
-    const sourcePass = SOURCE_EFFECT_BANDS[sourceSequence];
-    if (sourcePass !== undefined) return sourcePass;
-  }
-
-  switch (hint?.band ?? defaultBand(command)) {
-    case 'map': return 0;
-    case 'ground': return command.kind === 'pickup' ? 4 : 2;
-    case 'actor': return command.kind === 'npc' ? 14 : 23;
-    case 'vehicle': return 15;
-    case 'effect': {
-      if (command.kind === 'hazard' && sprite.animation === 'fire') return 6;
-      if (command.kind === 'hazard' && sprite.animation === 'water') return 5;
-      if (command.kind === 'hazard' && (sprite.animation === 'skid' || sprite.animation === 'slick' || sprite.animation === 'mine')) return 2;
-      return 18;
-    }
-    case 'overlay': return 50;
-  }
-}
-
-/** Source default draw layers, with semantic hints taking priority. */
-export function renderPolicy(sprite: GameObjectSpriteLayer, _command?: GameObjectDrawCommand): SpriteRenderPolicy {
+/** Resolve backend material policy without deciding GTA2 object ordering. */
+export function renderPolicy(sprite: GameObjectSpriteLayer, command: GameObjectDrawCommand): SpriteRenderPolicy {
   return {
-    renderOrder: _command ? renderPass(_command, sprite) : 2,
-    depthTest: sprite.depthTest ?? true,
-    depthWrite: sprite.depthWrite ?? false,
+    presentation: presentationSlot(command, sprite),
     alphaTest: sprite.alphaTest ?? .01,
   };
 }

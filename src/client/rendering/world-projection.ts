@@ -29,6 +29,7 @@ export function setTopDownCamera(
   cameraZ: number,
   viewWidth: number,
   viewHeight: number,
+  rotationX = 0,
 ) {
   camera.aspect = Math.max(1, viewWidth) / Math.max(1, viewHeight);
   const verticalHeight = Math.max(1, cameraZ);
@@ -36,6 +37,7 @@ export function setTopDownCamera(
   camera.position.set(centerX, centerY - Math.sin(TOP_DOWN_PITCH) * distance, verticalHeight);
   camera.userData['gta2Center'] = { x: centerX, y: centerY };
   camera.lookAt(centerX, centerY, 0);
+  camera.rotation.x = rotationX;
   camera.updateProjectionMatrix();
   // Screen-space hit testing can project before the next WebGL render.
   camera.updateMatrixWorld();

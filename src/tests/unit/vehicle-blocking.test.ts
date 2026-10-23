@@ -1,17 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { GameWorld } from '../../shared/game/game-world';
-import { decodeFace, parseMap } from '../../shared/loader/map-parser';
-import { loadVehicleBounds } from '../../shared/loader/vehicle-bounds';
+import { decodeFace, parseMap } from '../../shared/engine/loader/map-parser';
+import { loadVehicleBounds } from '../../shared/engine/loader/vehicle-bounds';
 import { VehicleObject } from '../../shared/game/gameobjects/vehicle';
 import { PlayerObject } from '../../shared/game/gameobjects/player';
 import { CollisionWorld, shapeContact, type CollisionBody } from '../../shared/game/physics/collision-world';
-import { loadCarCatalog } from '../../shared/loader/cars';
-import { parseStyle } from '../../shared/loader/style-parser';
+import { loadCarCatalog } from '../../shared/engine/loader/cars';
+import { parseStyle } from '../../shared/engine/loader/style-parser';
 import type { TrafficState } from '../../shared/protocol/types';
 import { vehicleMass } from '../../shared/domain/physics/vehicle-kinematics';
 import { VehicleCatalog } from '../../shared/domain/vehicles/vehicle-catalog';
 import { mapFixture, styleFixture, binary, chunk, npcDefaults } from './fixtures';
-import { readChunks } from '../../shared/loader/binary';
+import { readChunks } from '../../shared/engine/loader/binary';
 
 function requireContact(value: ReturnType<typeof shapeContact>) {
   const contact = value[0];
@@ -226,7 +226,7 @@ describe.each([false, true])('walking into cars (authoritative game mode: %s)', 
   });
 });
 
-it('removes a car velocity component when it contacts a map wall', () => {
+it('depenetrates a car through generic map blocking before removing its velocity', () => {
   const level = parseMap(mapFixture());
   level.map[85]![189]![4] = { ...level.map[85]![190]![3]!, Bottom: { ...decodeFace(1024), wall: true } };
   const game = new GameWorld(level, undefined, [], new Map(), [], new Map([[7, { width: 20, height: 100 }]]));
@@ -235,7 +235,11 @@ it('removes a car velocity component when it contacts a map wall', () => {
 
   game.step(new Map());
 
-  expect(vehicle.y).toBeGreaterThan(-190 * 64 - 2);
+  const wallY = -(189 * 64 + 32);
+  // The full authored chassis footprint must be on the approach side of the
+  // wall, even though this fixture starts 18 world pixels inside it.
+  expect(vehicle.y + 50).toBeLessThanOrEqual(wallY + .25);
+  expect(vehicle.y).toBeGreaterThan(wallY - 50 - 2);
   expect(Math.abs(vehicle.vy ?? 0)).toBeLessThan(1);
   expect(vehicle.damage).toBeGreaterThan(0);
   expect(vehicle.health).toBeLessThan(100);

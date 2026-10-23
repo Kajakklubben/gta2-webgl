@@ -2,7 +2,8 @@ import { expect, it } from 'vitest';
 import { GameObject, type GameObjectSprite } from '../../shared/game/gameobjects/gameobject';
 import { GameState } from '../../shared/game/gameobjects/game-state';
 import { GameWorld } from '../../shared/game/game-world';
-import { parseMap } from '../../shared/loader/map-parser';
+import { parseMap } from '../../shared/engine/loader/map-parser';
+import type { PhysicsBody } from '../../shared/engine/physics-world';
 import type { TrafficState } from '../../shared/protocol/types';
 import { mapFixture } from './fixtures';
 
@@ -63,6 +64,17 @@ it('lets an object request flat domain lifecycle changes', () => {
   object.despawn();
   expect(registry.findHazard(object.id)).toBeUndefined();
   expect(registry.findHazard(deferred.id)).toBe(deferred);
+});
+
+it('binds a live simulation body to the object without owning its runtime lifecycle', () => {
+  const object = new TestObject(8), first = {} as PhysicsBody, second = {} as PhysicsBody;
+
+  expect(object.physicsBody).toBeUndefined();
+  expect(object.attachPhysicsBody(first)).toBeUndefined();
+  expect(object.physicsBody).toBe(first);
+  expect(object.attachPhysicsBody(second)).toBe(first);
+  expect(object.detachPhysicsBody()).toBe(second);
+  expect(object.physicsBody).toBeUndefined();
 });
 
 it('keeps vehicle game object identity across authoritative world restores', () => {

@@ -2,7 +2,7 @@ import { Gta2Game } from '../../shared/game/gta2-game';
 import type { ClientSnapshot } from '../../shared/protocol/client-dto';
 import type { MatchState } from '../../shared/protocol/types';
 import type { ClientBootstrap } from './client-bootstrap';
-import type { CarInfo } from '../../shared/loader/style-parser';
+import type { CarInfo } from '../../shared/engine/loader/style-parser';
 
 export function createMultiplayerGame(bootstrap: ClientBootstrap, id: string, carInfo: ReadonlyMap<number, CarInfo>) {
   const { assets } = bootstrap;

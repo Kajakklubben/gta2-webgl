@@ -1,22 +1,25 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 export { VEHICLE_PROPERTY_CASES } from '../../client/tools/scenarios/vehicle-property-cases';
 export { ENTRY_APPROACHES, ENTRY_SCENARIO_APPROACHES, ENTRY_SCENARIO_IDS as ENTRY_SCENARIOS, EXIT_SCENARIO_IDS as EXIT_SCENARIOS, VEHICLE_ENTRY_SCENARIOS, VEHICLE_EXIT_SCENARIOS } from '../../client/tools/scenarios/vehicle-entry-scenarios';
-import { ENTRY_APPROACHES, ENTRY_SCENARIO_APPROACHES, ENTRY_SCENARIO_IDS as ENTRY_SCENARIOS, EXIT_SCENARIO_IDS as EXIT_SCENARIOS } from '../../client/tools/scenarios/vehicle-entry-scenarios';
+export { SCENARIO_DEFINITIONS } from '../../client/tools/scenarios/scenario-definitions';
+import { ENTRY_APPROACHES, ENTRY_SCENARIO_APPROACHES, ENTRY_SCENARIO_IDS as ENTRY_SCENARIOS, EXIT_SCENARIO_IDS as EXIT_SCENARIOS, scenarioOptionValue } from '../../client/tools/scenarios/vehicle-entry-scenarios';
 
 export type EntryScenarioId = typeof ENTRY_SCENARIOS[number];
 export type ExitScenarioId = typeof EXIT_SCENARIOS[number];
 export type EntryApproach = typeof ENTRY_APPROACHES[number];
 export type EntryOutcome = 'active' | 'seated' | 'rejected';
 export type ScenarioAction = 'enter' | 'exit';
+export const DEFAULT_SCENARIO_CAR = 0;
 
 export interface VehicleScenarioSelection {
-  readonly car: number;
+  readonly car?: number;
   readonly scenario: EntryScenarioId | ExitScenarioId;
-  readonly action?: ScenarioAction;
   readonly approach: EntryApproach;
 }
 
 export interface VehicleScenarioSnapshot extends VehicleScenarioSelection {
+  readonly car: number;
+  readonly action: ScenarioAction;
   readonly title: string;
   readonly status: string;
   readonly detail: string;
@@ -92,11 +95,11 @@ function parseOptionalNumber(value: string | null) {
 export class VehicleScenarioPanel {
   readonly panel: Locator;
   readonly car: Locator;
-  readonly action: Locator;
-  readonly scenario: Locator;
+  readonly scenarioSelect: Locator;
   readonly restartButton: Locator;
   readonly playButton: Locator;
   readonly stepButton: Locator;
+  readonly speed: Locator;
   readonly status: Locator;
   readonly progress: Locator;
   readonly propertySection: Locator;
@@ -105,11 +108,11 @@ export class VehicleScenarioPanel {
   constructor(readonly page: Page) {
     this.panel = page.getByRole('main', { name: 'Vehicle scenarios' });
     this.car = page.locator('#entry-car');
-    this.action = page.locator('#entry-action');
-    this.scenario = page.locator('#entry-scenario-approach');
+    this.scenarioSelect = page.locator('#scenario-select');
     this.restartButton = page.locator('#entry-restart');
     this.playButton = page.locator('#entry-play');
     this.stepButton = page.locator('#entry-step');
+    this.speed = page.locator('#entry-speed');
     this.status = page.locator('#entry-status');
     this.progress = page.locator('#entry-progress');
     this.propertySection = page.locator('#entry-property-coverage');
@@ -134,12 +137,17 @@ export class VehicleScenarioPanel {
 
   async select(selection: VehicleScenarioSelection) {
     await this.open();
-    await this.car.selectOption(String(selection.car));
-    if (selection.action) await this.action.selectOption(selection.action);
-    await this.scenario.selectOption(`${selection.scenario}|${selection.approach}`);
-    await expect(this.panel).toHaveAttribute('data-car-model', String(selection.car));
+    const car = selection.car ?? DEFAULT_SCENARIO_CAR;
+    await this.car.selectOption(String(car));
+    await this.scenarioSelect.selectOption(scenarioOptionValue(selection.scenario, selection.approach));
+    await expect(this.panel).toHaveAttribute('data-car-model', String(car));
     await expect(this.panel).toHaveAttribute('data-scenario', selection.scenario);
     await expect(this.panel).toHaveAttribute('data-approach', selection.approach);
+  }
+
+  async setSpeed(speed: 1 | 2 | 4 | 8 | 16) {
+    await this.speed.selectOption(String(speed));
+    await expect(this.panel).toHaveAttribute('data-simulation-speed', String(speed));
   }
 
   async restart({ pause = false }: { readonly pause?: boolean } = {}) {
@@ -150,6 +158,10 @@ export class VehicleScenarioPanel {
 
   async play() {
     if (await this.playButton.innerText() === 'Play') await this.playButton.click();
+  }
+
+  async waitForOutcome(outcome: EntryOutcome | 'exited', timeout = 2_000) {
+    await expect.poll(() => this.panel.getAttribute('data-outcome'), { timeout, intervals: [25, 50, 100] }).toBe(outcome);
   }
 
   async pause() {
@@ -203,7 +215,11 @@ export class VehicleScenarioPanel {
   async run(selection: VehicleScenarioSelection, options: RunMatrixOptions = {}) {
     await this.select(selection);
     await this.play();
-    await this.page.waitForTimeout(options.settleMs ?? 2_000);
+    try {
+      await expect.poll(() => this.panel.getAttribute('data-outcome'), { timeout: options.settleMs ?? 2_000, intervals: [25, 50, 100] }).not.toBe('active');
+    } catch (error) {
+      if (!options.allowActive) throw error;
+    }
     // Freeze the fixed-step replay before reading several data attributes so
     // phase/progress/door state cannot come from different animation frames.
     await this.pause();

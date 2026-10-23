@@ -1,7 +1,10 @@
 import { WORLD, sourceFixedPerTickToWorld, tilesPerSecondToWorld } from '../world/world';
-import type { CarPhysics } from '../../loader/gci';
+import type { CarPhysics } from '../../engine/loader/gci';
 import { directionFromRotation, normalizeRotation, type Vector2 } from './motion-vector';
+import { SOURCE_OIL_GRIP_SCALE, SOURCE_OIL_STEER_ANGLE } from './vehicle-skid';
 import { computeEngineTorque, computePointVelocity, applyForceAtPoint, stabilizeVehicleVelocity, vehicleCenterOfMassOffset, vehicleDamageSpeedFactor, vehicleForwardSpeed, vehicleMass, vehicleMomentOfInertia, vehicleSteeringScale, type VehicleControl, type VehicleDynamicsState, type VehicleGeometry, type VehicleGroundContact, type VehicleIntegrationOptions } from './vehicle-kinematics';
+
+type SourceVehicleControl = VehicleControl & { sourceOilSpinDirection?: -1 | 1 };
 
 const approach = (current: number, target: number, amount: number) => current + Math.max(-amount, Math.min(amount, target - current));
 const DEFAULT_VEHICLE_GROUND: VehicleGroundContact = { grounded: true, surfaceType: 0, slopeLength: 0 };
@@ -19,7 +22,7 @@ const DEFAULT_VEHICLE_GROUND: VehicleGroundContact = { grounded: true, surfaceTy
  * drivetrain must use the same slices so steering, braking and gear changes
  * cannot jump over a wall between collision checks.
  */
-function integrateVehicleSlice(state: VehicleDynamicsState, control: VehicleControl, physics: CarPhysics | undefined, dt: number, wheelBase?: number, geometry: VehicleGeometry = {}, ground: VehicleGroundContact = DEFAULT_VEHICLE_GROUND, options: VehicleIntegrationOptions = {}) {
+function integrateVehicleSlice(state: VehicleDynamicsState, control: SourceVehicleControl, physics: CarPhysics | undefined, dt: number, wheelBase?: number, geometry: VehicleGeometry = {}, ground: VehicleGroundContact = DEFAULT_VEHICLE_GROUND, options: VehicleIntegrationOptions = {}) {
   const advancePose = options.advancePose !== false;
   const applyDrivetrainForces = options.applyDrivetrainForces !== false;
   const previousRotation = state.rotation;
@@ -68,7 +71,12 @@ function integrateVehicleSlice(state: VehicleDynamicsState, control: VehicleCont
   // player's left/right controls remain car-relative while backing up.
   let steerSign = 1;
   if (longitudinal < -1) steerSign = -1;
-  const steerAngle = control.steer * vehicleSteeringScale(absSpeed, physics, Boolean(control.ai)) * steerSign;
+  const oilSpinDirection = control.sourceOilSpinDirection;
+  const oilSpinning = oilSpinDirection === -1 || oilSpinDirection === 1;
+  const steerInput = oilSpinning ? oilSpinDirection : control.steer;
+  const steerAngle = oilSpinning
+    ? oilSpinDirection * SOURCE_OIL_STEER_ANGLE
+    : control.steer * vehicleSteeringScale(absSpeed, physics, Boolean(control.ai)) * steerSign;
   // CalculateRearWheelForce_5620D0 points the rear force in the opposite
   // direction, scaled by (0.6 - |velocity|) / (3.8 * 0.6). This small
   // counter-steer is what keeps the source car from pivoting around its front
@@ -101,12 +109,13 @@ function integrateVehicleSlice(state: VehicleDynamicsState, control: VehicleCont
     const wheelLongitudinal = velocity.x * wheelForward.x + velocity.y * wheelForward.y;
     const wheelLateral = velocity.x * wheelRight.x + velocity.y * wheelRight.y;
     let axleGrip = 1;
-    if (control.steer) axleGrip = 1 + turnIn;
+    if (steerInput) axleGrip = 1 + turnIn;
     if (!front) {
       axleGrip = 1;
-      if (control.steer) axleGrip = 1 - turnIn;
+      if (steerInput) axleGrip = 1 - turnIn;
       axleGrip *= rearStability * handbrakeGrip;
     }
+    if (control.slippery) axleGrip *= SOURCE_OIL_GRIP_SCALE;
     // ApplyDriveForce friction.y is the authored rolling coefficient plus
     // axle-specific brake friction. Brakes therefore scale contact slip,
     // instead of adding a second pixel-space force with a different unit.
@@ -193,7 +202,7 @@ function integrateVehicleSlice(state: VehicleDynamicsState, control: VehicleCont
  * the world runtime's native physics body performs that sweep, so repeating drivetrain forces
  * here would accelerate the car multiple times per source frame.
  */
-export function integrateVehicle(state: VehicleDynamicsState, control: VehicleControl, physics: CarPhysics | undefined, dt: number, wheelBase?: number, geometry: VehicleGeometry = {}, ground: VehicleGroundContact = DEFAULT_VEHICLE_GROUND, options: VehicleIntegrationOptions = {}) {
+export function integrateVehicle(state: VehicleDynamicsState, control: SourceVehicleControl, physics: CarPhysics | undefined, dt: number, wheelBase?: number, geometry: VehicleGeometry = {}, ground: VehicleGroundContact = DEFAULT_VEHICLE_GROUND, options: VehicleIntegrationOptions = {}) {
   if (!(dt > 0)) return state;
   integrateVehicleSlice(state, control, physics, dt, wheelBase, geometry, ground, options);
   return state;

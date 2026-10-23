@@ -1,7 +1,7 @@
 import type { HazardState, TrafficState, WorldEventInput } from '../../protocol/types';
 import type { HazardObject } from '../effects/hazard';
 import type { VehicleObject } from '../gameobjects/vehicle';
-import { GTA2_CAR_FIRE_SPRITES } from '../../domain/world/gta2-sprites';
+import { GTA2_CAR_FIRE_SPRITES, GTA2_SOURCE_OBJECT_MODELS } from '../../domain/world/gta2-sprites';
 import type { VehicleDamageTransition } from '../../domain/combat/vehicle-damage';
 
 export interface VehicleDamageControllerContext {
@@ -31,6 +31,7 @@ export class VehicleDamageController {
   }
 
   spawnFire(vehicle: TrafficState, life: number, effect: 'fire' | 'explosion' = 'fire') {
+    if (effect === 'fire' && vehicle.fireExtinguished) return undefined;
     const owner = this.fireOwner(vehicle, effect);
     let sourceModel: number | undefined;
     if (effect === 'fire') {
@@ -67,6 +68,13 @@ export class VehicleDamageController {
     }
   }
 
+  /** Car_BC::HandleCarHitByObject model 198 clears attached fire sprites but
+   * deliberately leaves the accumulated damage and burning damage phase. */
+  extinguishFire(vehicle: TrafficState) {
+    vehicle.fireExtinguished = true;
+    this.removeFire(vehicle, 'fire');
+  }
+
   syncFire() {
     for (const hazard of this.context.hazards) {
       if (hazard.kind !== 'fire' || !hazard.owner?.startsWith('vehicle:')) continue;
@@ -90,6 +98,7 @@ export class VehicleDamageController {
   applyDamage(vehicle: TrafficState, damage: number, x = vehicle.x, y = vehicle.y, sourceModel?: number, attacker?: string) {
     const object = this.context.vehicleObjectFor(vehicle.id);
     if (!object || !object.canReceiveObjectDamage(sourceModel)) return;
+    if (sourceModel === GTA2_SOURCE_OBJECT_MODELS.fireHitting) vehicle.fireExtinguished = false;
     const transition: VehicleDamageTransition = object.receiveDamage(damage, x, y);
     if (!transition.applied) return;
     const actor = attacker ?? object?.driver;

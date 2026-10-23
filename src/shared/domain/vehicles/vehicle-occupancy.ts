@@ -1,5 +1,5 @@
-import type { CarInfo } from '../../loader/style-parser';
-import type { VehicleBounds } from '../../loader/vehicle-bounds';
+import type { CarInfo } from '../../engine/loader/style-parser';
+import type { VehicleBounds } from '../../engine/loader/vehicle-bounds';
 import type { TrafficState, VehicleDoorState, VehicleOccupantState } from '../../protocol/types';
 export * from './vehicle-door-geometry';
 import { VEHICLE_DOOR_ANIMATION_FRAMES, VEHICLE_DOOR_FRAME_DELAY, VEHICLE_DOOR_OPEN_HOLD, vehicleDoorDefinitions, vehicleSeatDefinitions } from './vehicle-door-geometry';

@@ -5,7 +5,7 @@ import { loadLevelBundle, loadMultiplayerMapBundle, loadPickupAssetFromDisk as r
 import { createHttpServer } from './http';
 import { attachMultiplayer, type MultiplayerMapRuntime } from './multiplayer';
 import { Gta2Game } from '../shared/game/gta2-game';
-import { MULTIPLAYER_MAPS, multiplayerMapForFiles, type MultiplayerMapDefinition } from '../shared/loader/multiplayer-maps';
+import { MULTIPLAYER_MAPS, multiplayerMapForFiles, type MultiplayerMapDefinition } from '../shared/engine/loader/multiplayer-maps';
 import { createServerConfig, type ServerConfigOverrides } from './config';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import type { InlineConfig } from 'vite';

@@ -3,6 +3,12 @@ export type MapWallFixtureData = {
   layer?: number;
   movement?: boolean;
   bullet?: boolean;
+  /** Cardinal wall orientation used by Object_5C's impact-side dispatch. */
+  orientation?: 'horizontal' | 'vertical';
+  /** Explosion type selected by the four diagonal wall definitions. */
+  diagonalExplosionType?: 22 | 23;
+  objectId?: number;
+  model?: number;
 };
 
 export function mapFixtureMatches(fixture: unknown, layer: number, mode: 'movement' | 'bullet') {

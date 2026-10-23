@@ -1,4 +1,4 @@
-import type { MapObjectDefinition } from '../../loader/models/style';
+import type { MapObjectDefinition } from '../../engine/loader/models/style';
 import { COLLISION_CATEGORY } from '../../domain/physics/collision-rules';
 import type { GameObjectSprite, GameObjectUpdateContext } from './gameobject';
 import type { MapObjectPlacement } from '../../domain/physics/map-object-placement';
@@ -19,8 +19,18 @@ export interface StaticMapObjectState {
  * objects own their placement, sprite metadata, and collision footprint; the
  * map backend only adapts their collider into its native static world. */
 export class StaticMapObject extends StaticGameObject<StaticMapObjectState, number> {
+  private sourceAnimationFrame = 0;
+  private sourceAnimationCounter = 0;
+  private sourceAnimationTimer: number;
+  private sourceAnimationFinished = false;
+  private presentationModel: number;
+
   constructor(state: StaticMapObjectState, readonly definition: MapObjectDefinition) {
     super(state.id, state, 'map-object');
+    // ObjectDefinition_74 defaults field_65 to 99 before an override is
+    // applied. Preserve that source default for custom animated definitions.
+    this.sourceAnimationTimer = definition.animationTimer ?? 99;
+    this.presentationModel = state.model;
     this.collision = {
       shape: { type: 'box', width: definition.width, height: definition.height },
       solid: definition.blocksMovement && definition.width > 0 && definition.height > 0,
@@ -33,25 +43,37 @@ export class StaticMapObject extends StaticGameObject<StaticMapObjectState, numb
   }
 
   override update(_context: GameObjectUpdateContext) {
-    // Authored MOBJ records are fixed in the map. Animated definitions change
-    // their presentation frame, not their world pose or collision footprint.
+    // Object_2C::UpdateAnimation_5257D0 advances the frame counter first,
+    // then the OBJI frame, and finally consumes one finite animation timer.
+    // MOBJ placement and the authored collision shape stay fixed while the
+    // source definition changes presentation.
+    if (this.sourceAnimationFinished || this.definition.behavior !== 'animated' || this.definition.spriteCount <= 1) return;
+    this.sourceAnimationCounter++;
+    if (this.sourceAnimationCounter < Math.max(1, this.definition.frameTicks)) return;
+    this.sourceAnimationCounter = 0;
+    this.sourceAnimationFrame++;
+    if (this.sourceAnimationFrame < this.definition.spriteCount) return;
+    this.sourceAnimationFrame = 0;
+    if (this.sourceAnimationTimer > 0) this.sourceAnimationTimer--;
+    if (this.sourceAnimationTimer !== 0 || this.definition.nextDefinition === 0) return;
+    this.presentationModel = this.definition.nextDefinition;
+    this.sourceAnimationFinished = true;
   }
 
   override getSprite(_now: number): GameObjectSprite {
+    const sourceAnimated = this.definition.behavior === 'animated' && !this.sourceAnimationFinished;
     const sprite: GameObjectSprite = {
       atlas: 'objects',
-      definition: { bank: 'map-object', sourceId: this.mutableState.model },
-      model: this.mutableState.model,
+      definition: { bank: 'map-object', sourceId: this.presentationModel },
+      model: this.presentationModel,
       placement: this.placement,
-      frameTicks: this.definition.frameTicks,
-      renderDepth: { band: 'map', sourceLayer: this.definition.drawLayer },
+      ...(sourceAnimated ? { frame: this.sourceAnimationFrame } : {}),
+      presentation: { priority: this.definition.drawLayer, band: 'object' },
       blending: (this.definition.spriteFlags & 3) === 2 ? 'additive' : 'normal',
-      depthTest: true,
-      depthWrite: false,
       alphaTest: .01,
-      animationKey: `map-object:${this.id}:${this.mutableState.model}`,
+      animationKey: `map-object:${this.id}:${this.presentationModel}`,
     };
-    const animated = this.definition.behavior === 'animated' ? sprite : { ...sprite, frame: 0 };
+    const animated = sourceAnimated ? sprite : { ...sprite, frame: 0 };
     if (!this.definition.hasShadows) return animated;
     return { ...animated, shadow: { opacity: .24, scale: .7, offsetX: 3, offsetY: 3 } };
   }

@@ -11,13 +11,13 @@ inputs and are not committed.
 
 The current loader boundary is organized as follows:
 
-- `src/shared/loader/map-parser.ts` and `models/map.ts` decode and model GMP data;
-- `src/shared/loader/style-parser.ts` and `models/style.ts` decode and model STY data;
-- `src/shared/loader/gci.ts`, `cars.ts`, `vehicle-bounds.ts`, and
+- `src/shared/engine/loader/map-parser.ts` and `models/map.ts` decode and model GMP data;
+- `src/shared/engine/loader/style-parser.ts` and `models/style.ts` decode and model STY data;
+- `src/shared/engine/loader/gci.ts`, `cars.ts`, `vehicle-bounds.ts`, and
   `models/vehicles.ts` handle vehicle metadata;
-- `src/shared/loader/scr.ts` and `models/catalog.ts` handle authored pickup data;
-- `src/shared/loader/asset-loaders.ts` and `bundle.ts` compose typed bundles; and
-- `src/shared/loader/multiplayer-maps.ts` maps the supported multiplayer catalog.
+- `src/shared/engine/loader/scr.ts` and `models/catalog.ts` handle authored pickup data;
+- `src/shared/engine/loader/asset-loaders.ts` and `bundle.ts` compose typed bundles; and
+- `src/shared/engine/loader/multiplayer-maps.ts` maps the supported multiplayer catalog.
 
 The server reads files through its asset adapter. Client and shared gameplay
 code consume the resulting typed bundle rather than opening files directly.
@@ -31,7 +31,7 @@ The GMP documentation defines the data needed for traffic:
 
 The official design documentation says weapon points come from gameplay data rather than the map geometry: a ped drop, a weapon-carrying vehicle, street/roof placement, or a regenerating weapon-shop selection. It also separates vehicle-only weapons (land mines, oil slicks, machine-gun cars, and similar equipment) from ped weapons.
 
-The runtime decodes `DMAP`, `CMAP`, and `UMAP` map chunks and loads authored map zones, tile animations, lights, PSX tile mappings, and junction data from `ZONE`, `ANIM`, `LGHT`, `PSXM`, and `RGEN`. Each zone now has its documented type name, while `level.traffic` indexes traffic-light and bus-stop zones separately. The authoritative server spawns parked cars at authored green-arrow camera-edge positions and recycles them outside the multiplayer interest radius; clients consume those traffic snapshots without local world stepping. Style loading retains and parses the car records in `CARI`, plus the sprite bases, delta stores, object info, font base, and recycling data; restart zones are used for player respawns. Multiplayer state carries team, armor, money, wanted level, and readiness so the client and server agree on the complete player HUD state.
+The runtime decodes `DMAP`, `CMAP`, and `UMAP` map chunks and loads authored map zones, tile animations, lights, PSX tile mappings, and junction data from `ZONE`, `ANIM`, `LGHT`, `PSXM`, and `RGEN`. Each zone now has its documented type name, while `level.traffic` indexes traffic-light, arrow-blocker, and bus-stop zones separately. The authoritative server and local sessions spawn traffic at authored camera-edge road positions, advance it through the shared traffic controller, and recycle ordinary cars outside the multiplayer interest radius; network clients consume those authoritative traffic snapshots without local world stepping. Style loading retains and parses the car records in `CARI`, plus the sprite bases, delta stores, object info, font base, and recycling data; restart zones are used for player respawns. Multiplayer state carries team, armor, money, wanted level, and readiness so the client and server agree on the complete player HUD state.
 
 GCI `max_speed`, `gear2 speed`, and `gear3 speed` are decoded Fix16 values in map units per fixed tick. The executable's Fix16 one is `0x4000` (not `0x10000`); the shared boundary converts those decoded values to pixels per second using the 64-pixel tile size and 30 Hz world rate before player, traffic, and collision code consumes them. The traffic bands are therefore `0x1EB..0xCCC` (slow), `0xCCC..0x1333` (medium), and `0x1333..0x1999` (fast).
 
@@ -78,7 +78,7 @@ state, not a second seat allocation. This preserves old `driver` and
 `passengers` aliases while allowing remote clients to attach seated peds and
 render the authored DELX door frames.
 
-The remaining authoritative source for fixed weapon points is the compiled mission script (`bil.scr` for the Industrial single-player map, `wil.SCR` for Downtown, `ste.SCR` for Residential, plus the corresponding mission sub-scripts). `src/shared/loader/scr.ts` now decodes the SCR pointer table, command headers, signed 16.14 coordinates, `OBJ_DATA`/`CREATE_OBJ` records, and `GENERATOR` records. It maps the documented `COLLECT_00`…`COLLECT_23` object IDs to the game's weapon slots and imports the resulting points; no pickup locations are invented and `MOBJ` scenery is never treated as a weapon. Pickup art is decoded from the STY code-object sprite base using the eight authored frames for each `COLLECT_*` definition, rather than from decorative map-object sprites.
+The remaining authoritative source for fixed weapon points is the compiled mission script (`bil.scr` for the Industrial single-player map, `wil.SCR` for Downtown, `ste.SCR` for Residential, plus the corresponding mission sub-scripts). `src/shared/engine/loader/scr.ts` now decodes the SCR pointer table, command headers, signed 16.14 coordinates, `OBJ_DATA`/`CREATE_OBJ` records, and `GENERATOR` records. It maps the documented `COLLECT_00`…`COLLECT_23` object IDs to the game's weapon slots and imports the resulting points; no pickup locations are invented and `MOBJ` scenery is never treated as a weapon. Pickup art is decoded from the STY code-object sprite base using the eight authored frames for each `COLLECT_*` definition, rather than from decorative map-object sprites.
 
 Weapon fire and impact visuals use the same authored STY code-object bank. The renderer selects data ranges for bullets, shotgun pellets, flame, rockets, molotovs, grenades, shock effects, oil slicks, mines, and explosion frames; it does not draw synthetic trace lines or placeholder projectile circles. Source gameplay object ids remain distinct from pickup art: oil slick is source model 8 / pickup sprite model 216, and land mine is source model 10 / pickup sprite model 217. Ped firing and throw poses use the authored character animation ranges decoded from the ped sprite sets. The decoder keeps the source civilian (`base+0`), player (`base+158`), and police (`base+316`) graphic banks separate, so NPC falling, weapon, entry, and jump sequences use the correct artwork.
 
@@ -96,9 +96,12 @@ longer each apply an independent scale factor.
 
 Player-controlled vehicle handling reads `max_speed` and the other authored
 values from the GCI catalog. Traffic cars are spawned from the decoded
-green/red-arrow road graph at authored camera-edge positions and remain parked
-until a player takes a driver seat; no route, traffic-light, or ahead-of-car
-world runtime runs for them. The full authored handling record is decoded as
+green/red-arrow road graph at authored camera-edge positions and are advanced
+by the authoritative/local traffic controller. The controller keeps ordinary
+green-arrow following separate from special/emergency red routes, uses decoded
+RGEN data for target-driven route searches when available, probes nearby cars,
+actors, and arrow blockers, and consumes shared traffic-light phases. Network
+clients only interpolate the replicated result. The full authored handling record is decoded as
 well: turbo, catalogue value/pad, mass, drive and mass bias, brake friction,
 turn-in/turn-ratio, rear-end stability, handbrake slide, thrust, anti strength,
 skid threshold, and all three gear multipliers/speed thresholds. These values

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Grand Theft Kayak 2</title>
+  <title>__APPLICATION_TITLE__</title>
   <link rel="stylesheet" href="/src/client/ui/ui.css">
   <style>
     body { margin: 0; overflow: hidden; background: #111820; color: #ecf2f8; font: 15px system-ui, sans-serif; touch-action: none; -webkit-tap-highlight-color: transparent; }
@@ -15,82 +15,75 @@
   <main id="game"></main>
 
   <nav id="top-toolbar" aria-label="Game menu">
-    <button id="open-menu" type="button" aria-expanded="false" aria-controls="game-menu">Menu</button>
+    <button id="open-menu" class="menu-button" type="button" aria-expanded="false" aria-controls="game-menu">Menu</button>
   </nav>
 
   <div id="menu-backdrop" hidden></div>
-  <aside id="game-menu" hidden aria-label="Game menu" role="dialog" aria-modal="false">
-    <div class="game-menu-header">
-      <strong>GTA2</strong>
-    </div>
-    <ul class="game-menu-actions" aria-label="Game panels">
-      <li><button id="menu-resume" type="button">Resume</button></li>
-      <li><button id="open-single-player" type="button">Single player</button></li>
-      <li><button id="open-split-screen" type="button">Split screen</button></li>
-      <li><button id="open-lobby" type="button" aria-expanded="false">Multiplayer</button></li>
-      <li><button id="open-scoreboard" type="button" aria-expanded="false">Scoreboard</button></li>
-      <li><button id="open-chat" type="button" aria-expanded="false">Chat</button></li>
-      <li><button id="open-debug" type="button" aria-expanded="false">Debug</button></li>
-    </ul>
+  <aside id="game-menu" class="menu-surface menu-layout menu-layout--root" hidden aria-label="Game menu" role="dialog" aria-modal="false"></aside>
+
+  <aside id="local-menu" class="menu-surface menu-layout" hidden aria-label="Local game setup" role="dialog" aria-modal="false">
+    <div class="menu-surface-header local-menu-header"><strong id="local-menu-title">Single player</strong><button id="close-local-menu" class="menu-button" type="button">Back</button></div>
+    <label class="menu-field">Map <select id="local-map" class="menu-select"></select></label>
+    <button id="start-local-game" class="menu-button" type="button">Start</button>
   </aside>
 
-  <aside id="local-menu" hidden aria-label="Local game setup" role="dialog" aria-modal="false">
-    <div class="local-menu-header"><strong id="local-menu-title">Single player</strong><button id="close-local-menu" type="button">Back</button></div>
-    <label>Map <select id="local-map"></select></label>
-    <button id="start-local-game" type="button">Start</button>
-  </aside>
+  <aside id="debug-menu" class="menu-surface menu-layout" hidden aria-label="Debug tools" role="dialog" aria-modal="false">
+    <div class="debug-menu-header"><strong>Debug tools</strong><div class="debug-menu-header-actions"><a id="open-scenarios" class="menu-button" href="/scenarios.html">Scenarios</a><a id="open-sprites" class="menu-button" href="/sprites.html">Sprites</a><button id="close-debug" class="menu-button" type="button" aria-label="Close debug menu">Close</button></div></div>
 
-  <aside id="debug-menu" hidden aria-label="Debug tools">
-    <div class="debug-menu-header"><strong>Debug tools</strong><div class="debug-menu-header-actions"><a id="open-scenarios" href="/scenarios.html">Scenarios</a><a id="open-sprites" href="/sprites.html">Sprites</a><button id="close-debug" type="button" aria-label="Close debug menu">Close</button></div></div>
-    <div class="debug-tabs" role="tablist" aria-label="Debug tool groups">
-      <button id="debug-tab-graphs" type="button" role="tab" aria-selected="true" aria-controls="debug-graphs">Traffic</button>
-      <button id="debug-tab-player" type="button" role="tab" aria-selected="false" aria-controls="debug-player">Player</button>
-      <button id="debug-tab-camera" type="button" role="tab" aria-selected="false" aria-controls="debug-camera">Camera</button>
-    </div>
-
-    <section id="debug-graphs" class="debug-tab-panel" role="tabpanel" aria-labelledby="debug-tab-graphs">
-      <strong>Traffic debug</strong>
-      <label><input id="debug-pedestrian-graph" type="checkbox"> Pedestrian graph</label>
-      <label><input id="debug-traffic" type="checkbox"> Traffic</label>
-      <label><input id="debug-car" type="checkbox"> Cars</label>
-      <label><input id="debug-zones" type="checkbox"> Zones</label>
-      <label><input id="debug-police-attack" type="checkbox"> Police attack player</label>
-      <small class="debug-legend">Pedestrian graph marks road nodes separately. Traffic includes road links, routes, and waypoints. Cars includes vehicle bounds, movement vectors, and active route metadata. Zones includes map zones, junctions, and segments.</small>
-      <div class="debug-actions"><button id="debug-reset-world" type="button">Reset world</button><small class="debug-legend">Resets connected players and dynamic world state.</small></div>
+    <section id="debug-graphs" class="debug-section">
+      <h2 class="debug-section-title">Traffic</h2>
+      <div class="debug-control-grid">
+        <label class="menu-checkbox-field"><input id="debug-pedestrian-graph" class="menu-checkbox" type="checkbox"> Pedestrian graph</label>
+        <label class="menu-checkbox-field"><input id="debug-traffic" class="menu-checkbox" type="checkbox"> Traffic</label>
+        <label class="menu-checkbox-field"><input id="debug-car" class="menu-checkbox" type="checkbox"> Cars</label>
+        <label class="menu-checkbox-field"><input id="debug-zones" class="menu-checkbox" type="checkbox"> Zones</label>
+        <label class="menu-checkbox-field"><input id="debug-police-attack" class="menu-checkbox" type="checkbox"> Police attack player</label>
+      </div>
     </section>
 
-    <section id="debug-player" class="debug-tab-panel" role="tabpanel" aria-labelledby="debug-tab-player" hidden>
-      <strong>Player vehicle-entry overlays</strong>
-      <div class="debug-actions"><button id="debug-give-all-weapons" type="button" disabled>Give all weapons</button><small class="debug-legend">Gives the player the authored maximum ammo for every weapon.</small></div>
-      <label><input id="debug-vehicle-doors" type="checkbox"> Vehicle doors</label>
-      <label><input id="debug-closest-door" type="checkbox"> Line to closest door</label>
-      <small class="debug-legend">Shows authored enter/exit door positions and the player’s nearest usable door.</small>
-      <strong>Player coordinates</strong>
-      <label><input id="debug-show-coordinates" type="checkbox"> Show coordinates overlay</label>
-      <output id="debug-coordinates" class="debug-coordinate-readout" aria-label="Current player coordinates">X — · Y — · Z — · layer —</output>
-      <strong>Player state</strong>
-      <label><input id="debug-show-player-state" type="checkbox"> Show player/car state overlay</label>
+    <section id="debug-map" class="debug-section">
+      <h2 class="debug-section-title">Map</h2>
+      <label class="menu-checkbox-field"><input id="debug-tile-picker" class="menu-checkbox" type="checkbox"> Select surface</label>
+      <label class="menu-field">Enabled map levels (Cmd/Ctrl-click to toggle) <select id="debug-map-levels" class="menu-select" multiple size="4" aria-label="Enabled map levels"></select></label>
     </section>
 
-    <section id="debug-camera" class="debug-tab-panel" role="tabpanel" aria-labelledby="debug-tab-camera" hidden>
-      <strong>Camera presentation</strong>
-      <small class="debug-legend">Player and vehicle positions use authoritative server snapshots.</small>
-      <label>Camera mode <select id="debug-camera-mode"><option value="follow">Follow (1:1)</option><option value="detached">Detached (WASD / page keys)</option></select></label>
-      <label><input id="debug-camera-speed-zoom" type="checkbox" checked> Speed zoom-out</label>
-      <label><input id="debug-camera-lookahead" type="checkbox" checked> Look ahead at speed</label>
-      <label><input id="debug-sprite-frame-interpolation" type="checkbox" checked> Sprite frame interpolation</label>
-      <label><input id="debug-fps" type="checkbox"> FPS counter</label>
+    <section id="debug-player" class="debug-section">
+      <h2 class="debug-section-title">Player</h2>
+      <div class="debug-group">
+        <h3 class="debug-group-title">Vehicle</h3>
+        <div class="debug-control-grid">
+          <label class="menu-checkbox-field"><input id="debug-vehicle-doors" class="menu-checkbox" type="checkbox"> Vehicle doors</label>
+          <label class="menu-checkbox-field"><input id="debug-closest-door" class="menu-checkbox" type="checkbox"> Line to closest door</label>
+        </div>
+      </div>
+      <div class="debug-group">
+        <h3 class="debug-group-title">State</h3>
+        <label class="menu-checkbox-field"><input id="debug-show-player-state" class="menu-checkbox" type="checkbox"> Show player/car state overlay</label>
+      </div>
+    </section>
+
+    <section id="debug-camera" class="debug-section">
+      <h2 class="debug-section-title">Camera</h2>
+      <label class="menu-field">Camera mode <select id="debug-camera-mode" class="menu-select"><option value="follow">Follow (1:1)</option><option value="detached">Detached (WASD / Shift-W, Shift-S / page keys)</option></select></label>
+    </section>
+
+    <section class="debug-section debug-final-actions" aria-label="Debug actions">
+      <button id="debug-reset-world" class="menu-button" type="button">Reset world</button>
+      <button id="debug-give-all-weapons" class="menu-button" type="button" disabled>Give all weapons</button>
     </section>
 
   </aside>
 
-  <div id="lobby" hidden>
-    <label>Mode <select id="mode"><option value="singleplayer">Single player</option><option value="online">Multiplayer</option><option value="local">Local split-screen</option></select></label>
-    <label>Name <input id="name" maxlength="32" placeholder="Random name"></label>
-    <label>Room <input id="room" maxlength="24" value="main"></label>
-    <label>Team <select id="team"><option value="0">Free for all</option><option value="1">Red</option><option value="2">Blue</option><option value="3">Green</option></select></label>
-    <label>Map <select id="map"></select></label>
-    <button id="join">Apply &amp; reconnect</button><button id="ready" disabled>Ready</button><button id="local-reset" type="button" hidden>Reset local match</button><button id="local-leave" type="button" hidden>Leave local match</button><span id="roomstate"></span>
+  <aside id="graphics-menu" class="menu-surface menu-layout" hidden aria-label="Graphics" role="dialog" aria-modal="false"></aside>
+
+  <div id="lobby" class="menu-surface menu-layout menu-layout--lobby" hidden aria-label="Multiplayer" role="dialog" aria-modal="false">
+    <div class="menu-surface-header"><strong>Multiplayer</strong><button id="close-lobby" class="menu-button" type="button">Back</button></div>
+    <label class="menu-field">Mode <select id="mode" class="menu-select"><option value="singleplayer">Single player</option><option value="online">Multiplayer</option><option value="local">Local split-screen</option></select></label>
+    <label class="menu-field">Name <input id="name" class="menu-input" maxlength="32" placeholder="Random name"></label>
+    <label class="menu-field">Room <input id="room" class="menu-input" maxlength="24" value="main"></label>
+    <label class="menu-field">Team <select id="team" class="menu-select"><option value="0">Free for all</option><option value="1">Red</option><option value="2">Blue</option><option value="3">Green</option></select></label>
+    <label class="menu-field">Map <select id="map" class="menu-select"></select></label>
+    <div class="menu-actions"><button id="join" class="menu-button">Apply &amp; reconnect</button><button id="ready" class="menu-button" disabled>Ready</button><button id="local-reset" class="menu-button" type="button" hidden>Reset local match</button><button id="local-leave" class="menu-button" type="button" hidden>Leave local match</button></div><span id="roomstate"></span>
   </div>
 
   <div id="status" role="status">
@@ -111,14 +104,14 @@
       </section>
     </template>
   </div>
-  <div id="local-paused" hidden><div>PAUSED<br><small>Press Escape to resume</small><div class="local-pause-actions"><button id="local-resume" type="button">Resume</button><button id="local-pause-leave" type="button">Leave match</button></div></div></div>
+  <div id="local-paused" hidden><div>PAUSED<br><small>Press Escape to resume</small><div class="local-pause-actions"><button id="local-resume" class="menu-button" type="button">Resume</button><button id="local-pause-leave" class="menu-button" type="button">Leave match</button></div></div></div>
   <div id="fps-counter" hidden aria-live="polite">FPS —</div>
-  <output id="debug-coordinate-overlay" hidden aria-label="Current player coordinates"></output>
   <output id="debug-player-state-overlay" hidden aria-label="Current player and vehicle state"></output>
+  <output id="debug-map-tile-overlay" hidden aria-label="Selected map tile state"></output>
 
-  <div id="scoreboard" hidden></div>
+  <div id="scoreboard" class="menu-surface" hidden aria-label="Scoreboard" role="dialog" aria-modal="false"></div>
   <div id="feed" hidden></div>
-  <div id="chat" hidden><div id="chatlog"></div><input id="chatinput" maxlength="240" placeholder="Chat…"></div>
+  <div id="chat" class="menu-surface" hidden aria-label="Chat" role="dialog" aria-modal="false"><div class="menu-surface-header"><strong>Chat</strong><button id="close-chat" class="menu-button" type="button">Back</button></div><div id="chatlog"></div><input id="chatinput" class="menu-input" maxlength="240" placeholder="Chat…"></div>
   <div id="touch-controls" aria-label="Touch controls">
     <div id="touch-joystick" role="application" aria-label="Movement joystick">
       <div class="touch-joystick-base"><div id="touch-joystick-knob"></div></div>

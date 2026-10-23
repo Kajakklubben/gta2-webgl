@@ -28,7 +28,7 @@ export function restore(host: any, state: PlayerState) {
     if (!current) { host.addPlayer(state.id, state); return; }
     playerSnapshotCodec.apply(current, state);
     if (host.localId) host.gameObjects.findPlayer(current.id)?.syncReplicatedShot();
-    const body = host.bodies.get(state.id);
+    const body = host.gameObjects.findPlayer(state.id)?.physicsBody;
     if (body) {
       body.setPosition({ x: worldToPhysics(state.x), y: -worldToPhysics(state.y) });
       body.setLinearVelocity({ x: worldToPhysics(state.vx), y: -worldToPhysics(state.vy) });

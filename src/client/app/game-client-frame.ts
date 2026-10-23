@@ -1,7 +1,7 @@
 import { FixedClock } from '../../shared/engine/fixed-clock';
 import { Gta2Game } from '../../shared/game/gta2-game';
 import type { ClientSnapshot } from '../../shared/protocol/client-dto';
-import type { Input, PlayerState } from '../../shared/protocol/types';
+import type { Input } from '../../shared/protocol/types';
 import { WEAPONS } from '../../shared/domain/combat/weapons';
 import { WORLD } from '../../shared/domain/world/world';
 import { Renderer } from '../rendering/renderer';
@@ -9,7 +9,7 @@ import type { PlayerHud } from './main-ui';
 import { updatePlayerHud } from './game-client-hud';
 import { buildPlayerInput, type LocalPlayerInputState } from './player-input';
 import { controlTransitions, gamepadActions, gamepadFor, gamepadMask } from './input-bindings';
-import type { ClientAssetBundle } from '../../shared/loader/models/catalog';
+import type { ClientAssetBundle } from '../../shared/engine/loader/models/catalog';
 
 export interface GameFrameContext {
   readonly renderer: Renderer;
@@ -20,7 +20,7 @@ export interface GameFrameContext {
   readonly playerHuds: readonly PlayerHud[];
   readonly touchControls: { readonly directions: readonly ({ x: number; y: number } | undefined)[] };
   readonly vehicleEntryTracer: { log(game: Gta2Game, playerId: string): void };
-  readonly playerDebugOverlay: { updateCoordinates(player: PlayerState): void; update(game: Gta2Game, states: ReturnType<Gta2Game['snapshot']>): void };
+  readonly playerDebugOverlay: { update(game: Gta2Game, states: ReturnType<Gta2Game['snapshot']>): void };
   readonly scoreboard: HTMLElement;
   readonly weaponHint: HTMLElement;
   readonly debugCameraMode: HTMLSelectElement;
@@ -82,11 +82,11 @@ function stepGame(context: GameFrameContext, game: Gta2Game, multiplayer: boolea
 
 function renderGame(context: GameFrameContext, game: Gta2Game, splitScreen: boolean, multiplayer: boolean, now: number) {
   const states = game.snapshot(), localId = context.getId(), local = game.gameState.playerStates.get(localId)!;
-  context.playerDebugOverlay.updateCoordinates(local); context.playerDebugOverlay.update(game, states);
   const world = context.getAuthoritative(), pickups = world?.pickups ?? game.gameState.pickupStates;
   context.renderer.render({ now, localId, paused: !multiplayer && context.getPaused(), ...(splitScreen ? { localIds: context.localPlayerIds } : {}), players: states, pickups, traffic: game.gameState.vehicleStates, hazards: world?.hazards ?? game.gameState.hazardStates, objects: game.gameObjects.values() });
+  context.playerDebugOverlay.update(game, states);
   document.body.dataset['players'] = String(states.length);
-  context.scoreboard.innerHTML = `<strong>Scoreboard</strong><table><tbody>${states.slice().sort((a, b) => b.score - a.score).map(state => `<tr><td>${state.name.replace(/[&<>]/g, '')}</td><td>${state.score}</td><td>${state.kills}/${state.deaths}</td></tr>`).join('')}</tbody></table>`;
+  context.scoreboard.innerHTML = `<div class="menu-surface-header"><strong>Scoreboard</strong><button class="menu-button" type="button" data-menu-back>Back</button></div><table><tbody>${states.slice().sort((a, b) => b.score - a.score).map(state => `<tr><td>${state.name.replace(/[&<>]/g, '')}</td><td>${state.score}</td><td>${state.kills}/${state.deaths}</td></tr>`).join('')}</tbody></table>`;
   const combat = local.combat, weapon = combat.weapon >= 0 ? WEAPONS[combat.weapon] : undefined;
   const hudPlayers = splitScreen ? context.localPlayerIds.map(id => game.gameState.playerStates.get(id)) : [local];
   for (const [index, player] of hudPlayers.entries()) if (player) updatePlayerHud(player, context.playerHuds[index]!, game, context.style);

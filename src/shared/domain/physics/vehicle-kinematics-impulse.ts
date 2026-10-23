@@ -1,4 +1,4 @@
-import type { CarPhysics } from '../../loader/gci';
+import type { CarPhysics } from '../../engine/loader/gci';
 import { directionFromRotation } from './motion-vector';
 import type { Vector2 } from './motion-vector';
 import { vehicleCenterOfMassOffset, vehicleMass, vehicleMomentOfInertia, type VehicleDynamicsState, type VehicleGeometry } from './vehicle-kinematics';

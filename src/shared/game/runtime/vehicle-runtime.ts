@@ -22,17 +22,21 @@ export function createVehicleObject(host: any, vehicle: TrafficState) {
   }
 export function createVehicleBody(host: any, vehicle: TrafficState) {
     const driven = locallyDrivenVehicle(host);
-    if ((host.localId && !driven.some(item => item.id === vehicle.id)) || host.vehicleBodies.has(vehicle.id)) return host.vehicleBodies.get(vehicle.id);
+    const object = host.gameObjects.findVehicle(vehicle.id);
+    if (host.localId && !driven.some(item => item.id === vehicle.id)) return object?.physicsBody;
+    if (!object) return undefined;
+    if (object.physicsBody) return object.physicsBody;
     const body = host.createVehiclePhysicsBody(vehicle);
-    host.vehicleBodies.set(vehicle.id, body);
+    object.attachPhysicsBody(body);
+    host.updateVehicleBodyLayer(vehicle, body);
     return body;
   }
 export function destroyVehicleBody(host: any, id: number) {
-    const body = host.vehicleBodies.get(id);
+    const object = host.gameObjects.findVehicle(id);
+    const body = object?.detachPhysicsBody();
     if (body) host.destroyPhysicsBody(body);
-    host.vehicleBodies.delete(id);
   }
-export function updateVehicleBodyLayer(host: any, vehicle: TrafficState, body = host.vehicleBodies.get(vehicle.id)) {
+export function updateVehicleBodyLayer(host: any, vehicle: TrafficState, body = host.gameObjects.findVehicle(vehicle.id)?.physicsBody) {
     updateVehiclePhysicsBodyLayer(body, vehicle, state => host.collisionLayer(state));
   }
   /**
@@ -53,6 +57,14 @@ export function updateUnoccupiedVehicleDynamics(host: any, dt: number) {
       host.updateVehicleFloor(vehicle, dt);
       const object = host.gameObjects.findVehicle(vehicle.id);
       if (!object) continue;
+      // Scenario replays may include a moving chassis, but that movement is
+      // authored initial data, not a request to join the traffic planner.
+      // Leave the vehicle on its neutral physics path so it can coast and
+      // collide without inventing a route or steering decision.
+      if (host.vehicleAiEnabled === false) {
+        object.updateUnoccupied(dt);
+        continue;
+      }
       // The traffic planner mutates route/AI metadata as part of producing its
       // control packet. Do not run that planner for a player-driven chassis:
       // besides being unnecessary, it makes a successfully entered car look
@@ -63,7 +75,11 @@ export function updateUnoccupiedVehicleDynamics(host: any, dt: number) {
       }
       object.setAutonomousControlMode();
       const autonomousTraffic = !host.localId && ((host.carPhysics?.size ?? 0) > 0 || (host.carInfo?.size ?? 0) > 0);
-      const control = autonomousTraffic ? host.trafficSpawner.controlFor(vehicle, host.gameState.vehicleStates, host.tick, [...host.gameState.playerStates.values()]) : undefined;
+      const actors = [
+        ...[...host.gameState.playerStates.values()].map((player: { id: string; x: number; y: number; z: number }) => ({ id: player.id, x: player.x, y: player.y, z: player.z })),
+        ...[...(host.gameState.npcStates ?? [])].map((npc: { id: number; x: number; y: number; z: number }) => ({ id: `npc:${npc.id}`, x: npc.x, y: npc.y, z: npc.z })),
+      ];
+      const control = autonomousTraffic ? host.trafficSpawner.controlFor(vehicle, host.gameState.vehicleStates, host.tick, actors) : undefined;
       object.updateUnoccupied(dt, control);
     }
   }
@@ -95,7 +111,7 @@ export function prepareVehicleBodies(host: any, starts: ReadonlyMap<number, { x:
   }
 export function readVehicleBodies(host: any, dt = STEP) {
     for (const vehicle of host.gameState.vehicleStates) {
-      const body = host.vehicleBodies.get(vehicle.id);
+      const body = host.gameObjects.findVehicle(vehicle.id)?.physicsBody;
       if (!body) continue;
       const object = host.gameObjects.findVehicle(vehicle.id);
       if (object) {
@@ -104,12 +120,31 @@ export function readVehicleBodies(host: any, dt = STEP) {
       }
     }
   }
+
+function isOccupied(vehicle: TrafficState) {
+  return vehicle.passengers.length > 0 || vehicle.occupants.length > 0;
+}
+
+function isPlayerControlled(vehicle: TrafficState, playerVehicleIds: ReadonlySet<number>) {
+  return playerVehicleIds.has(vehicle.id) || vehicle.passengers.some(id => !id.startsWith('npc:'));
+}
+
+function hasTaskBearingAi(vehicle: TrafficState) {
+  if (vehicle.aiActive === false) return false;
+  return vehicle.transport !== undefined || vehicle.pursuitTarget !== undefined || vehicle.serviceStop !== undefined ||
+    vehicle.routeId !== undefined || vehicle.aiMode === 'scripted' || vehicle.aiMode === 'chase' ||
+    vehicle.aiMode === 'emergency' || vehicle.aiMode === 'service' || vehicle.aiTask === 'route' ||
+    vehicle.aiTask === 'goto' || vehicle.aiTask === 'chase' || vehicle.aiTask === 'service';
+}
+
 export function maintainTraffic(host: any) {
-    if (host.localId || !host.gameState.playerStates.size) return;
+    if (host.ambientTrafficEnabled === false || host.localId || !host.gameState.playerStates.size) return;
     const players = [...host.gameState.playerStates.values()];
+    const playerVehicleIds = new Set(players.flatMap(player => player.vehicleId === undefined ? [] : [player.vehicleId]));
     for (const vehicle of [...host.gameState.vehicleStates]) {
       if (!vehicle) continue;
       if (players.some(player => Math.hypot(vehicle.x - player.x, vehicle.y - player.y) <= INTEREST_RADIUS)) continue;
+      if (isOccupied(vehicle) || isPlayerControlled(vehicle, playerVehicleIds) || hasTaskBearingAi(vehicle)) continue;
       host.trafficSpawner.remove(vehicle.id);
       host.destroyVehicleBody(vehicle.id);
       host.unregisterObject(host.gameObjects.findVehicle(vehicle.id));
@@ -122,9 +157,9 @@ export function maintainTraffic(host: any) {
       const spawned = host.trafficSpawner.spawnAround(player.x, player.y, host.nextTrafficId, occupied, host.tick, player.z);
       host.nextTrafficId += spawned.length;
       for (const vehicle of spawned) {
-        host.createVehicleBody(vehicle);
         const object = host.createVehicleObject(vehicle);
         host.registerObject(object);
+        host.createVehicleBody(vehicle);
       }
     }
     // Public transport is source-owned rather than a random parked-car pick:
@@ -138,8 +173,9 @@ export function maintainTraffic(host: any) {
         const spawned = host.trafficSpawner.spawnServiceVehicle(kind, host.nextTrafficId, host.tick, players[0]?.z ?? 0);
         host.nextTrafficId += spawned.length;
         for (const vehicle of spawned) {
+          const object = host.createVehicleObject(vehicle);
+          host.registerObject(object);
           host.createVehicleBody(vehicle);
-          host.registerObject(host.createVehicleObject(vehicle));
         }
       }
     }

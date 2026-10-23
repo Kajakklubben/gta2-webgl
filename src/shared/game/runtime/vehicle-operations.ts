@@ -35,7 +35,7 @@ export function vehicleEntryContext(world: any): VehicleEntryContext {
 }
 
 export function setPlayerBodyPose(world: any, player: Readonly<PlayerState>) {
-  const body = world.bodies.get(player.id);
+  const body = world.gameObjects.findPlayer(player.id)?.physicsBody;
   body?.setPosition({ x: worldToPhysics(player.x), y: -worldToPhysics(player.y) });
   body?.setLinearVelocity({ x: 0, y: 0 });
 }

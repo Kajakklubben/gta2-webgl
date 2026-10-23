@@ -1,6 +1,6 @@
 import type { Input, PlayerState } from '../protocol/types';
 import { WeaponSystem } from '../domain/combat/weapon-system';
-import type { CarPhysics } from '../loader/gci';
+import type { CarPhysics } from '../engine/loader/gci';
 import type { PlayerObject } from './gameobjects/player';
 import type { VehicleObject } from './gameobjects/vehicle';
 import { PlayerLoadoutSystem } from './player-loadout';

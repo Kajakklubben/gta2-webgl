@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import type { GameObjectDrawCommand, GameObjectSprite, GameObjectSpriteLayer } from '../../../shared/game/gameobjects/gameobject';
-import type { Pixels } from '../../../shared/loader/models/style';
+import type { Pixels } from '../../../shared/engine/assets/pixels';
+import type { SpriteAssetResolver } from '../../../shared/engine/assets/sprites';
 import { pixelTexture } from '../textures';
 import { AnimationPlayer } from './animation-player';
-import { SpriteAssetRegistry } from './asset-registry';
 import { fallbackColor, fallbackSize, renderPolicy } from './render-policy';
 import { buildRenderQueue, spriteRenderOrder } from './render-queue';
 import { resolveRenderDepth } from '../spatial-depth';
+import { spriteRenderPassBand } from '../render-passes';
 
 type SpriteMesh = THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
 
@@ -16,15 +17,23 @@ export class ThreeSpriteRenderer {
   private readonly interpolationMeshes = new Map<string, SpriteMesh>();
   private readonly shadowMeshes = new Map<string, SpriteMesh>();
   private readonly shadowInterpolationMeshes = new Map<string, SpriteMesh>();
+  private readonly renderOrders = new Map<string, number>();
   private readonly beamMeshes = new Map<string, THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>[]>();
   private readonly textures = new Map<Pixels, THREE.DataTexture>();
   private readonly animations = new AnimationPlayer();
   private frameInterpolation = false;
 
-  constructor(private readonly scene: THREE.Scene, private readonly registry: SpriteAssetRegistry) {}
+  constructor(
+    private readonly scene: THREE.Scene,
+    private readonly registry: SpriteAssetResolver<GameObjectSpriteLayer, GameObjectDrawCommand>,
+  ) {}
 
   setFrameInterpolation(enabled: boolean) {
     this.frameInterpolation = enabled;
+  }
+
+  getRenderOrder(commandKey: string) {
+    return this.renderOrders.get(commandKey);
   }
 
   private texture(frame: Pixels) {
@@ -40,8 +49,6 @@ export class ThreeSpriteRenderer {
     const policy = renderPolicy(sprite, command);
     const material = new THREE.MeshBasicMaterial({
       transparent: true,
-      depthTest: policy.depthTest,
-      depthWrite: policy.depthWrite,
       alphaTest: policy.alphaTest,
       blending: sprite.blending === 'additive' ? THREE.AdditiveBlending : THREE.NormalBlending,
       color: fallbackColor(command, sprite),
@@ -60,11 +67,10 @@ export class ThreeSpriteRenderer {
       this.beamMeshes.set(command.key, meshes);
     }
     const policy = renderPolicy(sprite, command);
+    const renderPass = { mapLevel: policy.presentation.mapLevel, band: spriteRenderPassBand(command.kind, policy.presentation.band) };
     const materialFor = () => new THREE.MeshBasicMaterial({
       color: beam.color,
       transparent: true,
-      depthTest: policy.depthTest,
-      depthWrite: policy.depthWrite,
       side: THREE.DoubleSide,
     });
     while (meshes.length < beam.points.length - 1) {
@@ -88,8 +94,13 @@ export class ThreeSpriteRenderer {
       mesh.scale.set(length, beam.width, 1);
       mesh.rotation.z = Math.atan2(dy, dx);
       mesh.renderOrder = spriteRenderOrder(command, sprite);
+      mesh.userData['gta2RenderPass'] = renderPass;
+      mesh.userData['gta2BaseVisible'] = mesh.visible;
     }
-    for (const mesh of meshes.slice(active.length)) mesh.visible = false;
+    for (const mesh of meshes.slice(active.length)) {
+      mesh.visible = false;
+      mesh.userData['gta2BaseVisible'] = false;
+    }
   }
 
   private renderSpriteLayer(command: GameObjectDrawCommand, sprite: GameObjectSpriteLayer, now: number, key: string, forcedRenderOrder: number) {
@@ -117,12 +128,19 @@ export class ThreeSpriteRenderer {
     }
 
     const placement = sprite.placement;
+    const mapObjectState = command.kind === 'map-object' && key === command.key
+      ? command.state as { model?: number; x?: number; y?: number; z?: number; collisionLayer?: number }
+      : undefined;
+    const mapObjectPick = mapObjectState && Number.isFinite(mapObjectState.x) && Number.isFinite(mapObjectState.y) && Number.isFinite(mapObjectState.z)
+      ? { id: command.id, model: mapObjectState.model, x: mapObjectState.x, y: mapObjectState.y, z: mapObjectState.z, collisionLayer: mapObjectState.collisionLayer }
+      : undefined;
+    if (mapObjectPick) mesh.userData['gta2MapObject'] = mapObjectPick;
+    else delete mesh.userData['gta2MapObject'];
     const policy = renderPolicy(sprite, command);
     const spatialDepth = resolveRenderDepth(command, sprite);
+    const renderPass = { mapLevel: policy.presentation.mapLevel, band: spriteRenderPassBand(command.kind, policy.presentation.band) };
     const material = mesh.material;
     material.opacity = (sprite.opacity ?? 1) * (1 - blend);
-    material.depthTest = policy.depthTest;
-    material.depthWrite = policy.depthWrite;
     material.alphaTest = policy.alphaTest;
     const blending = sprite.blending === 'additive' ? THREE.AdditiveBlending : THREE.NormalBlending;
     if (material.blending !== blending) {
@@ -132,6 +150,8 @@ export class ThreeSpriteRenderer {
     material.side = sprite.mirrorY ? THREE.DoubleSide : THREE.FrontSide;
     mesh.renderOrder = forcedRenderOrder;
     mesh.visible = material.opacity > 0.001 && (hasFrame || hasFallback);
+    mesh.userData['gta2RenderPass'] = renderPass;
+    mesh.userData['gta2BaseVisible'] = mesh.visible;
     const scale = sprite.scale ?? 1;
     if (hasFrame) {
       const current = currentFrames[0]!;
@@ -154,8 +174,6 @@ export class ThreeSpriteRenderer {
 
     const interpolationMaterial = interpolationMesh.material;
     interpolationMaterial.opacity = (sprite.opacity ?? 1) * blend;
-    interpolationMaterial.depthTest = policy.depthTest;
-    interpolationMaterial.depthWrite = policy.depthWrite;
     interpolationMaterial.alphaTest = policy.alphaTest;
     if (interpolationMaterial.blending !== blending) {
       interpolationMaterial.blending = blending;
@@ -164,6 +182,8 @@ export class ThreeSpriteRenderer {
     interpolationMaterial.side = sprite.mirrorY ? THREE.DoubleSide : THREE.FrontSide;
     interpolationMesh.renderOrder = forcedRenderOrder + .001;
     interpolationMesh.visible = interpolationMaterial.opacity > 0.001 && hasNextFrame && blend > 0;
+    interpolationMesh.userData['gta2RenderPass'] = renderPass;
+    interpolationMesh.userData['gta2BaseVisible'] = interpolationMesh.visible;
     if (hasNextFrame) {
       const next = nextFrames[0]!;
       const nextTexture = this.texture(next);
@@ -176,10 +196,13 @@ export class ThreeSpriteRenderer {
     }
     interpolationMesh.position.set(placement.x, placement.y, spatialDepth.worldZ);
     interpolationMesh.rotation.z = placement.rotation;
+    if (mapObjectPick) interpolationMesh.userData['gta2MapObject'] = mapObjectPick;
+    else delete interpolationMesh.userData['gta2MapObject'];
   }
 
   render(commands: readonly GameObjectDrawCommand[], now: number) {
     const active = new Set<string>();
+    this.renderOrders.clear();
     for (const command of commands) {
       const sprite = command.sprite;
       if ((sprite.opacity ?? 1) <= 0) continue;
@@ -191,6 +214,7 @@ export class ThreeSpriteRenderer {
     for (const job of buildRenderQueue(commands)) {
       const { command, sprite, key } = job;
       active.add(key);
+      if (!job.shadow && key === command.key) this.renderOrders.set(command.key, job.renderOrder);
       this.renderSpriteLayer(command, sprite, now, key, job.renderOrder);
       if (job.shadow) {
         const shadowMesh = this.meshes.get(key);

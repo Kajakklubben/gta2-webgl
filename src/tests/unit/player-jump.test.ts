@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { parseMap } from '../../shared/loader/map-parser';
+import { parseMap } from '../../shared/engine/loader/map-parser';
 import { GameWorld } from '../../shared/game/game-world';
-import { loadVehicleBounds } from '../../shared/loader/vehicle-bounds';
+import { loadVehicleBounds } from '../../shared/engine/loader/vehicle-bounds';
 import { parseInput } from '../../shared/protocol/validation';
 import type { TrafficState } from '../../shared/protocol/types';
 import { mapFixture } from './fixtures';

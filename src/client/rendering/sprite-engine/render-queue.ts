@@ -12,8 +12,8 @@ export interface SpriteRenderJob {
   readonly renderOrder: number;
 }
 
-export function spriteRenderOrder(command: GameObjectDrawCommand, sprite: GameObjectSpriteLayer, sequence = 0, passOverride?: number) {
-  return resolveRenderDepth(command, sprite, sequence, passOverride).sortKey;
+export function spriteRenderOrder(command: GameObjectDrawCommand, sprite: GameObjectSpriteLayer, sequence = 0, mapLevelOverride?: number) {
+  return resolveRenderDepth(command, sprite, sequence, mapLevelOverride).sortKey;
 }
 
 function childPlacement(parent: GameObjectSpriteLayer, child: GameObjectSpriteLayer, attachment: NonNullable<GameObjectSpriteLayer['attachments']>[number]): GameObjectSpriteLayer {
@@ -54,11 +54,10 @@ function addLayer(
       },
       opacity: (sprite.opacity ?? 1) * (shadow.opacity ?? .3),
       scale: (sprite.scale ?? 1) * (shadow.scale ?? .6),
-      renderDepth: { band: 'ground', elevation: -.35 },
-      depthWrite: false,
+      presentation: { band: 'underlay', elevation: -.35 },
     };
     const shadowSequence = sequence.value++;
-    jobs.push({ command, sprite: shadowLayer, key: `${key}:shadow`, shadow: true, sequence: shadowSequence, renderOrder: spriteRenderOrder(command, shadowLayer, shadowSequence, Math.min(policy.renderOrder, 0) - 1) });
+    jobs.push({ command, sprite: shadowLayer, key: `${key}:shadow`, shadow: true, sequence: shadowSequence, renderOrder: spriteRenderOrder(command, shadowLayer, shadowSequence, Math.min(policy.presentation.mapLevel, 0) - 1) });
   }
   const { attachments, ...renderedSprite } = sprite;
   const renderedSequence = sequence.value++;

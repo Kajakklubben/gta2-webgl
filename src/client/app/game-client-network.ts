@@ -2,7 +2,7 @@ import { fromClientHazard, fromClientNpc, fromClientPickup, fromClientPlayer, fr
 import { parseServerMessage } from '../../shared/protocol/validation';
 import type { ChatMessage, MatchState } from '../../shared/protocol/types';
 import type { ClientSnapshot } from '../../shared/protocol/client-dto';
-import type { CarInfo } from '../../shared/loader/style-parser';
+import type { CarInfo } from '../../shared/engine/loader/style-parser';
 import { expandClientSnapshot } from './client-snapshot';
 import { createMultiplayerGame, multiplayerUrl, welcomeSnapshot } from './multiplayer-session';
 import { getPlayerSessionId } from './debug-settings';

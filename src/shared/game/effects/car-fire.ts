@@ -85,8 +85,8 @@ export function sourceCarFireParticles({
       // The source uses SetBlendAndAlpha(2, 15) for the expanding bursts;
       // the alpha is intentionally softer than an explosion ring.
       opacity,
-      depthTest: true, depthWrite: false, alphaTest: .01,
-      renderDepth: { band: 'effect' },
+      alphaTest: .01,
+      presentation: { band: 'overlay' },
       fallbackColor: 0xff8a3d,
     });
   }

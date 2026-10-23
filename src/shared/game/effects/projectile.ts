@@ -2,11 +2,12 @@ import type { CombatShot, HazardState } from '../../protocol/types';
 import type { GameObjectSprite, GameObjectSpriteLayer, ProjectileCombatContext, ProjectileImpactContext } from '../gameobjects/gameobject';
 import { StatefulGameObject, type GameObjectUpdateHandler } from '../gameobjects/stateful';
 import { WORLD } from '../../domain/world/world';
-import { GTA2_EXPLOSION_VISUAL_TICKS, GTA2_SOURCE_EFFECT_SPRITES, GTA2_SOURCE_OBJECT_MODELS, GTA2_SOURCE_OBJECT_SPRITES, GTA2_SOURCE_PROJECTILE_FRAME_TICKS, GTA2_WATER_SPLASH_VISUAL_TICKS, GTA2_WEAPON_PROJECTILE_SPRITES } from '../../domain/world/gta2-sprites';
+import { GTA2_EXPLOSION_VISUAL_TICKS, GTA2_FLAME_SEGMENT_FRAME_TICKS, GTA2_SOURCE_EFFECT_SPRITES, GTA2_SOURCE_OBJECT_MODELS, GTA2_SOURCE_OBJECT_SPRITES, GTA2_SOURCE_PROJECTILE_FRAME_TICKS, GTA2_WATER_SPLASH_VISUAL_TICKS, GTA2_WEAPON_PROJECTILE_SPRITES } from '../../domain/world/gta2-sprites';
 import { sourceDamageForObjectModel, sourceDamageForWeapon } from '../../domain/combat/vehicle-damage';
-import { GTA2_FLAME_MUZZLE_LEAD, GTA2_FLAME_SEGMENT_SCALE, WEAPONS } from '../../domain/combat/weapons';
+import { GTA2_FLAME_MUZZLE_LEAD, GTA2_FLAME_SEGMENT_SCALE, GTA2_MOLOTOV_LIGHT, WEAPONS } from '../../domain/combat/weapons';
 import { directionFromRotation, rotationFromDirection } from '../../domain/physics/motion-vector';
 import { createHazardObject, ExplosionObject } from './hazard';
+import type { PlayerObject } from '../gameobjects/player/player';
 
 export interface ProjectileState {
   actor: string; weapon: number; x: number; y: number; endX: number; endY: number; z: number; life: number; rotation: number;
@@ -99,8 +100,8 @@ function electricalBeamSprite(state: ProjectileState, placement: GameObjectSprit
         rotation: Math.atan2(dy + amount * nx, dx - amount * ny),
       },
       opacity: .9 - index * .08, scale: .72 + (index % 2) * .12,
-      depthTest: false, depthWrite: false, alphaTest: .01,
-      renderDepth: { band: 'effect', elevation: .2 },
+      alphaTest: .01,
+      presentation: { band: 'overlay', elevation: .2 },
       fallbackColor: 0x9be7ff,
     };
   });
@@ -108,9 +109,52 @@ function electricalBeamSprite(state: ProjectileState, placement: GameObjectSprit
   return { ...primary, layers: layers.slice(1) };
 }
 
+/** The source Armor power-up consumes one charge for direct projectile hits.
+ * Keep this separate from PlayerObject.takeDamage(), whose half-damage armor
+ * reduction is used by collisions and area effects. */
+function absorbDirectProjectileArmor(victim: { readonly state: { readonly armor: number }; readonly mutablePlayerState: { armor: number } }) {
+  if (victim.state.armor <= 0) return false;
+  victim.mutablePlayerState.armor = Math.max(0, Math.floor(victim.state.armor) - 1);
+  return true;
+}
+
+type WaterCannonCombatContext = Pick<ProjectileImpactContext, 'damagePlayer' | 'spawnEffect' | 'emit'>;
+
+/** Ped::HandlePedHitByObject's model-198 branch. The water stream consumes one
+ * armor charge when present; otherwise its authored player packet is 2. */
+export function resolveWaterCannonPlayerHit(victim: PlayerObject, actor: string, weapon: number, combat: WaterCannonCombatContext) {
+  victim.putOutFire();
+  if (victim.state.armor > 0) {
+    victim.mutablePlayerState.armor = Math.max(0, Math.floor(victim.state.armor) - 1);
+    combat.emit({ type: 'hit', actor, target: victim.id, weapon, damage: 0, lethal: false, x: victim.state.x, y: victim.state.y, z: victim.state.z });
+    return;
+  }
+  const damage = 2;
+  const currentHealth = victim.combatState.health;
+  combat.damagePlayer(victim, damage, actor, 'weapon');
+  combat.emit({ type: 'hit', actor, target: victim.id, weapon, damage, lethal: currentHealth <= damage, x: victim.state.x, y: victim.state.y, z: victim.state.z });
+}
+
+function emitWaterCannonImpact(combat: Pick<ProjectileImpactContext, 'spawnEffect'>, actor: string, x: number, y: number, z: number, rotation: number) {
+  combat.spawnEffect({ x, y, z, kind: 'water', life: GTA2_WATER_SPLASH_VISUAL_TICKS, owner: actor, rotation, scale: .8, sourceModel: GTA2_SOURCE_OBJECT_MODELS.bulletOnFire });
+}
+
+/** The retail source creates these terminal object models, but this checkout
+ * does not have dedicated code-object atlas ranges for them. Keep those
+ * authored transitions renderable with the weapon's tracer art while leaving
+ * unrelated missing source objects non-renderable. */
+function sourceModelHasVisualFallback(sourceModel: number | undefined) {
+  return sourceModel === GTA2_SOURCE_OBJECT_MODELS.fireHitting ||
+    sourceModel === GTA2_SOURCE_OBJECT_MODELS.flamethrowerImpact ||
+    sourceModel === GTA2_SOURCE_OBJECT_MODELS.bulletOnFire ||
+    sourceModel === GTA2_SOURCE_OBJECT_MODELS.impactChild;
+}
+
 export class ProjectileObject extends StatefulGameObject<ProjectileState, string> {
   private detonationResolved = false;
   private impactEffectResolved = false;
+  private impactCause: 'entity' | 'surface' | 'wall' | undefined;
+  private impactExplosionType: number | undefined;
   private replicatedOrigin?: { x: number; y: number; endX: number; endY: number; initialLife: number; velocity: { vx: number; vy: number } };
   readonly projectileType: ProjectileType;
   constructor(id: string, state: ProjectileStateInput, projectileType: ProjectileType | 'from-weapon' = 'from-weapon', update?: GameObjectUpdateHandler<ProjectileState>) {
@@ -134,6 +178,11 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
     this.mutableState.gravity = values.gravity;
     this.mutableState.life = Math.max(1, Math.floor(values.life));
     this.mutableState.selfDamage = values.selfDamage;
+    // A thrown object's replicated endpoint is its actual launch vector over
+    // its configured lifetime.  The initial spawn distance is only a
+    // construction hint and must not survive this source launch rewrite.
+    this.mutableState.endX = this.mutableState.x + values.vx * this.mutableState.life / WORLD.tickRate;
+    this.mutableState.endY = this.mutableState.y + values.vy * this.mutableState.life / WORLD.tickRate;
     return this;
   }
   /** Apply the compact shot state replicated with a player snapshot. Client
@@ -182,10 +231,12 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
     this.mutableState.rotation = rotationFromDirection(rotationX, rotationY, this.mutableState.rotation);
   }
   /** Mark a moving source object at its collision point. */
-  impactAt(x: number, y: number, z = this.mutableState.z) {
+  impactAt(x: number, y: number, z = this.mutableState.z, cause: 'entity' | 'surface' | 'wall' = 'entity', wallImpact?: { wallSide?: number; explosionType?: number }) {
     this.mutableState.x = x; this.mutableState.y = y;
     this.mutableState.z = z;
     this.mutableState.endX = x; this.mutableState.endY = y;
+    this.impactCause = cause;
+    this.impactExplosionType = wallImpact?.explosionType;
     this.mutableState.impact = true; this.mutableState.life = 0;
   }
   markWaterDeath() {
@@ -198,9 +249,14 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
   private emitImpactEffect(combat: ProjectileImpactContext) {
     if (this.impactEffectResolved || this.mutableState.destroyedByWater) return;
     const state = this.mutableState, weapon = combat.weaponSystem.get(state.weapon);
+    if (weapon.waterCannon) {
+      this.impactEffectResolved = true;
+      emitWaterCannonImpact(combat, state.actor, state.x, state.y, state.z, state.rotation);
+      return;
+    }
     // A source flame with no target is itself the stream segment; only its
     // target transition creates the separate fire-hitting child.
-    if (state.projectileType === 'flame' && !state.impactTarget) return;
+    if (state.projectileType === 'flame' && !state.impactTarget && this.impactCause !== 'wall') return;
     this.impactEffectResolved = true;
     combat.spawnEffect({
       x: state.x, y: state.y, z: state.z, kind: 'impact', life: 7,
@@ -217,26 +273,40 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
     state.life = 0;
     if (!combat.authoritative) return;
     const weapon = combat.weaponSystem.get(state.weapon);
+    // The cook-timeout path creates a compact thrown-object state without a
+    // copied source model. Resolve the authored model at the terminal
+    // transition so explosion packets and vehicle immunity still use the
+    // Weapon_30 mapping.
+    const sourceModel = state.sourceModel ?? weapon.sourceModel;
     let impactX = state.endX;
     if (state.impact) impactX = state.x;
     let impactY = state.endY;
     if (state.impact) impactY = state.y;
-    if (weapon.impactModel !== undefined) {
+    const wallSpecificExplosion = this.impactCause === 'wall' && (
+      sourceModel === GTA2_SOURCE_OBJECT_MODELS.rocketBullet || sourceModel === GTA2_SOURCE_OBJECT_MODELS.movingMolotov
+    );
+    if (weapon.impactModel !== undefined && !wallSpecificExplosion) {
       combat.spawnEffect({
         x: impactX, y: impactY, z: state.z, kind: 'impact', life: 7,
         owner: state.actor, rotation: state.rotation, sourceModel: weapon.impactModel,
       });
     }
-    const sourceTimedRocket = weapon.kind === 'rocket' && state.sourceModel === GTA2_SOURCE_OBJECT_MODELS.rocketBullet;
+    const sourceTimedRocket = weapon.kind === 'rocket' && sourceModel === GTA2_SOURCE_OBJECT_MODELS.rocketBullet;
     let blastRadius = 110;
-    if (sourceTimedRocket) blastRadius = WORLD.projectile.sourceSmallExplosionRadius;
+    if (sourceTimedRocket || weapon.sourceType === 2 || weapon.sourceType === 4 || weapon.sourceType === 5 || weapon.sourceType === 17) {
+      // Explosion_30 type 18 is a half-tile blast. Grenades, moving
+      // molotovs, rockets, and mines use that authored small radius; larger
+      // item/car-bomb blasts are represented by their dedicated dispatchers.
+      blastRadius = WORLD.projectile.sourceSmallExplosionRadius;
+    }
     if (weapon.damage > 0) {
       let explosionLife = GTA2_EXPLOSION_VISUAL_TICKS;
       if (sourceTimedRocket) explosionLife = WORLD.projectile.sourceExplosionTicks;
+      const sourceExplosionType = this.impactExplosionType ?? 18;
       const explosionState: HazardState = {
         id: combat.nextHazardId(), x: impactX, y: impactY, z: state.z,
         kind: 'fire', life: explosionLife,
-        owner: state.actor, effect: 'explosion', explosionType: 'small', sourceModel: state.sourceModel,
+        owner: state.actor, effect: 'explosion', explosionType: sourceExplosionType === 20 ? 'large' : sourceExplosionType === 19 ? 'item' : 'small', sourceExplosionType, sourceModel,
       };
       if (sourceTimedRocket) explosionState.sourceTimer = WORLD.projectile.sourceExplosionTicks;
       const explosion = createHazardObject(explosionState);
@@ -244,7 +314,7 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
         // Car_BC::Explosion_30::ApplyBlastDamage applies the full vehicle
         // packet to every car inside the blast radius. The weapon's direct
         // object packet (e.g. grenade = 800) is a separate source path.
-        explosion.armBlast({ actor: state.actor, weapon: state.weapon, radius: blastRadius, damage: weapon.damage, pellets: weapon.pellets, selfDamage: state.selfDamage || sourceTimedRocket, height: 2, knockback: sourceTimedRocket ? 10 : 6, sourceModel: state.sourceModel });
+        explosion.armBlast({ actor: state.actor, weapon: state.weapon, radius: blastRadius, damage: weapon.damage, pellets: weapon.pellets, selfDamage: state.selfDamage || sourceTimedRocket, height: 2, knockback: sourceTimedRocket ? 10 : 6, sourceModel });
         this.spawn(explosion);
         // Mines, grenades, and other existing explosive paths keep their
         // immediate area resolution. A rocket enters Explosion_30's timed
@@ -254,12 +324,17 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
       if (weapon.sourceType === 4) {
         const surface = combat.surfaceAt(impactX, impactY, state.z);
         const support = surface[0];
-        const fire: HazardState = {
-          id: combat.nextHazardId(), x: impactX, y: impactY, z: state.z,
-          kind: 'fire', life: 180, owner: state.actor, effect: 'fire',
-        };
-        if (support) fire.collisionLayer = support.collisionLayer;
-        this.spawn(createHazardObject(fire));
+        // A source Molotov that reaches water loses the attached fire object;
+        // the water splash/projectile death path remains responsible for the
+        // visual transition. Ground fire is only left on a valid dry surface.
+        if (!combat.isWaterAt({ x: impactX, y: impactY, z: state.z })) {
+          const fire: HazardState = {
+            id: combat.nextHazardId(), x: impactX, y: impactY, z: support?.height ?? state.z,
+            kind: 'fire', life: WORLD.projectile.molotovFireTicks, owner: state.actor, effect: 'fire',
+          };
+          if (support) fire.collisionLayer = support.collisionLayer;
+          this.spawn(createHazardObject(fire));
+        }
       }
     }
     combat.emit({ type: 'explosion', actor: state.actor, weapon: state.weapon, damage: weapon.damage, x: impactX, y: impactY, z: state.z });
@@ -308,11 +383,34 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
       owner?.recordShot({ x: state.x, y: state.y, endX: impactState.endX, endY: impactState.endY, z: state.z, life: 4, weapon: state.weapon, projectile: true, impact: true, beam: true });
       return;
     }
+    if (weapon.waterCannon) {
+      if (target.kind === 'player') {
+        const victim = combat.findPlayer(String(target.id));
+        if (!victim || victim.id === state.actor || victim.combatState.respawn > 0 || (actor?.state.team && actor.state.team === victim.state.team)) return;
+        resolveWaterCannonPlayerHit(victim, state.actor, state.weapon, combat);
+        return;
+      }
+      if (target.kind === 'npc') {
+        const victim = combat.findNpc(Number(target.id));
+        if (!victim || victim.state.health <= 0 || victim.state.vehicleId !== undefined || victim.id === actorNpcId) return;
+        const damage = Math.max(1, Math.round(weapon.npcDamage ?? 5));
+        combat.damageNpc(victim, damage, state.actor, GTA2_SOURCE_OBJECT_MODELS.bulletOnFire, state.rotation, 'weapon');
+        combat.emit({ type: 'hit', actor: state.actor, target: `npc:${victim.id}`, weapon: state.weapon, damage, lethal: victim.state.health <= 0, x: victim.state.x, y: victim.state.y, z: victim.state.z });
+        return;
+      }
+      const vehicle = combat.findVehicle(Number(target.id));
+      if (vehicle?.alive) combat.extinguishVehicleFire(vehicle);
+      return;
+    }
     if (target.kind === 'player') {
       const victim = combat.findPlayer(String(target.id));
       if (!victim || victim.id === state.actor || victim.combatState.respawn > 0 || (actor?.state.team && actor.state.team === victim.state.team)) return;
       if (weapon.kind === 'flame') {
         victim.setOnFire(combat);
+        combat.emit({ type: 'hit', actor: state.actor, target: victim.id, weapon: state.weapon, damage: 0, lethal: false, x: victim.state.x, y: victim.state.y, z: victim.state.z });
+        return;
+      }
+      if (weapon.kind === 'bullet' && absorbDirectProjectileArmor(victim)) {
         combat.emit({ type: 'hit', actor: state.actor, target: victim.id, weapon: state.weapon, damage: 0, lethal: false, x: victim.state.x, y: victim.state.y, z: victim.state.z });
         return;
       }
@@ -357,7 +455,8 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
     const weapon = WEAPONS[state.weapon];
     const sourceModel = state.sourceModel ?? weapon?.sourceModel;
     if (sourceModel === undefined) return GTA2_WEAPON_PROJECTILE_SPRITES[state.weapon];
-    return GTA2_SOURCE_OBJECT_SPRITES[sourceModel];
+    const sourceRange = GTA2_SOURCE_OBJECT_SPRITES[sourceModel];
+    return sourceRange ?? (sourceModelHasVisualFallback(sourceModel) ? GTA2_WEAPON_PROJECTILE_SPRITES[state.weapon] : undefined);
   }
 
   override get isRenderable() {
@@ -372,16 +471,20 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
     if (state.beam) return electricalBeamSprite(state, this.placement);
     const sourceModel = state.sourceModel ?? weapon?.sourceModel;
     let range;
+    const sourceRange = sourceModel === undefined ? undefined : GTA2_SOURCE_OBJECT_SPRITES[sourceModel];
     if (sourceModel === undefined) range = GTA2_WEAPON_PROJECTILE_SPRITES[state.weapon];
-    else range = GTA2_SOURCE_OBJECT_SPRITES[sourceModel];
+    else range = sourceRange ?? (sourceModelHasVisualFallback(sourceModel) ? GTA2_WEAPON_PROJECTILE_SPRITES[state.weapon] : undefined);
     if (!range) throw new Error(`No projectile sprite for weapon ${state.weapon}`);
+    const renderSourceModel = sourceRange ? sourceModel : undefined;
     const ordinaryBullet = sourceModel === GTA2_SOURCE_OBJECT_MODELS.machineGunBullet || sourceModel === GTA2_SOURCE_OBJECT_MODELS.pistolBullet;
     let bulletOffset = 0;
     if (ordinaryBullet && state.actor.startsWith('npc:')) bulletOffset = 2;
     const model = range.start + Math.min(bulletOffset, Math.max(0, range.count - 1));
     const rotation = state.rotation;
     let frameTicks;
-    if (sourceModel !== undefined) frameTicks = GTA2_SOURCE_PROJECTILE_FRAME_TICKS[sourceModel];
+    let frameTicksByFrame;
+    if (renderSourceModel !== undefined) frameTicks = GTA2_SOURCE_PROJECTILE_FRAME_TICKS[renderSourceModel];
+    if (weapon?.kind === 'flame') frameTicksByFrame = GTA2_FLAME_SEGMENT_FRAME_TICKS;
     let flameScale;
     if (weapon?.kind === 'flame') flameScale = GTA2_FLAME_SEGMENT_SCALE;
     let rocketTrail: GameObjectSpriteLayer | undefined;
@@ -403,10 +506,8 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
           rotation,
         },
         opacity: state.life <= 0 ? 0 : Math.min(1, state.life / 4),
-        depthTest: true,
-        depthWrite: false,
         alphaTest: .01,
-        renderDepth: { band: 'effect', elevation: -.5 },
+        presentation: { band: 'overlay', elevation: -.5 },
         fallbackColor: 0xff9a43,
       };
     }
@@ -419,8 +520,8 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
         animationKey: `${this.key}:molotov-trail`,
         placement: { ...this.placement, x: state.x - direction.x * 8, y: state.y - direction.y * 8, z: state.z + .08, rotation },
         opacity: state.life <= 0 ? 0 : Math.min(1, state.life / 4), scale: .65,
-        depthTest: true, depthWrite: false, alphaTest: .01,
-        renderDepth: { band: 'effect', elevation: -.4 }, fallbackColor: 0xff7b36,
+        alphaTest: .01,
+        presentation: { band: 'overlay', elevation: -.4 }, fallbackColor: 0xff7b36,
       };
     }
     let flameLead = 0;
@@ -435,13 +536,15 @@ export class ProjectileObject extends StatefulGameObject<ProjectileState, string
       atlas: 'codeObjects' as const, model, animation: 'projectile' as const,
       frameCount,
       placement: spritePlacement,
-      opacity: state.life <= 0 ? 0 : Math.min(1, state.life / 4) * (state.destroyedByWater ? Math.min(1, state.life / GTA2_WATER_SPLASH_VISUAL_TICKS) : 1), depthTest: true, depthWrite: false,
-      alphaTest: .01, renderDepth: { band: 'effect' as const }, fallbackColor: 0xffc04d,
+      opacity: state.life <= 0 ? 0 : Math.min(1, state.life / 4) * (state.destroyedByWater ? Math.min(1, state.life / GTA2_WATER_SPLASH_VISUAL_TICKS) : 1),
+      alphaTest: .01, presentation: { band: 'overlay' as const }, fallbackColor: 0xffc04d,
     };
     let sprite: GameObjectSprite = { ...spriteBase, frameMs: 55 };
     if (frameTicks !== undefined) sprite = { ...spriteBase, frameTicks };
-    if (sourceModel !== undefined) sprite = { ...sprite, sourceModel, definition: { bank: 'code-object', sourceId: sourceModel } };
+    if (frameTicksByFrame !== undefined) sprite = { ...sprite, frameTicksByFrame, loop: false, animationKey: `${this.key}:flame-segment` };
+    if (renderSourceModel !== undefined) sprite = { ...sprite, sourceModel: renderSourceModel, definition: { bank: 'code-object', sourceId: renderSourceModel } };
     if (flameScale !== undefined) sprite = { ...sprite, scale: flameScale };
+    if (this.projectileType === 'molotov') sprite = { ...sprite, light: GTA2_MOLOTOV_LIGHT };
     if (state.destroyedByWater) sprite = { ...sprite, scale: Math.max(.2, state.life / GTA2_WATER_SPLASH_VISUAL_TICKS), opacity: Math.min(1, state.life / GTA2_WATER_SPLASH_VISUAL_TICKS) };
     const layers = [rocketTrail, molotovTrail].filter((layer): layer is GameObjectSpriteLayer => layer !== undefined);
     if (layers.length) sprite = { ...sprite, layers };
@@ -460,6 +563,28 @@ export class HitscanImpactObject extends ProjectileObject {
     const state = this.mutableState, target = state.impactTarget;
     if (!combat.authoritative || !target) return;
     const weapon = combat.weaponSystem.get(state.weapon), actor = combat.findPlayer(state.actor);
+    if (weapon.waterCannon) {
+      emitWaterCannonImpact(combat, state.actor, state.endX, state.endY, state.z, state.rotation);
+      let actorNpcId: number | undefined;
+      if (state.actor.startsWith('npc:')) actorNpcId = Number(state.actor.slice('npc:'.length));
+      if (target.kind === 'player') {
+        const victim = combat.findPlayer(String(target.id));
+        if (!victim || victim.id === state.actor || victim.combatState.respawn > 0 || (actor?.state.team && actor.state.team === victim.state.team)) return;
+        resolveWaterCannonPlayerHit(victim, state.actor, state.weapon, combat);
+        return;
+      }
+      if (target.kind === 'npc') {
+        const victim = combat.findNpc(Number(target.id));
+        if (!victim || victim.state.health <= 0 || victim.state.vehicleId !== undefined || victim.id === actorNpcId) return;
+        const damage = Math.max(1, Math.round(weapon.npcDamage ?? 5));
+        combat.damageNpc(victim, damage, state.actor, GTA2_SOURCE_OBJECT_MODELS.bulletOnFire, state.rotation, 'weapon');
+        combat.emit({ type: 'hit', actor: state.actor, target: `npc:${victim.id}`, weapon: state.weapon, damage, lethal: victim.state.health <= 0, x: victim.state.x, y: victim.state.y, z: victim.state.z });
+        return;
+      }
+      const vehicle = combat.findVehicle(Number(target.id));
+      if (vehicle?.alive) combat.extinguishVehicleFire(vehicle);
+      return;
+    }
     const impactModel = weapon.impactModel ?? (state.sourceModel === GTA2_SOURCE_OBJECT_MODELS.pistolBullet || state.sourceModel === GTA2_SOURCE_OBJECT_MODELS.machineGunBullet ? undefined : state.sourceModel);
     combat.spawnEffect({ x: state.endX, y: state.endY, z: state.z, kind: 'impact', life: 7, owner: state.actor, rotation: state.rotation, sourceModel: impactModel });
     let actorNpcId: number | undefined;
@@ -475,6 +600,10 @@ export class HitscanImpactObject extends ProjectileObject {
       let damage = Math.max(1, Math.round(weapon.playerDamage ?? weapon.damage));
       if (weapon.kind === 'shock') damage = 3;
       if (weapon.kind === 'shock') victim.shock(3);
+      if (weapon.kind === 'bullet' && absorbDirectProjectileArmor(victim)) {
+        combat.emit({ type: 'hit', actor: state.actor, target: victim.id, weapon: state.weapon, damage: 0, lethal: false, x: victim.state.x, y: victim.state.y, z: victim.state.z });
+        return;
+      }
       const currentHealth = victim.combatState.health, armor = Math.min(victim.state.armor, Math.ceil(damage * .5));
       combat.damagePlayer(victim, damage, state.actor, 'weapon');
       combat.emit({ type: 'hit', actor: state.actor, target: victim.id, weapon: state.weapon, damage, lethal: currentHealth <= damage - armor, x: victim.state.x, y: victim.state.y, z: victim.state.z });
@@ -533,14 +662,20 @@ export class RocketObject extends ProjectileObject {
 /** Thrown grenade projectile. The throw velocity and any source gravity are
  * supplied by the firing code; this class identifies the authored behavior. */
 export class GrenadeObject extends ProjectileObject {
-  constructor(id: string, state: ProjectileStateInput, update?: GameObjectUpdateHandler<ProjectileState>) { super(id, state, 'grenade', update); }
+  constructor(id: string, state: ProjectileStateInput, update?: GameObjectUpdateHandler<ProjectileState>) {
+    state.explosive = true;
+    super(id, state, 'grenade', update);
+  }
 }
 
 /** Molotov projectile. Its impact is converted into a FireObject by the world
  * after collision, preserving the source's separate projectile and fire
  * objects. */
 export class MolotovObject extends ProjectileObject {
-  constructor(id: string, state: ProjectileStateInput, update?: GameObjectUpdateHandler<ProjectileState>) { super(id, state, 'molotov', update); }
+  constructor(id: string, state: ProjectileStateInput, update?: GameObjectUpdateHandler<ProjectileState>) {
+    state.explosive = true;
+    super(id, state, 'molotov', update);
+  }
 }
 
 /** Flamethrower segment; it is moving but intentionally non-explosive. */

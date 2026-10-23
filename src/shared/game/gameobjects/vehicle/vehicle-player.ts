@@ -4,8 +4,8 @@ import { createHazardObject, ExplosionObject } from '../../effects/hazard';
 import type { MobilePose } from '../stateful';
 import type { PlayerObject } from '../player/player';
 import type { NpcObject } from '../npc';
-import type { CarInfo } from '../../../loader/style-parser';
-import type { VehicleBounds } from '../../../loader/vehicle-bounds';
+import type { CarInfo } from '../../../engine/loader/style-parser';
+import type { VehicleBounds } from '../../../engine/loader/vehicle-bounds';
 import { sourceAnimationFrame } from '../../../domain/animation';
 import { directionFromRotation, rotationFromDirection } from '../../../domain/physics/motion-vector';
 import { WORLD, sourceFixedPerTickToWorld, tilesPerSecondToWorld } from '../../../domain/world/world';
@@ -26,9 +26,16 @@ import {
 import { GTA2_VEHICLE_DAMAGE } from '../../../domain/combat/vehicle-damage';
 import { WeaponId } from '../../../domain/combat/weapons';
 import { GTA2_EXPLOSION_VISUAL_TICKS, GTA2_SOURCE_OBJECT_MODELS } from '../../../domain/world/gta2-sprites';
+import {
+  SOURCE_MINE_DROP_REAR_CLEARANCE,
+  SOURCE_MINE_DROP_REAR_PADDING,
+  SOURCE_OIL_DROP_REAR_PADDING,
+  SOURCE_OIL_DROP_SIDE_OFFSET,
+} from '../../../domain/physics/vehicle-skid';
 import type { VehicleObject } from './vehicle';
 import type { VehicleControlAdapter } from './vehicle-control';
 import type { VehicleControl } from '../../../domain/physics/vehicle-kinematics';
+import { SOURCE_NORMAL_CAR_BOMB_ANIMATION_TICKS } from '../../../domain/vehicles/vehicle-weapons';
 
 export type VehicleEntryCandidate = {
   door: number;
@@ -92,7 +99,10 @@ export class VehiclePlayerController implements VehicleControlAdapter {
 
   canFireWeapon(sourceType: number, occupantId: string) {
     const state = this.vehicle.mutableVehicleState;
-    if (!occupantForPlayer(state, occupantId) || !this.vehicle.alive) return false;
+    // Weapon_30 resolves every mounted dispatch through GetDriver(). A
+    // seated passenger may occupy a slot, but cannot own the vehicle weapon
+    // state or the car-bomb attribution transition.
+    if (this.vehicle.driver !== occupantId || !occupantForPlayer(state, occupantId) || !this.vehicle.alive) return false;
     if (sourceType === 18) return state.mountedWeapons?.includes(sourceType) === true;
     const model = this.vehicle.info?.model ?? state.model;
     if (sourceType === 19) return model === 54;
@@ -120,9 +130,9 @@ export class VehiclePlayerController implements VehicleControlAdapter {
     if (!instant) {
       target.spawn(createHazardObject({
         id: combat.nextHazardId(), x: target.state.x, y: target.state.y, z: target.state.z,
-        kind: 'fire', life: 52 + GTA2_EXPLOSION_VISUAL_TICKS, owner: actor.id,
+        kind: 'fire', life: SOURCE_NORMAL_CAR_BOMB_ANIMATION_TICKS + GTA2_EXPLOSION_VISUAL_TICKS, owner: actor.id,
         effect: 'fire', sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb,
-        armingTimer: 50, vehicleId: target.id,
+        armingTimer: SOURCE_NORMAL_CAR_BOMB_ANIMATION_TICKS, vehicleId: target.id,
       }));
       return true;
     }
@@ -181,11 +191,14 @@ export class VehiclePlayerController implements VehicleControlAdapter {
     const state = this.vehicle.mutableVehicleState;
     const forward = directionFromRotation(state.rotation);
     const right = { x: Math.cos(state.rotation), y: Math.sin(state.rotation) };
-    let side = 1;
-    if (sourceType === 16 && ammo % 2) side = -1;
+    const oil = sourceType === 16;
+    const mine = sourceType === 17;
+    if (!oil && !mine) return undefined;
     let localX = 0;
-    if (sourceType === 16) localX = side * Math.min(12, this.vehicle.bounds.width * .25);
-    const localY = -(this.vehicle.bounds.height * .5 + 24);
+    if (oil) localX = (ammo % 2 ? -1 : 1) * SOURCE_OIL_DROP_SIDE_OFFSET;
+    const localY = oil
+      ? -(this.vehicle.bounds.height + SOURCE_OIL_DROP_REAR_PADDING) * .5
+      : -(SOURCE_MINE_DROP_REAR_CLEARANCE + (SOURCE_MINE_DROP_REAR_PADDING + this.vehicle.bounds.height) * .5);
     return {
       x: state.x + right.x * localX + forward.x * localY,
       y: state.y + right.y * localX + forward.y * localY,
@@ -198,23 +211,24 @@ export class VehiclePlayerController implements VehicleControlAdapter {
    * lifecycle allocation. */
   deployHazard(actor: PlayerObject, weaponId: number, combat: GameObjectCombatContext) {
     const state = this.vehicle.mutableVehicleState;
-    if (!occupantForPlayer(state, actor.id)) return false;
+    if (this.vehicle.driver !== actor.id || !this.vehicle.alive) return false;
     const weapon = combat.weaponSystem.get(weaponId);
+    if (weapon.kind !== 'slick' && weapon.kind !== 'mine') return false;
     const point = this.rearHazardPoint(weapon.sourceType, actor.ammoFor(weaponId));
     if (!point || !combat.canPlaceHazard(point.x, point.y, state.z)) return false;
     const surface = combat.surfaceAt(point.x, point.y, state.z);
     const support = surface[0];
     const hazard: HazardState = {
-      id: combat.nextHazardId(), x: point.x, y: point.y, z: point.z,
+      id: combat.nextHazardId(), x: point.x, y: point.y, z: support?.height ?? point.z,
       kind: 'slick',
-      life: 900,
+      life: Number.MAX_SAFE_INTEGER,
       owner: actor.id,
       sourceModel: weapon.sourceModel,
+      rotation: state.rotation,
     };
     if (support) hazard.collisionLayer = support.collisionLayer;
     if (weapon.kind === 'mine') {
       hazard.kind = 'mine';
-      hazard.life = 1800;
     }
     this.vehicle.spawn(createHazardObject(hazard));
     return true;

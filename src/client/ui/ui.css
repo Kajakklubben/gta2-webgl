@@ -103,21 +103,24 @@ canvas, button, #touch-controls { user-select: none; -webkit-user-select: none; 
 .debug-menu-header a { border: 1px solid #6b86a0; border-radius: 5px; padding: 4px 8px; background: #1b3045; color: #fff; text-decoration: none; }
 .debug-menu-header a:hover, .debug-menu-header a:focus-visible { border-color: #b9ddff; outline: none; }
 .debug-menu-header button { border: 1px solid #6b86a0; border-radius: 5px; padding: 4px 8px; background: #1b3045; color: #fff; }
-.debug-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
-.debug-tabs button { min-width: 0; padding: 7px 5px; border: 1px solid #49657e; border-radius: 4px; background: #172a3b; color: #c9dbea; font: 700 11px/1.1 "Arial Narrow", "Trebuchet MS", sans-serif; cursor: pointer; }
-.debug-tabs button:hover, .debug-tabs button:focus-visible { border-color: #b9ddff; outline: none; }
-.debug-tabs button[aria-selected="true"] { border-color: #e3af54; background: linear-gradient(#6b4b20, #352611); color: #fff0ba; }
-.debug-tab-panel { display: grid; gap: 7px; min-width: 0; }
-.debug-tab-panel[hidden] { display: none !important; }
+.debug-section { display: grid; gap: 10px; min-width: 0; padding-top: 12px; border-top: 1px solid #6b86a055; }
+.debug-section:first-of-type { padding-top: 0; border-top: 0; }
+.debug-section-title, .debug-group-title { margin: 0; color: #e4b55d; font: 700 13px/1.1 "Arial Narrow", "Trebuchet MS", sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.debug-group { display: grid; gap: 7px; }
+.debug-group-title { color: #c8c0ae; font-size: 11px; letter-spacing: .06em; }
+.debug-control-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px 14px; }
+.debug-final-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 #debug-menu label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
 #debug-menu input { accent-color: #76b8ed; }
-.debug-actions { display: grid; gap: 4px; margin-top: 4px; }
-.debug-actions button { border: 1px solid #8da8c4; border-radius: 5px; padding: 7px 10px; background: #1b3045; color: #fff; font: inherit; cursor: pointer; }
-.debug-actions button:disabled { opacity: .55; cursor: wait; }
-.debug-legend { color: #9fb4c8; font-size: 11px; line-height: 1.3; }
-.debug-coordinate-readout { display: block; padding: 7px 8px; border: 1px solid #3e5870; border-radius: 5px; background: #0b1118; color: #f0c46d; font: 12px/1.3 Consolas, "Courier New", monospace; }
-#debug-coordinate-overlay { position: fixed; top: 58px; left: 8px; z-index: 9; padding: 6px 8px; border: 1px solid #d39d57; border-radius: 5px; background: #111b28e8; color: #ffe3b0; font: 12px Consolas, "Courier New", monospace; pointer-events: none; }
-#debug-player-state-overlay { position: fixed; top: 58px; right: 8px; z-index: 9; width: min(520px, calc(100vw - 16px)); max-height: calc(100vh - 72px); box-sizing: border-box; overflow: auto; padding: 8px 10px; border: 1px solid #72b7d8; border-radius: 5px; background: #111b28ed; color: #dff5ff; font: 11px/1.35 Consolas, "Courier New", monospace; white-space: pre; pointer-events: none; }
+.debug-section > .menu-button { width: 100%; }
+.debug-group .menu-button { width: 100%; }
+.debug-group .menu-checkbox-field { min-height: 36px; }
+.debug-group .menu-checkbox-field + .menu-checkbox-field { border-top: 1px solid #6b86a033; }
+#debug-player-state-overlay, #debug-map-tile-overlay { position: fixed; top: 58px; z-index: 9; width: min(520px, calc(100vw - 16px)); max-height: calc(100vh - 72px); box-sizing: border-box; overflow: auto; padding: 8px 10px; border: 1px solid #72b7d8; border-radius: 5px; background: #111b28ed; color: #dff5ff; font: 11px/1.35 Consolas, "Courier New", monospace; white-space: pre; pointer-events: none; }
+#debug-player-state-overlay { right: 8px; }
+#debug-map-tile-overlay { left: 8px; border-color: #e0ad58; color: #ffe6a8; pointer-events: auto; }
+#debug-map-tile-overlay summary { cursor: pointer; color: #ffe6a8; }
+#debug-map-tile-overlay pre { margin: 8px 0 0; color: #ffe6a8; font: inherit; white-space: pre; }
 #debug-menu #vehicle-entry-lab { position: static; width: auto; max-height: none; box-sizing: border-box; overflow: visible; transform: none; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: inherit; }
 #sprite-library {
   position: fixed;
@@ -197,6 +200,8 @@ canvas, button, #touch-controls { user-select: none; -webkit-user-select: none; 
   #lobby #roomstate { grid-column: 1 / -1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
   #open-chat { top: max(8px, env(safe-area-inset-top)); left: 78px; padding: 8px 10px; font-size: 12px; }
   #debug-menu { top: 48px; left: 8px; right: 8px; min-width: 0; }
+  .debug-control-grid { grid-template-columns: 1fr; }
+  .debug-final-actions { grid-template-columns: 1fr; }
   .sprite-library-controls { grid-template-columns: 1fr; }
   .entry-lab-controls { grid-template-columns: 1fr; }
   #weapon-hint { bottom: 242px; max-width: 86vw; font-size: 12px; }
@@ -400,13 +405,11 @@ canvas, button, #touch-controls { user-select: none; -webkit-user-select: none; 
 #local-menu select { width: 100%; height: 29px; box-sizing: border-box; padding: 3px 6px; border: 1px solid #7f878b; border-radius: 1px; background: #080b0d; color: #f7f0dc; font: 12px Consolas, "Courier New", monospace; }
 #local-menu button { min-height: 29px; padding: 4px 9px; border: 1px solid #92989a; border-radius: 1px; background: #2f373a; color: #f3e8cf; font-size: 11px; }
 #local-menu button:hover, #local-menu button:focus-visible { border-color: #e3af54; outline: none; }
-#local-menu #start-local-game { border-color: #d3a24e; background: linear-gradient(#6b4b20, #352611); }
 #lobby label { display: grid; gap: 3px; color: #bcb7a6; font-size: 10px; text-transform: uppercase; }
 #lobby input, #lobby select { width: 110px; height: 29px; box-sizing: border-box; padding: 3px 6px; border: 1px solid #7f878b; border-radius: 1px; background: #080b0d; color: #f7f0dc; font: 12px Consolas, "Courier New", monospace; }
 #lobby button, #ready { min-height: 29px; padding: 4px 9px; border: 1px solid #92989a; border-radius: 1px; background: #2f373a; color: #f3e8cf; font-size: 11px; }
 #lobby button:hover, #lobby button:focus-visible { border-color: #e3af54; outline: none; }
 #roomstate { max-width: 170px; overflow: hidden; color: #92d4a0; font: 11px Consolas, "Courier New", monospace; text-overflow: ellipsis; white-space: nowrap; }
-#local-reset, #local-leave { border-color: #b87951 !important; }
 
 #scoreboard {
   position: fixed;
@@ -701,4 +704,130 @@ button[aria-expanded="true"], button[aria-selected="true"] {
     max-height: calc(100dvh - 20px);
     transform: translate(-50%, -50%);
   }
+}
+
+/* Menu system: every game panel is one surface with one shared control
+   vocabulary. Individual panels keep only their placement and content layout. */
+.menu-surface[hidden] { display: none !important; }
+.menu-surface {
+  display: grid;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #a3aaad;
+  border-radius: 3px;
+  background: linear-gradient(145deg, #2a3238f7, #0d1318f7);
+  box-shadow: 4px 5px 0 #0009, inset 0 1px #d9e3e844;
+  color: #f0e7d4;
+  touch-action: auto;
+}
+.menu-layout { min-width: 250px; }
+#game-menu.menu-surface { z-index: 35; }
+#local-menu.menu-surface, #lobby.menu-surface, #graphics-menu.menu-surface, #debug-menu.menu-surface, #scoreboard.menu-surface, #chat.menu-surface { z-index: 35; }
+#local-menu.menu-surface, #lobby.menu-surface, #graphics-menu.menu-surface, #debug-menu.menu-surface, #scoreboard.menu-surface, #chat.menu-surface {
+  border: 1px solid #a3aaad;
+  border-radius: 3px;
+  background: linear-gradient(145deg, #2a3238f7, #0d1318f7);
+  box-shadow: 4px 5px 0 #0009, inset 0 1px #d9e3e844;
+  color: #f0e7d4;
+}
+#local-menu.menu-surface, #lobby.menu-surface { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+#graphics-menu.menu-surface { position: fixed; top: 50%; left: 50%; width: min(330px, calc(100vw - 24px)); transform: translate(-50%, -50%); }
+#debug-menu.menu-surface { top: 50%; left: 50%; width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); transform: translate(-50%, -50%); background: linear-gradient(145deg, #2a3238f7, #0d1318f7); color: #f0e7d4; }
+#lobby.menu-surface { display: grid; width: min(330px, calc(100vw - 24px)); align-items: stretch; }
+#scoreboard.menu-surface { display: grid; top: 50%; right: auto; bottom: auto; left: 50%; min-width: 260px; max-width: calc(100vw - 24px); transform: translate(-50%, -50%); }
+#chat.menu-surface { display: grid; right: auto; bottom: auto; left: 50%; width: min(330px, calc(100vw - 24px)); transform: translate(-50%, -50%); }
+.menu-surface-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.menu-surface-header strong { color: #e4b55d; font: 700 16px/1 "Arial Narrow", "Trebuchet MS", sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.menu-field { display: grid; gap: 4px; color: #c8c0ae; font-size: 11px; text-transform: uppercase; }
+.menu-actions { display: grid; gap: 7px; }
+.menu-button { min-height: 34px; padding: 7px 10px; cursor: pointer; }
+.menu-select, .menu-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  box-sizing: border-box;
+  padding: 5px 7px;
+  border: 1px solid #9ca4a8;
+  border-radius: 2px;
+  background: #080b0d;
+  color: #f7f0dc;
+  font: 12px Consolas, "Courier New", monospace;
+  color-scheme: dark;
+}
+#debug-map-levels { height: auto !important; min-height: 92px !important; max-height: none !important; padding: 4px 7px !important; }
+.menu-select:hover, .menu-select:focus-visible, .menu-input:hover, .menu-input:focus-visible { border-color: #f0bf62; outline: none; }
+.menu-checkbox-field { display: flex; align-items: center; gap: 8px; color: #e8e0cd; font-size: 12px; cursor: pointer; }
+.menu-checkbox { width: 16px; height: 16px; margin: 0; accent-color: #e3af54; }
+#local-menu .menu-select, #lobby .menu-select, #lobby .menu-input, #debug-menu .menu-select, #chatinput.menu-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  height: auto;
+  box-sizing: border-box;
+  padding: 5px 7px;
+  border: 1px solid #9ca4a8;
+  border-radius: 2px;
+  background: #080b0d;
+  color: #f7f0dc;
+  font: 12px Consolas, "Courier New", monospace;
+}
+#debug-menu .menu-checkbox { accent-color: #e3af54; }
+#scoreboard .menu-surface-header { margin-bottom: 0; }
+#scoreboard .menu-surface-header strong { display: block; margin: 0; color: #e4b55d; font: 700 16px/1 "Arial Narrow", "Trebuchet MS", sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+#chatlog { min-height: 100px; margin: 0; }
+#chatinput.menu-input { width: 100%; }
+#local-paused .menu-button { min-height: 34px; }
+
+@media (max-width: 700px), (pointer: coarse) {
+  #local-menu.menu-surface, #lobby.menu-surface, #graphics-menu.menu-surface, #debug-menu.menu-surface, #scoreboard.menu-surface, #chat.menu-surface {
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    left: 50%;
+    width: min(420px, calc(100vw - 20px));
+    max-height: calc(100dvh - 20px);
+    overflow: auto;
+    transform: translate(-50%, -50%);
+  }
+  #lobby.menu-surface { display: grid; }
+}
+
+/* One control treatment for every menu button, text field, and select. Keep
+   the dimensions fixed so focus can move between controls without the menu
+   jumping as their native browser styles change. */
+.menu-button, .menu-select, .menu-input {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  box-sizing: border-box !important;
+  border: 1px solid #9ca4a8 !important;
+  border-radius: 2px !important;
+  background: linear-gradient(#3b454b, #151c21) !important;
+  color: #f7ead1 !important;
+  font: 700 12px/1 "Arial Narrow", "Trebuchet MS", sans-serif !important;
+  text-shadow: 1px 1px #000 !important;
+  box-shadow: 2px 2px 0 #0009, inset 0 1px #d7e2e755 !important;
+}
+.menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px !important;
+  cursor: pointer;
+  text-align: center;
+}
+.menu-select, .menu-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0 10px !important;
+  color-scheme: dark;
+}
+.menu-button:hover, .menu-button:focus-visible,
+.menu-select:hover, .menu-select:focus-visible,
+.menu-input:hover, .menu-input:focus-visible {
+  border-color: #f0bf62 !important;
+  background: linear-gradient(#74572b, #302515) !important;
+  color: #fff5c8 !important;
+  outline: none;
 }

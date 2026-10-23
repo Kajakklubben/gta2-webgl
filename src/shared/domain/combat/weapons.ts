@@ -2,8 +2,8 @@ import type { CombatState } from '../../protocol/types';
 import { WORLD, tilesPerSecondToWorld } from '../world/world';
 import { GTA2_SOURCE_OBJECT_MODELS } from '../world/gta2-sprites';
 
-export type { WeaponDefinition } from '../../loader/models/weapons';
-import type { WeaponDefinition } from '../../loader/models/weapons';
+export type { WeaponDefinition } from '../../engine/loader/models/weapons';
+import type { WeaponDefinition } from '../../engine/loader/models/weapons';
 
 export enum WeaponId {
   /** Source Player::GetCurrPlayerWeapon returns NULL for this selection. */
@@ -42,15 +42,24 @@ export const GTA2_SOURCE_WEAPON_TYPES = {
   armyGunJeep: 22, unknown23: 23,
 } as const;
 
-/** Tuned visual reach for the continuously emitted model-154 stream. */
-export const GTA2_FLAME_STREAM_RANGE = 100;
-/** Render scale for each moving flame segment; the projectile cadence and
- * source speed remain unchanged, leaving a visible gap between segments. */
+/** Source-sized reach for one continuously emitted model-154 stream segment. */
+export const GTA2_FLAME_STREAM_RANGE = WORLD.projectile.flameSpeed / WORLD.tickRate * WORLD.tileSize * WORLD.projectile.flameSegmentLifetimeTicks;
+/** Render scale for each moving flame segment. The source emitter creates one
+ * segment per trigger tick; its frame holds, rather than its spawn cadence,
+ * create the visible gaps in the stream. */
 export const GTA2_FLAME_SEGMENT_SCALE = 1;
 /** Presentation-only lead from the projectile point toward the muzzle-facing
  * side, keeping the first flame visibly attached to the weapon without
  * changing its collision or damage origin. */
 export const GTA2_FLAME_MUZZLE_LEAD = 6;
+/** Weapon_30 attaches NewLight(94, 138, 2, 0xFF8000, 3, 255) to the
+ * moving Molotov fire object. Radius is converted once at the source/world
+ * boundary; renderer intensity is normalized to the Three.js light range. */
+export const GTA2_MOLOTOV_LIGHT = {
+  color: 0xff8000,
+  radius: WORLD.tileSize * 3,
+  intensity: 1,
+} as const;
 /** Source shocker_5E06B0 searches a two-unit collision prism around the
  * shooter, then a one-unit prism around each chained ped. Runtime positions
  * are world pixels on a 64-pixel tile grid. */
@@ -67,6 +76,10 @@ export const GTA2_ELECTRO_BATON_RANGE = WORLD.tileSize * 3;
  * that need the base source pose. */
 export const GTA2_PLAYER_FIRE_POINT_FORWARD = WORLD.tileSize / 4;
 export const GTA2_PLAYER_FIRE_POINT_RIGHT = 0;
+/** Weapon_8::dual_pistol_5DDA70 uses one quarter-forward origin and emits
+ * the two projectiles at +/-48 source Ang16. Keeping this public makes the
+ * authored two-ray contract explicit without changing the pickup slots. */
+export const GTA2_DUAL_PISTOL_SPREAD = [-48, 48] as const;
 
 /** Source Weapon_30's vehicle attachment families. Model ids are the CARI
  * model ids, not sprite-bank indices. */
@@ -91,9 +104,9 @@ export const WEAPONS: readonly WeaponDefinition[] = [
   // flamethrower_5DD0F0 emits model 154 segments continuously.
   { name: 'Flamethrower', damage: 7, npcDamage: 5, range: GTA2_FLAME_STREAM_RANGE, interval: 1, ammo: 120, maxAmmo: 990, sourceDefaultAmmo: 200, pellets: 1, kind: 'flame', sourceType: 8, sourceModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerFire, impactModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerImpact, spread: [0], moving: true, waterDeath: true, reportsCrime: true },
   // rocket_5E3850: model 128, reload speed 50.
-  { name: 'Rocket launcher', damage: 100, npcDamage: 25, range: 900, interval: 50, ammo: 12, maxAmmo: 990, sourceDefaultAmmo: 50, pellets: 1, kind: 'rocket', sourceType: 2, sourceModel: GTA2_SOURCE_OBJECT_MODELS.rocketBullet, impactModel: GTA2_SOURCE_OBJECT_MODELS.explosiveImpact, spread: [0], moving: true, waterDeath: true, reportsCrime: true },
+  { name: 'Rocket launcher', damage: 100, playerDamage: 10, npcDamage: 25, range: 900, interval: 50, ammo: 12, maxAmmo: 990, sourceDefaultAmmo: 50, pellets: 1, kind: 'rocket', sourceType: 2, sourceModel: GTA2_SOURCE_OBJECT_MODELS.rocketBullet, impactModel: GTA2_SOURCE_OBJECT_MODELS.explosiveImpact, spread: [0], moving: true, waterDeath: true, reportsCrime: true },
   // throwable_5DDFC0 with moving_molotov_138 and charge/release.
-  { name: 'Molotov cocktail', damage: 60, npcDamage: 25, range: 360, interval: 4, ammo: 12, maxAmmo: 990, sourceDefaultAmmo: 50, pellets: 1, kind: 'explosive', sourceType: 4, sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingMolotov, impactModel: GTA2_SOURCE_OBJECT_MODELS.explosiveImpact, spread: [0], throwable: true, moving: true, waterDeath: true, reportsCrime: true },
+  { name: 'Molotov cocktail', damage: 60, playerDamage: 10, npcDamage: 25, range: 360, interval: 4, ammo: 12, maxAmmo: 990, sourceDefaultAmmo: 50, pellets: 1, kind: 'explosive', sourceType: 4, sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingMolotov, impactModel: GTA2_SOURCE_OBJECT_MODELS.explosiveImpact, spread: [0], throwable: true, moving: true, waterDeath: true, reportsCrime: true },
   // silence_smg shares smg_5DDD20 but skips AddThreateningPed/ReportCrime.
   { name: 'Silenced gun', damage: 25, playerDamage: 10, npcDamage: 25, range: 520, interval: 2, ammo: 60, maxAmmo: 990, sourceDefaultAmmo: 100, pellets: 1, kind: 'bullet', sourceType: 9, sourceModel: GTA2_SOURCE_OBJECT_MODELS.machineGunBullet, spread: [0], silent: true, reportsCrime: false, waterDeath: true },
   // oil_stain_5E1DC0 places source object model 8 behind the car.  COLLECT_16
@@ -113,20 +126,20 @@ export const WEAPONS: readonly WeaponDefinition[] = [
   // electro_batton_5E0740 fires model 277, reload speed 20.
   { name: 'Electro-shock', damage: 3, npcDamage: 3, range: GTA2_ELECTRO_BATON_RANGE, interval: 20, ammo: 30, maxAmmo: 990, sourceDefaultAmmo: 200, pellets: 1, kind: 'shock', sourceType: 7, sourceModel: GTA2_SOURCE_OBJECT_MODELS.electroBatonBullet, impactModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerFire, spread: [0], moving: true, waterDeath: true, reportsCrime: true },
   // dual_pistol_5DDA70 uses Weapon_8::word_706D5E = 48 Ang16 on each side.
-  { name: 'Dual shot pistol', damage: 22, playerDamage: 20, npcDamage: 50, range: 480, interval: 10, ammo: 60, maxAmmo: 990, sourceDefaultAmmo: 100, pellets: 2, kind: 'bullet', sourceType: 10, sourceModel: GTA2_SOURCE_OBJECT_MODELS.pistolBullet, spread: [-48, 48], waterDeath: true, reportsCrime: true },
+  { name: 'Dual shot pistol', damage: 22, playerDamage: 20, npcDamage: 50, range: 480, interval: 10, ammo: 60, maxAmmo: 990, sourceDefaultAmmo: 100, pellets: 2, kind: 'bullet', sourceType: 10, sourceModel: GTA2_SOURCE_OBJECT_MODELS.pistolBullet, spread: GTA2_DUAL_PISTOL_SPREAD, waterDeath: true, reportsCrime: true },
   // Weapon_30::car_bomb_5E0AB0. The normal car bomb creates model 132; the
   // special type 23 dispatch detonates immediately instead.
   { name: 'Car bomb', damage: 320, npcDamage: 50, range: 160, interval: 1, ammo: 1, maxAmmo: 10, sourceDefaultAmmo: 10, pellets: 1, kind: 'explosive', sourceType: 15, sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb, impactModel: GTA2_SOURCE_OBJECT_MODELS.explosiveImpact, spread: [0], vehicleOnly: true, moving: true, waterDeath: true, reportsCrime: true },
   // Tank main gun: source fires a rocket object from the turret at interval 50.
-  { name: 'Tank cannon', damage: 100, npcDamage: 25, range: 960, interval: 50, ammo: 20, maxAmmo: 990, sourceDefaultAmmo: 200, pellets: 1, kind: 'rocket', sourceType: 19, sourceModel: GTA2_SOURCE_OBJECT_MODELS.rocketBullet, hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.explosiveImpact, impactModel: GTA2_SOURCE_OBJECT_MODELS.tankTopImpact, spread: [0], vehicleOnly: true, vehicleModels: GTA2_VEHICLE_WEAPON_MODELS.tank, moving: true, waterDeath: true, reportsCrime: true },
+  { name: 'Tank cannon', damage: 100, playerDamage: 10, npcDamage: 25, range: 960, interval: 50, ammo: 20, maxAmmo: 990, sourceDefaultAmmo: 500, pellets: 1, kind: 'rocket', sourceType: 19, sourceModel: GTA2_SOURCE_OBJECT_MODELS.rocketBullet, hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.explosiveImpact, impactModel: GTA2_SOURCE_OBJECT_MODELS.tankTopImpact, spread: [0], vehicleOnly: true, vehicleModels: GTA2_VEHICLE_WEAPON_MODELS.tank, moving: true, waterDeath: true, reportsCrime: true },
   // Fire truck's direct gun/impact dispatches. The source's stream is a
   // moving object and its terminal impact is model 199/195.
-  { name: 'Fire truck gun', damage: 20, npcDamage: 25, range: 720, interval: 1, ammo: 50, maxAmmo: 990, sourceDefaultAmmo: 500, pellets: 1, kind: 'bullet', sourceType: 20, sourceModel: GTA2_SOURCE_OBJECT_MODELS.machineGunBullet, hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.impactChild, impactModel: GTA2_SOURCE_OBJECT_MODELS.impactChild, spread: [0], vehicleOnly: true, vehicleModels: GTA2_VEHICLE_WEAPON_MODELS.fireTruck, consumesAmmo: false, moving: true, waterDeath: true, reportsCrime: true },
+  { name: 'Fire truck gun', damage: 20, playerDamage: 2, npcDamage: 5, range: 720, interval: 1, ammo: 50, maxAmmo: 990, sourceDefaultAmmo: 500, pellets: 1, kind: 'bullet', sourceType: 20, sourceModel: GTA2_SOURCE_OBJECT_MODELS.machineGunBullet, hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.impactChild, impactModel: GTA2_SOURCE_OBJECT_MODELS.impactChild, spread: [0], vehicleOnly: true, vehicleModels: GTA2_VEHICLE_WEAPON_MODELS.fireTruck, consumesAmmo: false, moving: true, waterDeath: false, waterCannon: true, reportsCrime: true },
   { name: 'Fire truck flamethrower', damage: 7, npcDamage: 5, range: GTA2_FLAME_STREAM_RANGE, interval: 1, ammo: 20, maxAmmo: 990, sourceDefaultAmmo: 200, pellets: 1, kind: 'flame', sourceType: 21, sourceModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerFire, hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerImpact, impactModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerImpact, spread: [0], vehicleOnly: true, vehicleModels: GTA2_VEHICLE_WEAPON_MODELS.fireTruck, consumesAmmo: false, moving: true, waterDeath: true, reportsCrime: true },
   // Army jeep gun is the source machine-gun dispatch (model 254, interval 2).
-  { name: 'Army jeep gun', damage: 10, playerDamage: 10, npcDamage: 25, range: 620, interval: 2, ammo: 50, maxAmmo: 990, sourceDefaultAmmo: 200, pellets: 1, kind: 'bullet', sourceType: 22, sourceModel: GTA2_SOURCE_OBJECT_MODELS.machineGunBullet, hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerFire, impactModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerFire, spread: [0], vehicleOnly: true, vehicleModels: GTA2_VEHICLE_WEAPON_MODELS.armyJeep, moving: true, waterDeath: true, reportsCrime: true },
+  { name: 'Army jeep gun', damage: 10, playerDamage: 10, npcDamage: 25, range: 620, interval: 2, ammo: 50, maxAmmo: 990, sourceDefaultAmmo: 500, pellets: 1, kind: 'bullet', sourceType: 22, sourceModel: GTA2_SOURCE_OBJECT_MODELS.machineGunBullet, hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerFire, impactModel: GTA2_SOURCE_OBJECT_MODELS.flamethrowerFire, spread: [0], vehicleOnly: true, vehicleModels: GTA2_VEHICLE_WEAPON_MODELS.armyJeep, moving: true, waterDeath: true, reportsCrime: true },
   // Weapon_30's otherwise-unused type 23 is the instant car bomb variant.
-  { name: 'Special car bomb', damage: 320, npcDamage: 50, range: 1, interval: 1, ammo: 1, maxAmmo: 990, sourceDefaultAmmo: 10, pellets: 1, kind: 'explosive', sourceType: 23, sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb, impactModel: GTA2_SOURCE_OBJECT_MODELS.explosiveImpact, spread: [0], vehicleOnly: true, throwable: false, moving: false },
+  { name: 'Special car bomb', damage: 320, npcDamage: 50, range: 1, interval: 1, ammo: 1, maxAmmo: 10, sourceDefaultAmmo: 10, pellets: 1, kind: 'explosive', sourceType: 23, sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb, impactModel: GTA2_SOURCE_OBJECT_MODELS.explosiveImpact, spread: [0], vehicleOnly: true, throwable: false, moving: false },
 ] as const;
 
 /** The source stores weapon spread in Ang16 (a 1440-unit circle), unlike the
@@ -160,10 +173,37 @@ export const sourceThrowableSpeed = (weapon: number, throwStrength: number) => {
   return speedPerTick * WORLD.tileSize * WORLD.tickRate;
 };
 
+/** Compose a throwable's source launch vector. Weapon_30 first adds the
+ * ped's movement vector to the aimed projectile vector, then increases the
+ * resulting scalar speed by dword_706C8C while keeping that combined angle.
+ * Returning browser world units keeps the conversion at this domain boundary. */
+export const sourceThrowableVelocity = (
+  weapon: number,
+  throwStrength: number,
+  direction: { x: number; y: number },
+  carried: { x: number; y: number } = { x: 0, y: 0 },
+) => {
+  const speed = sourceThrowableSpeed(weapon, throwStrength);
+  const aimed = { x: direction.x * speed, y: direction.y * speed };
+  const carriedLength = Math.hypot(carried.x, carried.y);
+  if (carriedLength <= 1e-6) return aimed;
+
+  const combined = { x: aimed.x + carried.x, y: aimed.y + carried.y };
+  const combinedLength = Math.hypot(combined.x, combined.y);
+  const angleX = combinedLength > 1e-6 ? combined.x / combinedLength : direction.x;
+  const angleY = combinedLength > 1e-6 ? combined.y / combinedLength : direction.y;
+  const carriedBoost = WORLD.projectile.sourceThrow.carriedVelocity
+    * WORLD.projectile.sourceThrow.fix16Scale * WORLD.tileSize * WORLD.tickRate;
+  const finalSpeed = combinedLength + carriedBoost;
+  return { x: angleX * finalSpeed, y: angleY * finalSpeed };
+};
+
 export const isVehicleWeapon = (weapon: number) => Boolean(WEAPONS[weapon]?.vehicleOnly);
-// Players begin with the base pistol only. Every other weapon is acquired from
-// an authored pickup or a scripted GIVE_WEAPON action; do not manufacture a
-// full loadout here.
+// Players begin with the base pistol only. The runtime's 60-round opening
+// inventory is an intentional multiplayer balance/default, while the source
+// Weapon_8 pickup table's pistol default is 10 clips (100 rounds). Every other
+// weapon is acquired from an authored pickup or a scripted GIVE_WEAPON action;
+// do not manufacture a full loadout here.
 export const newCombat = (): CombatState => ({
   weapon: 0,
   ammo: WEAPONS.map((weapon, index) => {

@@ -10,10 +10,12 @@ import { runCollisionPhase as executeCollisionPhase, runPhysicsPhase as executeP
 
 export function runInputPhase(world: any, _context: WorldPhaseContext<WorldTickState>) {
     const inputs = _context.state.inputs, reactivated = _context.state.reactivated, playerOnly = _context.state.playerOnly;
-    for (const [id, body] of world.bodies) {
+    for (const playerObject of world.gameObjects.players) {
+      const id = playerObject.id, body = playerObject.physicsBody;
+      if (!body) continue;
       if (playerOnly && id !== world.localId) continue;
       const player: PlayerState = world.gameState.playerStates.get(id)!;
-      const playerObject = world.gameObjects.findPlayer(id), combat = player.combat;
+      const combat = player.combat;
       const input = world.input(inputs.get(id));
       if (playerObject instanceof PlayerObject && input.controls) playerObject.applyControls(input.controls);
       // The authoritative server reconstructs held controls from transition
@@ -144,13 +146,7 @@ export function runInputPhase(world: any, _context: WorldPhaseContext<WorldTickS
 
 export function runPhysicsPhase(world: any, _context: WorldPhaseContext<WorldTickState>) {
     const host: PhysicsPhaseHost = {
-      bodies: world.bodies,
-      players: world.gameState.playerStates,
-      playerObjectFor: (id: string) => {
-        const object = world.gameObjects.findPlayer(id);
-        if (object instanceof PlayerObject) return object;
-        return undefined;
-      },
+      playerObjects: world.gameObjects.players,
       preparePlayerBodies: () => world.preparePlayerBodies(),
       prepareVehicleBodies: (starts, dt) => world.prepareVehicleBodies(starts, dt),
       readVehicleBodies: dt => world.readVehicleBodies(dt),

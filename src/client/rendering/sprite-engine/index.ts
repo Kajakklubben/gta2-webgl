@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { GameObjectDrawCommand } from '../../../shared/game/gameobjects/gameobject';
-import type { Style } from '../../../shared/loader/models/style';
+import type { Style } from '../../../shared/engine/loader/models/style';
 import { SpriteAssetRegistry } from './asset-registry';
 import { SpriteDefinitionCatalog, type SpriteDefinitionSummary } from './definition-catalog';
 import { ThreeSpriteRenderer } from './three-renderer';
@@ -28,6 +28,10 @@ export class SpriteEngine {
 
   setFrameInterpolation(enabled: boolean) {
     this.renderer.setFrameInterpolation(enabled);
+  }
+
+  getRenderOrder(commandKey: string) {
+    return this.renderer.getRenderOrder(commandKey);
   }
 
   render(commands: readonly GameObjectDrawCommand[], now: number) {

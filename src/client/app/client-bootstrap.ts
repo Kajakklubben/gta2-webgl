@@ -1,5 +1,5 @@
 import { fetchAsset, fetchAvailableMultiplayerMaps, loadClientAssets } from './assets';
-import { DEFAULT_MULTIPLAYER_MAP_ID, MULTIPLAYER_MAPS, multiplayerMapById, multiplayerMapForFiles } from '../../shared/loader/multiplayer-maps';
+import { DEFAULT_MULTIPLAYER_MAP_ID, MULTIPLAYER_MAPS, multiplayerMapById, multiplayerMapForFiles } from '../../shared/engine/loader/multiplayer-maps';
 import { parseStartupOptions } from './startup-options';
 
 export async function loadClientBootstrap() {

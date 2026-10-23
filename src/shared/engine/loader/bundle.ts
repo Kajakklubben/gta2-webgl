@@ -1,5 +1,6 @@
 import { loadCarCatalog } from './cars';
-import { loadMapAsset, loadPickupAsset, loadStyleAsset, loadWeaponCatalog, type AssetReader } from './asset-loaders';
+import { loadMapAsset, loadPickupAsset, loadStyleAsset, loadWeaponCatalog } from './asset-loaders';
+import type { AssetReader } from '../assets/reader';
 import type { ClientAssetBundle } from './models/catalog';
 
 export type { ClientAssetBundle } from './models/catalog';

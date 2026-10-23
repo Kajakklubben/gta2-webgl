@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
 import { GameWorld } from '../../shared/game/game-world';
-import { parseMap } from '../../shared/loader/map-parser';
+import { parseMap } from '../../shared/engine/loader/map-parser';
 import { mapFixture, npcDefaults } from './fixtures';
-import { GTA2_FLAME_STREAM_RANGE, WeaponId, WEAPONS, projectileTravelTicks, sourceThrowableSpeed } from '../../shared/domain/combat/weapons';
+import { GTA2_FLAME_STREAM_RANGE, WeaponId, WEAPONS, projectileTravelTicks, sourceThrowableSpeed, sourceThrowableVelocity } from '../../shared/domain/combat/weapons';
 import { WeaponSystem } from '../../shared/domain/combat/weapon-system';
 import { PlayerSystem } from '../../shared/game/player-system';
 import { sourceAngleToRadians } from '../../shared/domain/physics/motion-vector';
@@ -11,7 +11,8 @@ import { BulletObject, ProjectileObject, RocketObject } from '../../shared/game/
 import { createHazardObject, ExplosionObject, FireObject, VehicleBombObject } from '../../shared/game/effects/hazard';
 import { GTA2_CAR_FIRE_FRAME_SEQUENCES, GTA2_SOURCE_EFFECT_SPRITES, GTA2_SOURCE_OBJECT_MODELS } from '../../shared/domain/world/gta2-sprites';
 import { SOURCE_FIX16_ONE, WORLD } from '../../shared/domain/world/world';
-import { GTA2_VEHICLE_DAMAGE, sourceDamageForObjectModel, sourceDamageForWeapon } from '../../shared/domain/combat/vehicle-damage';
+import { GTA2_VEHICLE_DAMAGE, sourceDamageForFire, sourceDamageForObjectModel, sourceDamageForWeapon } from '../../shared/domain/combat/vehicle-damage';
+import { SOURCE_NORMAL_CAR_BOMB_ANIMATION_TICKS } from '../../shared/domain/vehicles/vehicle-weapons';
 import type { NpcState, TrafficState } from '../../shared/protocol/types';
 import type { GameObjectSprite } from '../../shared/game/gameobjects/gameobject';
 
@@ -78,7 +79,7 @@ it('keeps the public slots while exposing the source Weapon_30 dispatch table', 
   expect(WEAPONS[WeaponId.Molotov]!.interval).toBe(4);
   expect(WEAPONS[WeaponId.Grenade]!.interval).toBe(4);
   expect(WEAPONS[WeaponId.FireTruckGun]!.interval).toBe(1);
-  expect(WEAPONS[WeaponId.FireTruckGun]).toMatchObject({ hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.impactChild, consumesAmmo: false });
+  expect(WEAPONS[WeaponId.FireTruckGun]).toMatchObject({ hitSourceModel: GTA2_SOURCE_OBJECT_MODELS.impactChild, consumesAmmo: false, waterCannon: true, waterDeath: false, playerDamage: 2, npcDamage: 5 });
   expect(WEAPONS[WeaponId.Pistol]!.playerDamage).toBe(20);
   expect(WEAPONS[WeaponId.MachineGun]!.playerDamage).toBe(10);
   expect(WEAPONS[WeaponId.Shotgun]!.playerDamage).toBe(10);
@@ -135,7 +136,11 @@ it('charges and releases a grenade as a moving source projectile', () => {
   expect(player.combat!.throwing).toBe(false);
   expect(player.combat!.ammo[WeaponId.Grenade]).toBe(1);
   expect(player.combat!.shots?.length).toBeGreaterThan(0);
-  expect([...game.gameObjects.values()].some(object => object.kind === 'projectile')).toBe(true);
+  const projectile = [...game.gameObjects.values()].find(object => object.kind === 'projectile')?.state as { endX: number; endY: number; x: number; y: number; z: number; vx: number; vy: number; life: number } | undefined;
+  expect(projectile).toBeDefined();
+  expect(projectile!.endX).toBeCloseTo(projectile!.x + projectile!.vx * projectile!.life / WORLD.tickRate);
+  expect(projectile!.endY).toBeCloseTo(projectile!.y + projectile!.vy * projectile!.life / WORLD.tickRate);
+  expect(projectile!.z).toBeCloseTo(player.z + .5);
 });
 
 it('uses the source Fix16 throw velocity for grenade and molotov charge', () => {
@@ -147,6 +152,20 @@ it('uses the source Fix16 throw velocity for grenade and molotov charge', () => 
   expect(sourceThrowableSpeed(WeaponId.Grenade, 60)).toBeGreaterThan(sourceThrowableSpeed(WeaponId.Grenade, 1));
 });
 
+it('uses the source airborne gravity rather than the throw friction constant', () => {
+  expect(WORLD.projectile.sourceThrow.gravity).toBeCloseTo(-(0x8 / SOURCE_FIX16_ONE) * WORLD.tickRate * WORLD.tickRate);
+});
+
+it('adds carried velocity before the source moving-throw speed boost', () => {
+  const direction = { x: 0, y: 1 }, carried = { x: 20, y: 0 }, base = sourceThrowableSpeed(WeaponId.Grenade, 30);
+  const combined = { x: carried.x, y: base + carried.y }, combinedSpeed = Math.hypot(combined.x, combined.y);
+  const boost = 0x340 * (1 / 0x4000) * WORLD.tileSize * WORLD.tickRate;
+  const velocity = sourceThrowableVelocity(WeaponId.Grenade, 30, direction, carried);
+
+  expect(velocity.x).toBeCloseTo(combined.x / combinedSpeed * (combinedSpeed + boost));
+  expect(velocity.y).toBeCloseTo(combined.y / combinedSpeed * (combinedSpeed + boost));
+});
+
 it('adds the source carried-velocity boost to a moving throw', () => {
   const game = makeGame();
   const player = game.addPlayer('thrower');
@@ -155,13 +174,11 @@ it('adds the source carried-velocity boost to a moving throw', () => {
   game.step(new Map([['thrower', { seq: 2, keys: 0, moveX: 1, moveY: 0 }]]));
   const projectile = [...game.gameObjects.values()].find(object => object.kind === 'projectile')?.state as { vx?: number; vy?: number } | undefined;
   expect(projectile).toBeDefined();
-  const sourceScale = 64 * 30 / 0x4000;
-  const carried = 0x340 * sourceScale;
   const strength = 1;
   const direction = { x: -Math.sin(player.rotation), y: Math.cos(player.rotation) };
-  const expectedSpeed = sourceThrowableSpeed(WeaponId.Grenade, strength) + carried;
-  expect(projectile!.vx).toBeCloseTo(direction.x * expectedSpeed + player.vx, 5);
-  expect(projectile!.vy).toBeCloseTo(direction.y * expectedSpeed + player.vy, 5);
+  const expected = sourceThrowableVelocity(WeaponId.Grenade, strength, direction, { x: player.vx, y: player.vy });
+  expect(projectile!.vx).toBeCloseTo(expected.x, 5);
+  expect(projectile!.vy).toBeCloseTo(expected.y, 5);
 });
 
 it('uses the source grenade hold timeout instead of tracing an immediate blast', () => {
@@ -244,7 +261,7 @@ it('applies moving flame damage when the authored object reaches a ped', () => {
 
   game.step(new Map([['shooter', 16]]));
   expect(game.gameState.playerStates.get('target')!.combat!.health).toBe(100);
-  for (let tick = 0; tick < 12; tick++) game.step(new Map());
+  for (let tick = 0; tick < WORLD.projectile.flameSegmentLifetimeTicks + 2; tick++) game.step(new Map());
   expect(game.gameState.playerStates.get('target')!.combat!.health).toBeLessThan(100);
 });
 
@@ -268,6 +285,41 @@ it('uses fire-hitting to ignite NPCs and keeps the source flame attached', () =>
   npc.putOutFire();
   game.updateGameObjects();
   expect(game.gameObjects.hazards.some(hazard => hazard.state.owner === 'npc:77')).toBe(false);
+});
+
+it('applies one source burn tick at a time and water clears the ignition state', () => {
+  const game = makeGame();
+  game.addPlayer('burning-player');
+  const player = game.gameObjects.findPlayer('burning-player')!;
+  player.setOnFire(game.gameObjectCombatContext());
+
+  player.tickStatus(game.gameObjectCombatContext());
+  expect(player.combatState.health).toBe(99);
+  expect(player.combatState.fireTimer).toBe(1);
+  player.tickStatus(game.gameObjectCombatContext());
+  expect(player.combatState.health).toBe(98);
+  expect(player.combatState.fireTimer).toBe(2);
+  expect(player.combatState.onFire).toBe(true);
+
+  player.tickStatus({ ...game.gameObjectCombatContext(), isWaterAt: () => true });
+  expect(player.combatState.onFire).toBe(false);
+  expect(player.combatState.health).toBe(98);
+});
+
+it('applies the source fire packet to a vehicle without using the moving flame model', () => {
+  const game = makeGame();
+  const vehicle: TrafficState = {
+    id: 88, model: 0, x: 100, y: 100, z: 0, rotation: 0, vx: 0, vy: 0, speed: 0, angularVelocity: 0,
+    throttle: 0, brakePressure: 1, handbrakeForce: 0, color: 0, passengers: [], occupants: [], doorStates: [], health: 100,
+  };
+  game.restoreWorld([], [vehicle]);
+  const fire = new FireObject({ id: 89, x: vehicle.x, y: vehicle.y, z: vehicle.z, kind: 'fire', life: 7, owner: 'shooter', effect: 'fire' });
+  game.registerObject(fire);
+  game.syncCollisionWorld();
+
+  game.updateGameObjects();
+
+  expect(game.gameState.vehicleStates.find(item => item.id === vehicle.id)?.damage).toBe(sourceDamageForFire());
 });
 
 it('keeps explosive vehicle damage on the moving source object model', () => {
@@ -362,8 +414,8 @@ it('renders car fire as source fire particles, not a generic explosion', () => {
   expect(sprite.layers).toHaveLength(4);
   expect(sprite.layers?.[0]?.placement.y).toBeLessThan(30);
   expect(sprite.layers?.[0]?.scale).toBeGreaterThan(1);
-  expect(sprite.renderDepth?.band).toBe('effect');
-  expect(sprite.layers?.every(layer => layer.renderDepth?.band === 'effect')).toBe(true);
+  expect(sprite.presentation?.band).toBe('overlay');
+  expect(sprite.layers?.every(layer => layer.presentation?.band === 'overlay')).toBe(true);
 });
 
 it('uses the source timing and scale for a vehicle item explosion', () => {
@@ -372,8 +424,8 @@ it('uses the source timing and scale for a vehicle item explosion', () => {
   });
   const sprite = explosion.getSprite(0);
   expect(sprite).toMatchObject({ frame: 0, frameCount: 16, scale: 1.5, loop: false });
-  expect(sprite.renderDepth?.band).toBe('effect');
-  expect(sprite.layers?.every(layer => layer.renderDepth?.band === 'effect')).toBe(true);
+  expect(sprite.presentation?.band).toBe('overlay');
+  expect(sprite.layers?.every(layer => layer.presentation?.band === 'overlay')).toBe(true);
   explosion.tick(); explosion.tick();
   expect(explosion.getSprite(0).frame).toBe(1);
 });
@@ -401,7 +453,7 @@ it('separates the armed normal car bomb from the instant large-bomb path', () =>
   const car = game.gameObjects.findVehicle(vehicle.id)!, player = game.gameObjects.findPlayer(driver.id)!;
 
   expect(car.fireCarBomb(player, false, game.gameObjectCombatContext())).toBe(true);
-  expect(game.gameState.hazardStates).toContainEqual(expect.objectContaining({ sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb, armingTimer: 50, vehicleId: vehicle.id, effect: 'fire' }));
+  expect(game.gameState.hazardStates).toContainEqual(expect.objectContaining({ sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb, armingTimer: SOURCE_NORMAL_CAR_BOMB_ANIMATION_TICKS, vehicleId: vehicle.id, effect: 'fire' }));
   expect(game.events).not.toContainEqual(expect.objectContaining({ type: 'explosion', weapon: WeaponId.CarBomb }));
   expect(car.fireCarBomb(player, true, game.gameObjectCombatContext())).toBe(true);
   expect(game.events).toContainEqual(expect.objectContaining({ type: 'explosion', actor: driver.id, weapon: WeaponId.SpecialVehicleBomb }));
@@ -432,9 +484,9 @@ it('reifies a normal car bomb as an attached source object', () => {
   const bomb = createHazardObject({
     id: 8, x: 0, y: 0, z: 0, kind: 'fire', life: 52, owner: 'driver',
     effect: 'fire', sourceModel: GTA2_SOURCE_OBJECT_MODELS.movingCarBomb,
-    armingTimer: 50, vehicleId: 7,
+    armingTimer: SOURCE_NORMAL_CAR_BOMB_ANIMATION_TICKS, vehicleId: 7,
   });
   expect(bomb).toBeInstanceOf(VehicleBombObject);
-  expect(bomb.state.armingTimer).toBe(50);
+  expect(bomb.state.armingTimer).toBe(SOURCE_NORMAL_CAR_BOMB_ANIMATION_TICKS);
   expect(bomb.isRenderable).toBe(true);
 });

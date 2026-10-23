@@ -1,4 +1,5 @@
-import type { GTA2MapFormat } from '../../domain/world/gta2-enums';
+import type { GTA2MapFormat } from '../../../domain/world/gta2-enums';
+import type { TileAnimationAsset, TileMapAsset } from '../../assets/tile-map';
 
 /** Decoded structures produced from a GTA2 map asset. */
 
@@ -39,7 +40,7 @@ export interface MapZone {
   name: string;
 }
 
-export interface TileAnimation {
+export interface TileAnimation extends TileAnimationAsset {
   base: number;
   frameRate: number;
   repeat: number;
@@ -76,6 +77,21 @@ export interface RoadNode {
   specialNext: number[];
 }
 
+/** The packed Link_2 value used by the retail RGEN route graph. */
+export interface RoadLink {
+  raw: number;
+  index: number;
+  length: number;
+  enabled: boolean;
+}
+
+export interface RoadLinkSet {
+  north: RoadLink;
+  south: RoadLink;
+  east: RoadLink;
+  west: RoadLink;
+}
+
 export interface RoadJunction {
   index: number;
   links: { north: number; south: number; east: number; west: number };
@@ -84,6 +100,8 @@ export interface RoadJunction {
   minY: number;
   maxX: number;
   maxY: number;
+  /** Present when the source-sized RGEN records were decoded. */
+  linkData?: RoadLinkSet;
 }
 
 export interface RoadSegment {
@@ -105,7 +123,7 @@ export interface TrafficMapMetadata {
   busStopZones: MapZone[];
 }
 
-export interface GameMap {
+export interface GameMap extends TileMapAsset<Block> {
   map: (Block | undefined)[][][];
   objects: MapObject[];
   zones: MapZone[];

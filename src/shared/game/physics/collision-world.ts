@@ -181,7 +181,7 @@ export class CollisionWorld {
   }
 
   /** Let the engine solver perform all solid separation and velocity response. */
-  resolveBlocking(dt = 1 / WORLD.tickRate, starts?: ReadonlyMap<string, CollisionStart>): CollisionContact[] {
+  resolveBlocking(dt = 1 / WORLD.tickRate, starts?: ReadonlyMap<string, CollisionStart>, mapBlockedBodies?: ReadonlySet<string>): CollisionContact[] {
     const priorContacts = this.contacts((a, b) => a.solid && b.solid);
     const priorSensorContacts = this.contacts((a, b) => !(a.solid && b.solid));
     const priorContactIds = new Set(priorContacts.flatMap(contact => [contact.a.id, contact.b.id]));
@@ -209,6 +209,7 @@ export class CollisionWorld {
       // velocity rewind.
       const position = record.body.getPosition();
       const providedStart = starts?.get(record.descriptor.id);
+      const mapBlocked = mapBlockedBodies?.has(record.descriptor.id) === true;
       // The map physics pass may already have stopped this body at a wall.
       // In that case the desired pose moved less than its post-contact
       // velocity would imply; preserve that pose and solve entity contacts
@@ -217,7 +218,7 @@ export class CollisionWorld {
       let actualDistance = expectedDistance;
       if (providedStart !== undefined) actualDistance = Math.hypot(record.descriptor.x - providedStart.x, record.descriptor.y - providedStart.y);
       let start: CollisionStart | undefined;
-      if (providedStart !== undefined && (expectedDistance < 1e-5 || actualDistance + Math.max(.5, expectedDistance * .1) >= expectedDistance)) start = providedStart;
+      if (!mapBlocked && providedStart !== undefined && (expectedDistance < 1e-5 || actualDistance + Math.max(.5, expectedDistance * .1) >= expectedDistance)) start = providedStart;
       if (start) nativeStarts.add(record.descriptor.id);
       if (start) record.body.setPosition({ x: worldToPhysics(start.x), y: worldToPhysics(start.y) });
       else record.body.setPosition(position);

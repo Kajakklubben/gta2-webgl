@@ -39,8 +39,8 @@ for (const file of sourceFiles) {
     if (owner === 'shared' && /\/(?:client|server)\//.test(target)) violations.push(`${relativeFile} imports ${specifier}`);
     if (owner === 'client' && /\/server\//.test(target)) violations.push(`${relativeFile} imports ${specifier}`);
     if (owner === 'server' && /\/client\//.test(target)) violations.push(`${relativeFile} imports ${specifier}`);
-    if (relativeFile.startsWith('src/shared/loader/models/') && (/\/protocol(?:\/|$)/.test(target))) violations.push(`${relativeFile} imports ${specifier}; loader models must remain protocol-independent`);
-    if (relativeFile.startsWith('src/shared/engine/')) {
+    if (relativeFile.startsWith('src/shared/engine/loader/models/') && (/\/protocol(?:\/|$)/.test(target))) violations.push(`${relativeFile} imports ${specifier}; loader models must remain protocol-independent`);
+    if (relativeFile.startsWith('src/shared/engine/') && !relativeFile.startsWith('src/shared/engine/loader/')) {
       if (/\/(?:domain|game|loader|protocol)(?:\/|$)/.test(target)) violations.push(`${relativeFile} imports game-specific module ${specifier}`);
     }
   }

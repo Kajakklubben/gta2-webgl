@@ -5,6 +5,10 @@ import { withinCollisionRadius } from '../domain/physics/collision-rules';
 import { pickupSnapshotCodec } from './snapshot-codecs';
 import type { PickupObject } from './effects/pickup';
 import type { PlayerObject } from './gameobjects/player';
+import { isScrPickupWeapon, SCR_ON_FOOT_PICKUP_OBJECTS } from '../engine/loader/scr';
+
+/** The source generator's timing is outside the current replicated pickup DTO. */
+export const PICKUP_RESPAWN_TICKS = 900;
 
 export interface PickupSystemContext {
   readonly floor: (player: PlayerState) => number;
@@ -23,7 +27,7 @@ export class PickupSystem {
     // wrappers and renderer meshes can then keep their identity while the
     // server corrects fields in place.
     const existing = new Map(this.pickups.map(pickup => [pickup.id, pickup]));
-    const next = pickups.map(source => {
+    const next = pickups.filter(pickup => this.isValidPickup(pickup)).map(source => {
       const normalized = normalize(source), target = existing.get(normalized.id);
       if (!target) return normalized;
       pickupSnapshotCodec.apply(target, normalized);
@@ -41,7 +45,8 @@ export class PickupSystem {
         const object = resolve?.(id);
         if (object) object.reactivate();
         else if (pickup) pickup.active = true;
-        reactivated.add(id); this.timers.delete(id);
+        if (object || pickup) reactivated.add(id);
+        this.timers.delete(id);
       } else this.timers.set(id, value - 1);
     }
     return reactivated;
@@ -49,25 +54,42 @@ export class PickupSystem {
 
   collect(player: PlayerState, reactivated: ReadonlySet<number>, context: PickupSystemContext) {
     for (const pickup of this.pickups) {
-      if (!pickup.active || reactivated.has(pickup.id) || (this.weapons.isVehicleWeapon(pickup.weapon) && player.vehicleId === undefined) || !withinCollisionRadius(player, pickup, WORLD.interaction.pickupRadius)) continue;
+      if (!this.isValidPickup(pickup) || !pickup.active || reactivated.has(pickup.id) || (this.weapons.isVehicleWeapon(pickup.weapon) && player.vehicleId === undefined) || !withinCollisionRadius(player, pickup, WORLD.interaction.pickupRadius)) continue;
       const definition = this.weapons.get(pickup.weapon);
-      const current = player.combat.ammo[pickup.weapon] ?? 0;
-      const requested = pickup.ammo || definition.sourceDefaultAmmo || definition.ammo;
-      const amount = Math.max(0, Math.min(requested, this.weapons.maxAmmo(pickup.weapon) - current));
+      const current = Math.max(0, Math.floor(player.combat.ammo[pickup.weapon] ?? 0));
+      const requested = pickup.ammo > 0 ? pickup.ammo : definition.sourceDefaultAmmo || definition.ammo;
+      const amount = Math.max(0, Math.min(Math.floor(requested), this.weapons.maxAmmo(pickup.weapon) - current));
       if (amount <= 0) continue;
+      const equip = this.shouldEquip(player, pickup.weapon);
       const object = context.pickupObjectFor?.(pickup.id);
       let collected: boolean;
-      if (object && context.playerObject) collected = object.collect(context.playerObject, amount);
-      else collected = this.collectLegacy(player, pickup, amount);
+      if (object && context.playerObject) collected = object.collect(context.playerObject, amount, equip);
+      else collected = this.collectLegacy(player, pickup, amount, equip);
       if (!collected) continue;
-      this.timers.set(pickup.id, 900);
+      this.timers.set(pickup.id, PICKUP_RESPAWN_TICKS);
       context.emit({ type: 'pickup', actor: player.id, entity: pickup.id, weapon: pickup.weapon, x: pickup.x, y: pickup.y, z: pickup.z });
     }
   }
 
-  private collectLegacy(player: PlayerState, pickup: PickupState, amount: number) {
+  private isValidPickup(pickup: PickupState) {
+    return Number.isSafeInteger(pickup.id) && pickup.id >= 0 &&
+      [pickup.x, pickup.y, pickup.z].every(Number.isFinite) &&
+      Number.isSafeInteger(pickup.ammo) && pickup.ammo >= 0 &&
+      typeof pickup.active === 'boolean' && isScrPickupWeapon(pickup.weapon) &&
+      this.weapons.definitions[pickup.weapon] !== undefined;
+  }
+
+  private shouldEquip(player: PlayerState, weapon: number) {
+    // The source attaches vehicle pickups to the active car weapon and does
+    // not switch to a ped weapon while the player is seated.
+    if (this.weapons.isVehicleWeapon(weapon)) return player.vehicleId !== undefined;
+    if (player.vehicleId !== undefined) return false;
+    return [...SCR_ON_FOOT_PICKUP_OBJECTS.values()].every(slot => (player.combat.ammo[slot] ?? 0) <= 0);
+  }
+
+  private collectLegacy(player: PlayerState, pickup: PickupState, amount: number, equip: boolean) {
     player.combat.ammo[pickup.weapon] = (player.combat.ammo[pickup.weapon] ?? 0) + amount;
-    player.combat.weapon = pickup.weapon;
+    if (equip) player.combat.weapon = pickup.weapon;
     pickup.active = false;
     return true;
   }

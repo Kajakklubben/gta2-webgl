@@ -1,14 +1,51 @@
 import type { GameObjectCombatContext } from '../gameobject';
 import type { PlayerObject, PlayerCombatContext } from './player';
 import { directionFromRotation } from '../../../domain/physics/motion-vector';
-import { GTA2_PLAYER_FIRE_POINT_FORWARD, GTA2_PLAYER_FIRE_POINT_RIGHT, projectileTravelTicks, sourceThrowableSpeed, sourceWeaponAngleToRadians, WeaponId } from '../../../domain/combat/weapons';
+import { GTA2_PLAYER_FIRE_POINT_FORWARD, GTA2_PLAYER_FIRE_POINT_RIGHT, projectileTravelTicks, sourceThrowableSpeed, sourceThrowableVelocity, sourceWeaponAngleToRadians, WeaponId } from '../../../domain/combat/weapons';
 import type { WeaponRay } from '../../../domain/combat/weapon-raycaster';
-import { GrenadeObject, HitscanImpactObject, type ProjectileObject, type ProjectileStateInput } from '../../effects/projectile';
+import { GrenadeObject, HitscanImpactObject, resolveWaterCannonPlayerHit, type ProjectileObject, type ProjectileStateInput } from '../../effects/projectile';
 import { WORLD } from '../../../domain/world/world';
+import { GTA2_SOURCE_OBJECT_MODELS } from '../../../domain/world/gta2-sprites';
+
+function directPlayerImpactModel(sourceModel: number | undefined, impactModel: number | undefined) {
+  if (impactModel !== undefined) return impactModel;
+  if (sourceModel === GTA2_SOURCE_OBJECT_MODELS.pistolBullet || sourceModel === GTA2_SOURCE_OBJECT_MODELS.machineGunBullet) return undefined;
+  return sourceModel;
+}
+
+/** Resolve the source's immediate player bullet branch at the authority. The
+ * numeric armor field is the existing wire-compatible representation of the
+ * source Armor_3 power-up: one protected direct hit consumes one charge and
+ * absorbs the hit. Other damage paths still go through damagePlayer, whose
+ * normal authoritative armor reduction remains unchanged. */
+function resolveDirectPlayerHit(player: PlayerObject, weaponId: number, ray: WeaponRay, combat: GameObjectCombatContext, sourceModel?: number) {
+  const weapon = combat.weaponSystem.get(weaponId), target = ray.targets[0];
+  if (!combat.authoritative || target?.kind !== 'player') return false;
+  const victim = combat.findPlayer(String(target.state.id));
+  if (!victim || victim.id === player.id || victim.combatState.respawn > 0 || (player.state.team && player.state.team === victim.state.team)) return true;
+
+  if (weapon.waterCannon) {
+    resolveWaterCannonPlayerHit(victim, player.id, weaponId, combat);
+    return true;
+  }
+
+  combat.spawnEffect({ x: ray.endX, y: ray.endY, z: player.state.z, kind: 'impact', life: 7, owner: player.id, rotation: ray.rotation, sourceModel: directPlayerImpactModel(sourceModel, weapon.impactModel) });
+  if (victim.state.armor > 0) {
+    victim.mutablePlayerState.armor = Math.max(0, Math.floor(victim.state.armor) - 1);
+    combat.emit({ type: 'hit', actor: player.id, target: victim.id, weapon: weaponId, damage: 0, lethal: false, x: victim.state.x, y: victim.state.y, z: victim.state.z });
+    return true;
+  }
+
+  const damage = Math.max(1, Math.round(weapon.playerDamage ?? weapon.damage)), currentHealth = victim.combatState.health;
+  combat.damagePlayer(victim, damage, player.id, 'weapon');
+  combat.emit({ type: 'hit', actor: player.id, target: victim.id, weapon: weaponId, damage, lethal: currentHealth <= damage, x: victim.state.x, y: victim.state.y, z: victim.state.z });
+  return true;
+}
 
 function rayDamage(player: PlayerObject, weaponId: number, ray: WeaponRay, combat: GameObjectCombatContext, sourceModel?: number) {
   const weapon = combat.weaponSystem.get(weaponId), target = ray.targets[0];
   if (!combat.authoritative || !target) return;
+  if (weapon.kind === 'bullet' && target.kind === 'player' && resolveDirectPlayerHit(player, weaponId, ray, combat, sourceModel)) return;
   const state: ProjectileStateInput = { actor: player.id, weapon: weaponId, x: ray.startX, y: ray.startY, endX: ray.endX, endY: ray.endY, z: player.state.z, life: 1, rotation: ray.rotation, impact: true, impactTarget: { kind: target.kind, id: target.state.id }, projectileType: 'shock', beam: weapon.kind === 'stun' };
   const resolvedSourceModel = sourceModel ?? weapon.sourceModel;
   if (typeof resolvedSourceModel === 'number') state.sourceModel = resolvedSourceModel;
@@ -69,15 +106,16 @@ export function updatePlayerCombat(player: PlayerObject, context: PlayerCombatCo
       const charge = player.chargeThrow(); player.recordShot({ x: state.x, y: state.y, endX: state.x, endY: state.y, z: state.z, life: 2, weapon: weaponId, projectile: false });
       if (weaponId === WeaponId.Grenade && charge >= 96 && !combat.cooldown) { player.fireWeapon(weaponId, weapon.interval, weapon.consumesAmmo !== false); player.finishThrow(weapon.interval); detonate(player, state.x, state.y, state.z, weaponId, context.combat); reportWeaponEmission(player, weaponId, { x: state.x, y: state.y, angle: state.rotation }, context.combat); context.emit({ type: 'shot', actor: player.id, weapon: weaponId, x: state.x, y: state.y, z: state.z }); }
     } else if (!fireDown && combat.throwing && !combat.cooldown && ammo() > 0) {
-      const charge = Math.max(1, combat.throwCharge), strength = Math.max(1, Math.min(60, charge)), ratio = strength / 60, direction = directionFromRotation(state.rotation), speed = sourceThrowableSpeed(weaponId, strength), distance = weapon.range * (.35 + ratio * .65);
-      if (distance <= .5) player.cancelThrow(); else {
-        const pending = context.spawnWeaponVisual(player.state, weaponId, state.x, state.y, state.z + .5, state.rotation, distance, true);
-        const carried = Math.hypot(state.vx, state.vy) > 1e-6 ? WORLD.projectile.sourceThrow.carriedVelocity * WORLD.projectile.sourceThrow.fix16Scale * WORLD.tileSize * WORLD.tickRate : 0;
-        const life = Math.max(WORLD.projectile.minimumTravelTicks, Math.ceil(distance / Math.max(1, speed) * WORLD.tickRate)), projectileLife = weaponId === WeaponId.Grenade ? Math.max(1, Math.floor((96 - charge) / 8)) : life;
-        pending.configureLaunch({ vx: direction.x * (speed + carried) + state.vx, vy: direction.y * (speed + carried) + state.vy, life: projectileLife, selfDamage: true, vz: WORLD.projectile.sourceThrow.verticalSpeed, gravity: WORLD.projectile.sourceThrow.gravity });
+      const charge = Math.max(1, combat.throwCharge), strength = Math.max(1, Math.min(60, charge)), ratio = strength / 60, direction = directionFromRotation(state.rotation), requestedDistance = weapon.range * (.35 + ratio * .65), speed = Math.max(1, sourceThrowableSpeed(weaponId, strength));
+      const life = Math.max(WORLD.projectile.minimumTravelTicks, Math.ceil(requestedDistance / speed * WORLD.tickRate)), projectileLife = weaponId === WeaponId.Grenade ? Math.max(1, Math.floor((96 - charge) / 8)) : life;
+      const velocity = sourceThrowableVelocity(weaponId, strength, direction, { x: state.vx, y: state.vy });
+      const launchDistance = Math.hypot(velocity.x, velocity.y) * projectileLife / WORLD.tickRate;
+      if (launchDistance <= .5) player.cancelThrow(); else {
+        const pending = context.spawnWeaponVisual(player.state, weaponId, state.x, state.y, state.z + .5, state.rotation, launchDistance, true);
+        pending.configureLaunch({ vx: velocity.x, vy: velocity.y, life: projectileLife, selfDamage: true, vz: WORLD.projectile.sourceThrow.verticalSpeed, gravity: WORLD.projectile.sourceThrow.gravity });
         player.fireWeapon(weaponId, weapon.interval, weapon.consumesAmmo !== false); player.finishThrow(weapon.interval);
         reportWeaponEmission(player, weaponId, { x: state.x, y: state.y, angle: state.rotation }, context.combat);
-        const sequence = player.recordProjectileShot({ x: state.x, y: state.y, endX: pending.endpoint.x, endY: pending.endpoint.y, z: state.z, life: pending.lifeRemaining, vx: pending.state.vx, vy: pending.state.vy, weapon: weaponId, projectile: true }); pending.setShotSequence(sequence);
+        const value = pending.state, sequence = player.recordProjectileShot({ x: value.x, y: value.y, endX: value.endX, endY: value.endY, z: value.z, life: pending.lifeRemaining, vx: value.vx, vy: value.vy, weapon: weaponId, projectile: true }); pending.setShotSequence(sequence);
         context.emit({ type: 'shot', actor: player.id, weapon: weaponId, x: state.x, y: state.y, z: state.z });
       }
     } else if (!fireDown && combat.throwing) player.cancelThrow();
@@ -107,7 +145,7 @@ export function updatePlayerCombat(player: PlayerObject, context: PlayerCombatCo
     const angle = origin.angle + sourceWeaponAngleToRadians(spread), traced = weapon.kind === 'stun' ? context.traceShockerWeapon(muzzleActor, origin.x, origin.y, angle, input.clientTick ?? 'latest') : [context.traceWeaponRay(muzzleActor, weaponId, origin.x, origin.y, angle, input.clientTick ?? 'latest')];
     let made = 0;
     for (const ray of traced) {
-      if (ray.distance <= .5) continue;
+      if (ray.distance <= .5 && ray.targets.length === 0) continue;
       rays.push(ray);
       const hitSourceModel = ray.targets.length > 0 ? weapon.hitSourceModel : weapon.missSourceModel;
       if (weapon.kind === 'stun') { rayDamage(player, weaponId, ray, context.combat, hitSourceModel); continue; }

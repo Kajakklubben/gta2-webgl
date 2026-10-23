@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Block, Face, GameMap } from '../../shared/loader/map-parser';
+import type { Block, Face, GameMap } from '../../shared/engine/loader/map-parser';
 import { PedestrianNavigation } from '../../shared/domain/pedestrians/pedestrian-navigation';
 import { PedestrianSpawner } from '../../shared/domain/pedestrians/pedestrian-spawner';
 import { CIVILIAN_PED_REMAPS } from '../../shared/domain/pedestrians/pedestrian-appearance';

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { ASSET_NAMES } from '../shared/loader/asset-loaders';
+import { ASSET_NAMES } from '../shared/engine/loader/asset-loaders';
 
 export interface ServerConfig {
   readonly workingDirectory: string;

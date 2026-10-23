@@ -4,7 +4,8 @@ export const PLAYER_SESSION_STORAGE_KEY = 'gta2-player-session';
 export type DebugTab = 'graphs' | 'player' | 'camera';
 
 export type DebugSettings = {
-  tab: DebugTab;
+  /** Retained for compatibility with settings saved before the Debug page was flattened. */
+  tab?: DebugTab;
   pedestrianGraph: boolean;
   traffic: boolean;
   car: boolean;
@@ -17,8 +18,9 @@ export type DebugSettings = {
   cameraLookahead: boolean;
   spriteFrameInterpolation: boolean;
   fpsCounter: boolean;
-  showCoordinates: boolean;
   showPlayerState: boolean;
+  tilePicker: boolean;
+  mapLevels: number[];
 };
 
 export function readDebugSettings(): Partial<DebugSettings> {

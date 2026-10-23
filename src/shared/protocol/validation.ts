@@ -1,5 +1,5 @@
 import { PROTOCOL_VERSION } from './constants';
-import type { ClientMessage, CombatShot, Input, JumpPhase, JumpState, NpcState, PlayerControl, PlayerMovementState, PlayerState, ServerMessage, TrafficState, VehicleDamagePhase, VehicleDoorPhase, VehicleDoorState, VehicleOccupancyState, VehicleOccupantState, WorldEvent } from './types';
+import type { ClientMessage, CombatShot, Input, JumpPhase, JumpState, NpcState, PlayerControl, PlayerMovementState, PlayerState, ServerMessage, TrafficAiMode, TrafficAiTask, TrafficDirection, TrafficLaneAlignment, TrafficPlannedTurn, TrafficSpeedClass, TrafficState, VehicleDamagePhase, VehicleDoorPhase, VehicleDoorState, VehicleOccupancyState, VehicleOccupantState, WorldEvent } from './types';
 import { WEAPONS } from '../domain/combat/weapons';
 
 const weaponSlotCount = WEAPONS.length;
@@ -64,6 +64,12 @@ const vehicleDoorPhases = new Set<VehicleDoorPhase>(['closed', 'opening', 'open'
 const vehicleDoorLocks = new Set<NonNullable<TrafficState['doorLock']>>(['unlocked', 'locked', 'player-only', 'thief-only']);
 const vehicleDamagePhases = new Set<VehicleDamagePhase>(['new', 'dented', 'burning', 'exploding', 'burned-out']);
 const jumpPhases = new Set<JumpPhase>(['rising', 'apex', 'falling']);
+const trafficAiModes = new Set<TrafficAiMode>(['inactive', 'ordinary', 'scripted', 'chase', 'emergency', 'service']);
+const trafficAiTasks = new Set<TrafficAiTask>(['none', 'follow-road', 'route', 'goto', 'chase', 'service', 'abandoned']);
+const trafficDirections = new Set<TrafficDirection>(['none', 'north', 'south', 'east', 'west']);
+const trafficPlannedTurns = new Set<TrafficPlannedTurn>(['none', 'left', 'right', 'u-turn']);
+const trafficLaneAlignments = new Set<TrafficLaneAlignment>(['unknown', 'left', 'center', 'right']);
+const trafficSpeedClasses = new Set<TrafficSpeedClass>(['slow', 'medium', 'fast']);
 function validVehicleOccupant(value: unknown): value is VehicleOccupantState {
   if (!value || typeof value !== 'object') return false;
   const occupant = value as VehicleOccupantState;
@@ -105,6 +111,9 @@ function validCollisionLayer(value: unknown) {
 function validOptionalVerticalState(value: { grounded?: unknown; verticalVelocity?: unknown }) {
   return (value.grounded === undefined || typeof value.grounded === 'boolean') &&
     (value.verticalVelocity === undefined || Number.isFinite(value.verticalVelocity));
+}
+function validOptionalCounter(value: unknown) {
+  return value === undefined || (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0);
 }
 function validCombatShot(value: unknown): value is CombatShot {
   if (!value || typeof value !== 'object') return false;
@@ -152,6 +161,21 @@ function validTrafficState(value: unknown): value is TrafficState {
     (traffic.damagePhase === undefined || vehicleDamagePhases.has(traffic.damagePhase)) &&
     (traffic.wrecked === undefined || typeof traffic.wrecked === 'boolean') &&
     (traffic.aiState === undefined || ['cruise', 'yield', 'brake', 'turn', 'stuck', 'wrecked'].includes(traffic.aiState)) &&
+    (traffic.aiActive === undefined || typeof traffic.aiActive === 'boolean') &&
+    (traffic.aiMode === undefined || trafficAiModes.has(traffic.aiMode)) &&
+    (traffic.aiTask === undefined || trafficAiTasks.has(traffic.aiTask)) &&
+    (traffic.aiActive !== false || traffic.aiMode === undefined || traffic.aiMode === 'inactive') &&
+    (traffic.routeId === undefined || (Number.isSafeInteger(traffic.routeId) && traffic.routeId >= 0)) &&
+    validOptionalCounter(traffic.routeCursor) && validOptionalCounter(traffic.arrowCursor) && validOptionalCounter(traffic.arrowRun) &&
+    (traffic.currentDirection === undefined || trafficDirections.has(traffic.currentDirection)) &&
+    (traffic.targetDirection === undefined || trafficDirections.has(traffic.targetDirection)) &&
+    (traffic.plannedTurn === undefined || trafficPlannedTurns.has(traffic.plannedTurn)) &&
+    (traffic.laneTarget === undefined || (typeof traffic.laneTarget === 'number' && Number.isSafeInteger(traffic.laneTarget) && traffic.laneTarget >= -2 && traffic.laneTarget <= 2)) &&
+    (traffic.laneAlignment === undefined || trafficLaneAlignments.has(traffic.laneAlignment)) &&
+    (traffic.targetSpeed === undefined || (Number.isFinite(traffic.targetSpeed) && traffic.targetSpeed >= 0)) &&
+    (traffic.speedClass === undefined || trafficSpeedClasses.has(traffic.speedClass)) &&
+    validOptionalCounter(traffic.yieldTimer) && validOptionalCounter(traffic.obstacleTimer) && validOptionalCounter(traffic.offRoadTimer) &&
+    (traffic.allowSpecialRoute === undefined || typeof traffic.allowSpecialRoute === 'boolean') &&
     (traffic.signal === undefined || ['green', 'red', 'none'].includes(traffic.signal)) &&
     (traffic.transport === undefined || traffic.transport === 'bus' || traffic.transport === 'train') &&
     (traffic.serviceStop === undefined || Number.isSafeInteger(traffic.serviceStop)) &&

@@ -31,6 +31,8 @@ export interface CameraPose {
   z: number;
   /** Source projection scale. Higher values show a smaller area. */
   zoom: number;
+  /** Presentation-only pitch around the world X axis, in radians. */
+  rotationX: number;
 }
 
 export interface CameraBounds extends CameraWorldBounds {
@@ -97,6 +99,8 @@ export class Gta2Camera {
   static readonly ELEVATION_STEP = 0x2000 / 0x4000;
   static readonly SOURCE_SCREEN_WIDTH = 640;
   static readonly SOURCE_SCREEN_HEIGHT = 480;
+  static readonly PITCH_STEP = Math.PI / 18;
+  static readonly MAX_PITCH = Math.PI * .35;
   /** Presentation-only response time for camera elevation and projection zoom. */
   static readonly ZOOM_SMOOTHING_SECONDS = 0.25;
   /** Keep the camera moving between the ped and car anchors during entry/exit. */
@@ -110,7 +114,7 @@ export class Gta2Camera {
   /** Small presentation filter for replicated velocity used by follow lookahead. */
   private static readonly VELOCITY_LOOKAHEAD_THRESHOLD = 180;
 
-  current: CameraPose = { x: 0, y: 0, z: 1, zoom: Gta2Camera.DEFAULT_ZOOM };
+  current: CameraPose = { x: 0, y: 0, z: 1, zoom: Gta2Camera.DEFAULT_ZOOM, rotationX: 0 };
   private previous: CameraPose = { ...this.current };
   target: CameraPose = { ...this.current };
   pending: CameraPose = { ...this.current };
@@ -158,6 +162,17 @@ export class Gta2Camera {
     this.pending = { ...this.current };
   }
 
+  /** Reset an embedded diagnostic camera to an authored static pose. */
+  setPose(pose: Partial<CameraPose>) {
+    const next = { ...this.current, ...pose };
+    this.current = { ...next };
+    this.previous = { ...next };
+    this.target = { ...next };
+    this.pending = { ...next };
+    this.velocity = { x: 0, y: 0, z: 0, zoom: 0 };
+    this.initialized = true;
+  }
+
   setMode(mode: CameraMode) {
     if (this.mode === mode) return;
     this.mode = mode;
@@ -168,10 +183,27 @@ export class Gta2Camera {
       this.pending = { ...this.current };
       this.velocity = { x: 0, y: 0, z: 0, zoom: 0 };
       this.lookaheadOffset = { x: 0, y: 0 };
+    } else {
+      // Follow mode retains GTA2's unrotated presentation. The free-camera
+      // roll is restored when detached mode is selected again by the user.
+      this.current.rotationX = 0;
+      this.previous.rotationX = 0;
+      this.target.rotationX = 0;
+      this.pending.rotationX = 0;
     }
   }
 
   get targetPose() { return { ...this.target }; }
+
+  /** Tilt the detached camera around the world X axis. */
+  rotateX(radians: number) {
+    if (this.mode !== 'debug' || !Number.isFinite(radians)) return;
+    const rotationX = Math.max(-Gta2Camera.MAX_PITCH, Math.min(Gta2Camera.MAX_PITCH, this.target.rotationX + radians));
+    this.current.rotationX = rotationX;
+    this.previous.rotationX = rotationX;
+    this.target.rotationX = rotationX;
+    this.pending.rotationX = rotationX;
+  }
 
   setSpeedZoomEnabled(enabled: boolean) {
     this.speedZoomEnabled = enabled;
@@ -326,7 +358,7 @@ export class Gta2Camera {
     x += lookahead.x;
     y += lookahead.y;
 
-    return { x, y, z, zoom };
+    return { x, y, z, zoom, rotationX: this.target.rotationX };
   }
 
   private smoothPose(current: CameraPose, target: CameraPose, dtSeconds: number, transitionActive: boolean): CameraPose {

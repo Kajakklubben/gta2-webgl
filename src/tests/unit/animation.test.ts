@@ -3,7 +3,7 @@ import { sourceAnimationDefinition, sourceAnimationPosition } from '../../shared
 import { selectSpriteFrames, spriteFrameBlend } from '../../client/rendering/sprite-engine';
 import { PlayerObject } from '../../shared/game/gameobjects/player';
 import { NpcObject } from '../../shared/game/gameobjects/npc';
-import { parseStyle } from '../../shared/loader/style-parser';
+import { parseStyle } from '../../shared/engine/loader/style-parser';
 import { newCombat } from '../../shared/domain/combat/weapons';
 import type { NpcState, PlayerState } from '../../shared/protocol/types';
 import { npcDefaults, styleFixture } from './fixtures';
@@ -92,7 +92,7 @@ describe('ped animation transitions', () => {
   it('maps jump, fall, entry, and exit transitions to source terminal frames', () => {
     const state = playerState();
     state.jump = { phase: 'rising', progress: .1, height: 12, baseZ: 0, vx: 170, vy: 0 };
-    expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'jumping', frame: .8, renderDepth: { elevation: 12 } });
+    expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'jumping', frame: .8, presentation: { elevation: 12 } });
     state.jump.progress = .95;
     expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'jumping', frame: 7 });
     state.jump = undefined; state.combat!.respawn = 80;
@@ -103,9 +103,9 @@ describe('ped animation transitions', () => {
     expect(new PlayerObject(state).getSprite(0).animation).toBe('dead');
     state.combat!.respawn = 0; state.animation = { kind: 'entering', progress: 0 };
     expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'entering', frame: 0 });
-    expect(new PlayerObject(state).getSprite(0).renderDepth).toBeUndefined();
+    expect(new PlayerObject(state).getSprite(0).presentation).toBeUndefined();
     state.animation = { kind: 'exiting', progress: 1 };
-    expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'exiting', frame: 7, renderDepth: { relation: 'behind-vehicle' } });
+    expect(new PlayerObject(state).getSprite(0)).toMatchObject({ animation: 'exiting', frame: 7, presentation: { band: 'underlay' } });
   });
 
   it('keeps NPC knockdown and firing states visible as authored sequences', () => {

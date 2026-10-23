@@ -1,7 +1,7 @@
 /**
  * Representative decoded vehicle records used by the scenario lab and its
- * browser tests. The values come from bil.sty/nyc.gci; the fixture catalog
- * mirrors them so tests exercise the same metadata contract as the game.
+ * browser tests. The values come from the authored bil.sty/nyc.gci catalog
+ * used by the loaded Tiny Town replay.
  */
 export interface VehiclePropertyCase {
   readonly name: string;

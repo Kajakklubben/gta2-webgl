@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { GameWorld } from '../../shared/game/game-world';
-import { parseMap } from '../../shared/loader/map-parser';
+import { parseMap } from '../../shared/engine/loader/map-parser';
 import { WEAPONS } from '../../shared/domain/combat/weapons';
 import { mapFixture, npcDefaults } from '../unit/fixtures';
 import type { NpcState } from '../../shared/protocol/types';

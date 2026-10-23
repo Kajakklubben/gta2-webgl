@@ -1,5 +1,6 @@
-import type { PedSpriteSet, Pixels, Style } from '../../../shared/loader/style-parser';
-import { SCR_PICKUP_SPRITE_MODELS } from '../../../shared/loader/scr';
+import type { PedSpriteSet, Style } from '../../../shared/engine/loader/style-parser';
+import type { Pixels } from '../../../shared/engine/assets/pixels';
+import { SCR_PICKUP_SPRITE_MODELS } from '../../../shared/engine/loader/scr';
 import { WEAPONS } from '../../../shared/domain/combat/weapons';
 import { cars, effects, weapons } from '../sprite';
 import { spriteFrameBlend } from './frame-interpolation';

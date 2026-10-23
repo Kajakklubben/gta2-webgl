@@ -1,12 +1,12 @@
 import { expect, it } from 'vitest';
 import * as THREE from 'three';
 import { MapRender } from '../../client/rendering/map/map-render';
-import { FaceType, GTA2MapFormat, decodeFace } from '../../shared/loader/map-parser';
+import { FaceType, GTA2MapFormat, decodeFace } from '../../shared/engine/loader/map-parser';
 import { GTA2SlopeType as SlopeType } from '../../shared/domain/world/gta2-enums';
 import { faceGeometry } from '../../client/rendering/textures';
-import { parseStyle } from '../../shared/loader/style-parser';
+import { parseStyle } from '../../shared/engine/loader/style-parser';
 import { binary, chunk, styleFixture } from './fixtures';
-import { readChunks } from '../../shared/loader/binary';
+import { readChunks } from '../../shared/engine/loader/binary';
 
 it('triangulates every supported slope and produces finite buffers and bounds', () => {
   const renderer = new MapRender();
@@ -77,23 +77,21 @@ it('creates modern textured meshes without removed Three.js APIs', () => {
   expect(object.children[0]).toBeInstanceOf(THREE.Mesh);
   expect((object.children[0] as THREE.Mesh).geometry).toBeInstanceOf(THREE.BufferGeometry);
 });
-it('keeps map faces single-sided and depth-writing like the authored surface model', () => {
+it('painter-orders transparent horizontal map lids without depth occlusion', () => {
   const renderer = new MapRender(); renderer.style = parseStyle(styleFixture(), [1]);
   const face = decodeFace(1), block = { Left: face, Right: face, Top: face, Bottom: face, Lid: face, slopeType: 0, groundType: 0, arrows: 0 };
   const object = renderer.CreatePolygon(0, 0, 0, face, FaceType.Lid, block);
   const material = ((object.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial);
   expect(material.side).toBe(THREE.FrontSide);
-  expect(material.transparent).toBe(false);
-  expect(material.depthWrite).toBe(true);
+  expect(material.transparent).toBe(true);
 });
-it('keeps GMP flat lids source-sided while retaining depth for lower-level occlusion', () => {
+it('keeps GMP flat lids source-sided while letting map order handle occlusion', () => {
   const renderer = new MapRender(); renderer.style = parseStyle(styleFixture(), [1]);
   const face = { ...decodeFace(1), flat: true }, block = { Left: face, Right: face, Top: face, Bottom: face, Lid: face, slopeType: 0, groundType: 0, arrows: 0 };
   const object = renderer.CreatePolygon(0, 0, 0, face, FaceType.Lid, block);
   const material = ((object.children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial);
   expect(material.side).toBe(THREE.FrontSide);
   expect(material.transparent).toBe(true);
-  expect(material.depthWrite).toBe(true);
 });
 it('applies the retail flat-face pairing rule instead of drawing both sides blindly', () => {
   const renderer = new MapRender(); renderer.style = parseStyle(styleFixture(), [1]);
@@ -101,7 +99,7 @@ it('applies the retail flat-face pairing rule instead of drawing both sides blin
   const block = { Left: solid, Right: flat, Top: empty, Bottom: empty, Lid: empty, slopeType: 0, groundType: 0, arrows: 0 };
   const object = renderer.CreateBlock(0, 0, 0, block);
   expect(object.children).toHaveLength(2);
-  expect(((object.children[0] as THREE.Group).children[0] as THREE.Mesh).material).toMatchObject({ transparent: true, depthWrite: false });
+  expect(((object.children[0] as THREE.Group).children[0] as THREE.Mesh).material).toMatchObject({ transparent: true });
 
   const bothFlat = renderer.CreateBlock(0, 0, 0, { ...block, Left: flat, Right: flat });
   expect(bothFlat.children).toHaveLength(4);
@@ -122,7 +120,6 @@ it('anchors supported flat wall art to the structural plane instead of duplicati
   const material = ((object.children[0] as THREE.Group).children[0] as THREE.Mesh).material as THREE.MeshBasicMaterial;
   expect(material.side).toBe(THREE.DoubleSide);
   expect(material.transparent).toBe(true);
-  expect(material.depthWrite).toBe(false);
   expect((object.children[0] as THREE.Group).position.x).toBe(-0.5);
 });
 it('does not promote a flat face to double-sided rendering from its own wall flag', () => {

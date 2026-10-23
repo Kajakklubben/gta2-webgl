@@ -1,43 +1,46 @@
 import * as THREE from 'three';
-import { FaceType, mapWallSegments, type GameMap } from '../../../shared/loader/map-parser';
-import type { CarInfo, Style } from '../../../shared/loader/style-parser';
-import type { CarPhysics } from '../../../shared/loader/gci';
+import { mapWallSegments, type GameMap } from '../../../shared/engine/loader/map-parser';
+import type { CarInfo, Style } from '../../../shared/engine/loader/style-parser';
+import type { CarPhysics } from '../../../shared/engine/loader/gci';
 import { Gta2Game } from '../../../shared/game/gta2-game';
 import { VehicleObject } from '../../../shared/game/gameobjects/vehicle';
-import { loadVehicleBounds, vehicleBounds, type VehicleBounds } from '../../../shared/loader/vehicle-bounds';
+import { loadVehicleBounds, vehicleBounds, type VehicleBounds } from '../../../shared/engine/loader/vehicle-bounds';
 import { VEHICLE_DOOR_ANIMATION_FRAMES, VEHICLE_DOOR_FRAME_DELAY, ensureVehicleOccupancy, vehicleDoorDefinitions, vehicleDoorPoint, vehicleSeatDefinitions, type VehicleDoorPoint } from '../../../shared/domain/vehicles/vehicle-occupancy';
 import { STEP } from '../../../shared/protocol/constants';
 import type { Input, PlayerState, TrafficState } from '../../../shared/protocol/types';
 import { WORLD, tilesPerSecondToWorld } from '../../../shared/domain/world/world';
 import { SpriteEngine } from '../../rendering/sprite-engine';
 import { VEHICLE_PROPERTY_CASE_MODELS } from './vehicle-property-cases';
-import { ENTRY_APPROACHES, ENTRY_SCENARIO_APPROACHES, EXIT_SCENARIO_IDS, ENTRY_SCENARIO_IDS, VEHICLE_ENTRY_SCENARIOS, VEHICLE_EXIT_SCENARIOS, scenarioSeatSet, scenarioWorldPlacement, vehicleEntryScenario, vehicleExitScenario, type VehicleEntryScenario, type VehicleExitScenario } from './vehicle-entry-scenarios';
+import { ENTRY_SCENARIO_APPROACHES, EXIT_SCENARIO_IDS, scenarioOptionValue, scenarioSeatSet, scenarioWorldPlacement, vehicleEntryScenario, vehicleExitScenario, type VehicleEntryScenario, type VehicleExitScenario } from './vehicle-entry-scenarios';
 import { MapRender } from '../../rendering/map/map-render';
 import { createTopDownCamera } from '../../rendering/world-projection';
 import { renderVehicleEntryLab } from './vehicle-entry-lab-render';
 import {
-  createCheckerTexture, createScenarioLevel, makePreviewBlockade,
-  makePreviewPlayer, makePreviewVehicle, propertyTags, segmentHitsVehicle, segmentsIntersect, vehicleBlockadePlacement,
+  createScenarioLevel, makePreviewBlockade,
+  makePreviewVehicle, propertyTags, segmentHitsVehicle, segmentsIntersect, vehicleBlockadePlacement,
   type EntryApproach, type EntryCandidate, type EntryLayout, type EntryPhase, type EntryScenarioId,
   type ExitScenarioId, type ScenarioAction,
 } from './vehicle-entry-lab-layout';
 import { populateScenarioSpeedSelect, type ScenarioSimulationSpeed } from './scenario-speed';
+import { createScenarioReplayGame } from './scenario-replay-runtime';
+import { scenarioDefinition } from './scenario-definitions';
+import { ScenarioManualInput } from './scenario-manual-input';
 
 const MAX_SIMULATION_TICKS_PER_PAINT = 64;
 
 export class VehicleEntryLab {
   onOpenChange: ((open: boolean) => void) | undefined;
+  onModelChange: ((model: number) => void) | undefined;
   readonly panel = document.querySelector<HTMLElement>('#vehicle-entry-lab')!;
   readonly closeButton = document.querySelector<HTMLButtonElement>('#close-entry-lab')!;
   readonly modelSelect = document.querySelector<HTMLSelectElement>('#entry-car')!;
-  readonly actionSelect = document.querySelector<HTMLSelectElement>('#entry-action')!;
-  readonly scenarioApproachSelect = document.querySelector<HTMLSelectElement>('#entry-scenario-approach')!;
   readonly speedSelect = document.querySelector<HTMLSelectElement>('#entry-speed')!;
   readonly propertyCases = document.querySelector<HTMLElement>('#entry-property-cases')!;
   readonly propertySummary = document.querySelector<HTMLElement>('#entry-property-summary')!;
   readonly playButton = document.querySelector<HTMLButtonElement>('#entry-play')!;
   readonly restartButton = document.querySelector<HTMLButtonElement>('#entry-restart')!;
   readonly stepButton = document.querySelector<HTMLButtonElement>('#entry-step')!;
+  readonly manualButton = document.querySelector<HTMLButtonElement>('#entry-manual')!;
   readonly progressOutput = document.querySelector<HTMLOutputElement>('#entry-progress')!;
   readonly title = document.querySelector<HTMLElement>('#entry-title')!;
   readonly status = document.querySelector<HTMLElement>('#entry-status')!;
@@ -50,6 +53,7 @@ export class VehicleEntryLab {
   readonly doorOverlayContext = this.doorOverlayCanvas.getContext('2d')!;
   readonly level: GameMap;
   readonly origin: { x: number; y: number };
+  readonly surfaceZ: number;
   readonly mapWalls: ReturnType<typeof mapWallSegments>;
   readonly style: Style;
   readonly carNames: ReadonlyMap<number, string>;
@@ -65,22 +69,6 @@ export class VehicleEntryLab {
   readonly mainSpriteEngine: SpriteEngine;
   readonly doorSpriteEngine: SpriteEngine;
   readonly patternMap = new MapRender();
-  readonly patternFloorTexture = createCheckerTexture('#2f9b59', '#237b48');
-  readonly patternWallTexture = createCheckerTexture('#ef4444', '#9f2634');
-  readonly patternRoofTexture = createCheckerTexture('#435565', '#273540');
-  readonly patternFloorMaterial = new THREE.MeshBasicMaterial({ map: this.patternFloorTexture, side: THREE.FrontSide, depthTest: true, depthWrite: true });
-  readonly patternWallMaterial = new THREE.MeshBasicMaterial({
-    map: this.patternWallTexture,
-    side: THREE.FrontSide,
-    depthTest: true,
-    depthWrite: true,
-  });
-  readonly patternRoofMaterial = new THREE.MeshBasicMaterial({
-    map: this.patternRoofTexture,
-    side: THREE.FrontSide,
-    depthTest: true,
-    depthWrite: true,
-  });
   selectedModel = 0;
   selectedAction: ScenarioAction = 'enter';
   selectedScenario: EntryScenarioId | ExitScenarioId = 'clear';
@@ -99,6 +87,8 @@ export class VehicleEntryLab {
   game!: Gta2Game;
   entryInputSent = false;
   inputSequence = 0;
+  manualControl = false;
+  readonly manualInput = new ScenarioManualInput(() => this.manualControl && !this.panel.hidden && this.playerState !== undefined);
   stripModel = -1;
   stripDoor = -1;
   stripObjects: VehicleObject[] = [];
@@ -109,6 +99,7 @@ export class VehicleEntryLab {
     const scenarioLevel = createScenarioLevel(sourceLevel);
     this.level = scenarioLevel.level;
     this.origin = scenarioLevel.origin;
+    this.surfaceZ = scenarioLevel.origin.z;
     this.mapWalls = mapWallSegments(this.level);
     this.style = style;
     this.carNames = carNames;
@@ -126,36 +117,14 @@ export class VehicleEntryLab {
     this.mainScene.add(new THREE.AmbientLight(0x8090a0, .55));
     this.patternMap.scene = this.mainScene;
     this.patternMap.camera = this.mainCamera;
-    this.patternMap.CreateMesh(this.level, style, {
-      renderOrder: -20,
-      materialFactory: (_face, type, block) => {
-        if (type !== FaceType.Lid) return this.patternWallMaterial;
-        if (block.groundType === 2) return this.patternRoofMaterial;
-        return this.patternFloorMaterial;
-      },
-    });
+    this.patternMap.CreateMesh(this.level, style, { renderOrder: -20 });
     const models = style.cars.filter(car => (style.sprites.cars[car.model] ?? []).length > 0);
     this.modelSelect.replaceChildren(...models.map(car => new Option(this.carLabel(car), String(car.model))));
-    this.actionSelect.replaceChildren(new Option('Enter vehicle', 'enter'), new Option('Exit vehicle', 'exit'));
-    this.populateScenarioOptions();
-    this.selectedModel = models[0]?.model ?? 0;
-    this.modelSelect.value = String(this.selectedModel); this.actionSelect.value = this.selectedAction; this.scenarioApproachSelect.value = this.scenarioOptionValue(this.selectedScenario, this.selectedApproach);
+    this.selectedModel = models.find(model => model.model === 0)?.model ?? models[0]?.model ?? 0;
+    this.modelSelect.value = String(this.selectedModel);
     this.buildPropertyCases(models);
     this.closeButton.onclick = () => this.setOpen(false);
-    this.modelSelect.onchange = () => { this.selectedModel = Number(this.modelSelect.value); this.restart(); };
-    this.actionSelect.onchange = () => {
-      this.selectedAction = this.actionSelect.value as ScenarioAction;
-      if (this.selectedAction === 'enter') this.selectedScenario = ENTRY_SCENARIO_IDS[0];
-      else this.selectedScenario = EXIT_SCENARIO_IDS[0];
-      this.populateScenarioOptions();
-      this.restart();
-    };
-    this.scenarioApproachSelect.onchange = () => {
-      const [scenario, approach] = this.scenarioApproachSelect.value.split('|');
-      this.selectedScenario = scenario as EntryScenarioId | ExitScenarioId;
-      if (approach && (ENTRY_APPROACHES as readonly string[]).includes(approach)) this.selectedApproach = approach as EntryApproach;
-      this.restart();
-    };
+    this.modelSelect.onchange = () => this.setCarModel(Number(this.modelSelect.value));
     populateScenarioSpeedSelect(this.speedSelect, speed => {
       this.simulationSpeed = speed;
       this.accumulator = 0;
@@ -164,6 +133,7 @@ export class VehicleEntryLab {
     this.playButton.onclick = () => { this.playing = !this.playing; this.updatePlayButton(); };
     this.restartButton.onclick = () => this.restart();
     this.stepButton.onclick = () => { this.playing = false; this.stepGame(); this.updatePlayButton(); this.render(); };
+    this.manualButton.onclick = () => this.setManualControl(!this.manualControl);
     addEventListener('keydown', this.keydown, true);
     this.updatePlayButton();
     this.restart();
@@ -189,41 +159,20 @@ export class VehicleEntryLab {
       const properties = document.createElement('small'); properties.textContent = propertyTags(car, seats);
       button.append(name, properties);
       button.onclick = () => {
-        this.selectedModel = car.model; this.modelSelect.value = String(car.model);
-        this.selectedAction = 'enter'; this.actionSelect.value = 'enter'; this.selectedScenario = 'clear';
-        this.selectedApproach = 'left'; this.populateScenarioOptions(); this.scenarioApproachSelect.value = this.scenarioOptionValue('clear', 'left');
-        this.restart();
+        this.setCarModel(car.model);
+        this.setScenario('clear', 'left');
       };
       this.propertyCases.append(button); this.propertyCaseButtons.push(button);
     }
   }
 
-  private populateScenarioOptions() {
-    let scenarios: readonly (VehicleEntryScenario | VehicleExitScenario)[] = VEHICLE_EXIT_SCENARIOS;
-    if (this.selectedAction === 'enter') scenarios = VEHICLE_ENTRY_SCENARIOS;
-    this.scenarioApproachSelect.replaceChildren(...scenarios.flatMap(scenario => {
-      let approaches: readonly EntryApproach[] = [this.selectedApproach];
-      if (this.selectedAction === 'enter') approaches = ENTRY_SCENARIO_APPROACHES[scenario.id as EntryScenarioId];
-      return approaches.map(approach => {
-        let title = scenario.title;
-        if (this.selectedAction === 'enter') title = `${scenario.title} · ${this.approachLabel(approach)}`;
-        return new Option(title, this.scenarioOptionValue(scenario.id, approach));
-      });
-    }));
-    let availableApproaches: readonly EntryApproach[] = [this.selectedApproach];
-    if (this.selectedAction === 'enter') availableApproaches = ENTRY_SCENARIO_APPROACHES[this.selectedScenario as EntryScenarioId];
-    let approach = availableApproaches[0]!;
-    if (availableApproaches.includes(this.selectedApproach)) approach = this.selectedApproach;
-    this.selectedApproach = approach;
-    this.scenarioApproachSelect.value = this.scenarioOptionValue(this.selectedScenario, approach);
-  }
-
-  private scenarioOptionValue(scenario: EntryScenarioId | ExitScenarioId, approach: EntryApproach) { return `${scenario}|${approach}`; }
-  private approachLabel(approach: EntryApproach) { return `${approach[0]!.toUpperCase()}${approach.slice(1)}`; }
-
   private scenario(): VehicleEntryScenario | VehicleExitScenario {
     if (this.selectedAction === 'enter') return vehicleEntryScenario(this.selectedScenario as EntryScenarioId);
     return vehicleExitScenario(this.selectedScenario as ExitScenarioId);
+  }
+
+  private scenarioDefinition() {
+    return scenarioDefinition(this.selectedScenario);
   }
 
   private layout(): EntryLayout {
@@ -233,13 +182,13 @@ export class VehicleEntryLab {
     let exitSeatIndex = -1;
     if (this.selectedAction === 'exit') exitSeatIndex = (scenario as VehicleExitScenario).exitSeat;
     const placement = scenarioWorldPlacement(this.origin, scenario.vehicle);
-    const vehicle = this.vehicleState ?? makePreviewVehicle(this.selectedModel, placement.x, placement.y, 1);
+    const vehicle = this.vehicleState ?? makePreviewVehicle(this.selectedModel, placement.x, placement.y, 1, undefined, this.surfaceZ);
     if (!this.vehicleState) vehicle.rotation = placement.rotation;
     const doors = vehicleDoorDefinitions(info, bounds);
     const seats = vehicleSeatDefinitions(info, bounds);
     let occupiedDoors: Set<number>;
     if (this.selectedAction === 'enter') occupiedDoors = scenarioSeatSet(scenario as VehicleEntryScenario, seats.length);
-    else occupiedDoors = new Set([exitSeatIndex]);
+    else occupiedDoors = this.playerState?.vehicleId === vehicle.id ? new Set([exitSeatIndex]) : new Set();
     const occupiedSeats = new Set(seats.filter(seat => occupiedDoors.has(seat.index)).map(seat => seat.index));
     const points = new Map<number, VehicleDoorPoint>();
     for (const door of doors) { const point = vehicleDoorPoint(vehicle, door.index, info, bounds); points.set(door.index, point); }
@@ -255,7 +204,9 @@ export class VehicleEntryLab {
     let exitPoint: VehicleDoorPoint | undefined;
     if (exitSeat) exitPoint = points.get(exitSeat.door);
     let playerPlacement: { x: number; y: number };
-    if (this.selectedAction === 'exit') {
+    if (this.selectedAction === 'exit' && this.playerState?.vehicleId !== vehicle.id) {
+      playerPlacement = { x: this.playerState?.x ?? vehicle.x, y: this.playerState?.y ?? vehicle.y };
+    } else if (this.selectedAction === 'exit') {
       playerPlacement = { x: vehicle.x, y: vehicle.y };
       if (exitPoint?.seatX !== undefined) playerPlacement.x = exitPoint.seatX;
       if (exitPoint?.seatY !== undefined) playerPlacement.y = exitPoint.seatY;
@@ -302,51 +253,24 @@ export class VehicleEntryLab {
     return { action: this.selectedAction, info, bounds, vehicle, blockades, doors, seats, points, blockedDoors, occupiedSeats, playerStart, candidates, selected: candidates[0] };
   }
 
-  private createScenarioGame(layout: EntryLayout) {
-    const game = new Gta2Game(this.level, undefined, [], this.carPhysics, [], this.carBounds, this.carInfo), scenario = this.scenario();
-    const vehiclePlacement = scenarioWorldPlacement(this.origin, scenario.vehicle);
-    let vehicleLock: 'locked' | undefined;
-    if (this.selectedAction === 'enter' && (scenario as VehicleEntryScenario).locked) vehicleLock = 'locked';
-    const vehicle = makePreviewVehicle(this.selectedModel, vehiclePlacement.x, vehiclePlacement.y, 1, vehicleLock);
-    vehicle.rotation = vehiclePlacement.rotation;
-    ensureVehicleOccupancy(vehicle, layout.info, layout.bounds);
-    const occupants = [] as NonNullable<TrafficState['occupants']>;
-    const player = makePreviewPlayer(layout.playerStart);
-    if (layout.action === 'exit') {
-      const seat = layout.seats.find(candidate => candidate.index === (scenario as VehicleExitScenario).exitSeat);
-      if (seat) {
-        const point = layout.points.get(seat.door);
-        occupants.push({ id: player.id, door: seat.door, state: 'seated', progress: 1 });
-        player.vehicleId = vehicle.id; player.animation = { kind: 'seated', progress: 1 };
-        if (point) { player.x = point.seatX; player.y = point.seatY; }
-      }
-    }
-    let passengerSeats: readonly typeof layout.seats[number][] = [];
-    if (layout.action === 'enter') passengerSeats = layout.seats.filter(candidate => layout.occupiedSeats.has(candidate.index));
-    for (const seat of passengerSeats) {
-      const point = layout.points.get(seat.door); if (!point) continue;
-      // Seat zero represents the traffic driver in the occupied-entry case;
-      // use the same NPC id shape as the authoritative runtime so the replay
-      // exercises the carjacking/ejection path.
-      const id = seat.index === 0 ? 'npc:1' : `scenario-passenger:${seat.index}`;
-      occupants.push({ id, door: seat.door, state: 'seated', progress: 1 });
-    }
-    if (layout.action === 'exit') {
-      for (const door of layout.blockedDoors) {
-        const point = layout.points.get(door); if (!point) continue;
-      }
-    }
-    vehicle.occupants = occupants; ensureVehicleOccupancy(vehicle, layout.info, layout.bounds);
-    game.addPlayer(player.id, player);
-    game.restoreWorld([], [vehicle, ...layout.blockades], []);
-    return game;
+  private createScenarioGame(_layout: EntryLayout) {
+    const replay = createScenarioReplayGame({
+      level: { level: this.level, origin: { ...this.origin, z: this.surfaceZ }, surfaceZ: this.surfaceZ, room: { minX: 0, maxX: 0, minY: 0, maxY: 0 } },
+      scenario: this.scenarioDefinition(),
+      variantId: this.selectedAction === 'enter' ? this.selectedApproach : 'default',
+      selectedModel: this.selectedModel,
+      carPhysics: this.carPhysics,
+      carBounds: this.carBounds,
+      carInfo: this.carInfo,
+    });
+    return replay.game;
   }
 
   private resetObjects() {
     const scenario = this.scenario(), vehiclePlacement = scenarioWorldPlacement(this.origin, scenario.vehicle);
     let vehicleLock: 'locked' | undefined;
     if (this.selectedAction === 'enter' && (scenario as VehicleEntryScenario).locked) vehicleLock = 'locked';
-    const initialVehicle = makePreviewVehicle(this.selectedModel, vehiclePlacement.x, vehiclePlacement.y, 1, vehicleLock);
+    const initialVehicle = makePreviewVehicle(this.selectedModel, vehiclePlacement.x, vehiclePlacement.y, 1, vehicleLock, this.surfaceZ);
     initialVehicle.rotation = vehiclePlacement.rotation;
     const info = this.carInfo.get(this.selectedModel), bounds = vehicleBounds(this.selectedModel, this.carBounds);
     ensureVehicleOccupancy(initialVehicle, info, bounds); this.vehicleState = initialVehicle;
@@ -367,30 +291,47 @@ export class VehicleEntryLab {
 
   private syncPhase(layout: EntryLayout) {
     const state = this.vehicleState.occupants.find(occupant => occupant.id === this.playerState.id)?.state;
-    if (layout.action === 'exit') {
-      if (state === 'exiting') this.phase = 'exiting';
-      else if (this.entryInputSent && this.playerState.vehicleId === undefined) this.phase = 'exited';
-      else if (!layout.selected || this.entryInputSent) this.phase = 'blocked';
+    if (state === 'approaching' || state === 'entering' || state === 'seated' || state === 'exiting') {
+      if (this.phase === 'blocked' && !layout.selected) return;
+      this.phase = state;
       return;
     }
-    if (state === 'approaching' || state === 'entering' || state === 'seated') this.phase = state;
-    else if (!layout.selected || (this.scenario() as VehicleEntryScenario).locked || this.entryInputSent) this.phase = 'blocked';
+    if (this.phase === 'exited' && this.playerState.vehicleId === undefined) return;
+    if (this.phase === 'exiting' && this.playerState.vehicleId === undefined) {
+      this.phase = 'exited';
+      return;
+    }
+    if (!layout.selected || (layout.action === 'enter' && (this.scenario() as VehicleEntryScenario).locked) || this.entryInputSent) this.phase = 'blocked';
   }
 
   /** Advance one fixed authoritative GameWorld tick and send its real input. */
   private stepGame() {
-    if (this.phase === 'blocked' || this.phase === 'exited') return;
-    const layout = this.layout(); if (!layout.selected || !this.game) { this.phase = 'blocked'; return; }
-    const input: Input = { seq: ++this.inputSequence, keys: 0 };
-    if (!this.entryInputSent) {
-      input.action = 'enter';
-      if (layout.action === 'enter') input.vehicleId = this.vehicleState.id;
+    if (this.phase === 'exited' && !this.manualControl) return;
+    const layout = this.layout(); if (!this.game) { this.phase = 'blocked'; return; }
+    let input: Input;
+    if (this.manualControl) {
+      input = this.manualInput.inputForTick(++this.inputSequence);
+    } else {
+      if (!this.entryInputSent) {
+        this.manualInput.queueVehicleToggle();
+      }
+      input = this.manualInput.inputForTick(++this.inputSequence, false);
     }
-    this.entryInputSent = true; this.game.step(new Map([[this.playerState.id, input]]));
+    if (input.action === 'enter') this.entryInputSent = true;
+    this.game.step(new Map([[this.playerState.id, input]]));
     this.playerState = this.game.gameState.playerStates.get(this.playerState.id)!; this.vehicleState = this.game.gameState.vehicleStates.find(vehicle => vehicle.id === 1)!; this.syncPhase(this.layout());
     this.elapsedTicks = Math.min(this.totalTicks, this.elapsedTicks + 1); this.progress = Math.min(1, this.elapsedTicks / this.totalTicks);
+    if (!this.manualControl && this.phase === 'blocked' && this.entryInputSent) {
+      this.playing = false;
+      this.elapsedTicks = this.totalTicks;
+      this.progress = 1;
+    }
     const selectedDoor = this.layout().selected?.door;
-    if ((layout.action === 'enter' && this.phase === 'seated' && (selectedDoor === undefined || (this.vehicleState.doorStates[selectedDoor]?.frame ?? 0) === 0)) || (layout.action === 'exit' && this.playerState.vehicleId === undefined)) { this.playing = false; this.elapsedTicks = this.totalTicks; this.progress = 1; }
+    if ((layout.action === 'enter' && this.phase === 'seated' && (selectedDoor === undefined || (this.vehicleState.doorStates[selectedDoor]?.frame ?? 0) === 0)) || (layout.action === 'exit' && this.playerState.vehicleId === undefined)) {
+      this.elapsedTicks = this.totalTicks;
+      this.progress = 1;
+      if (!this.manualControl) this.playing = false;
+    }
   }
 
   private render() { renderVehicleEntryLab(this); }
@@ -409,7 +350,41 @@ export class VehicleEntryLab {
     if (this.viewerVisible && !this.panel.hidden) this.render();
     this.request = requestAnimationFrame(this.paint);
   };
-  private restart() { this.resetObjects(); this.playing = this.phase !== 'blocked'; this.updatePlayButton(); this.render(); }
+  private setManualControl(enabled: boolean) {
+    this.restart(enabled);
+    if (this.manualControl) this.canvas.focus();
+  }
+  private restart(manualControl = false) {
+    this.manualControl = false;
+    this.manualInput.setEnabled(false);
+    this.resetObjects();
+    this.manualControl = manualControl;
+    this.manualInput.setEnabled(this.manualControl);
+    this.playing = this.manualControl || this.phase !== 'exited';
+    this.manualButton.disabled = false;
+    this.manualButton.textContent = this.manualControl ? 'Scripted replay' : 'Manual control';
+    this.manualButton.setAttribute('aria-pressed', String(this.manualControl));
+    this.updatePlayButton(); this.render();
+  }
+  setScenario(scenario: EntryScenarioId | ExitScenarioId, approach?: EntryApproach) {
+    this.selectedAction = (EXIT_SCENARIO_IDS as readonly string[]).includes(scenario) ? 'exit' : 'enter';
+    this.selectedScenario = scenario;
+    if (this.selectedAction === 'enter') {
+      const availableApproaches = ENTRY_SCENARIO_APPROACHES[scenario as EntryScenarioId];
+      this.selectedApproach = approach && (availableApproaches as readonly string[]).includes(approach) ? approach : availableApproaches[0]!;
+    }
+    const globalScenario = document.querySelector<HTMLSelectElement>('#scenario-select');
+    const value = this.selectedAction === 'enter' ? scenarioOptionValue(scenario as EntryScenarioId, this.selectedApproach) : scenario;
+    if (globalScenario?.querySelector(`option[value="${value}"]`)) globalScenario.value = value;
+    this.restart();
+  }
+  setCarModel(model: number) {
+    if (!this.carInfo.has(model) && !this.carBounds.has(model)) return;
+    this.selectedModel = model;
+    this.modelSelect.value = String(model);
+    this.onModelChange?.(model);
+    this.restart();
+  }
   private updatePlayButton() {
     if (this.playing) this.playButton.textContent = 'Pause';
     else this.playButton.textContent = 'Play';
@@ -427,10 +402,8 @@ export class VehicleEntryLab {
   readonly keydown = (event: KeyboardEvent) => { if (this.panel.hidden) return; if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); this.setOpen(false); } };
   dispose() {
     cancelAnimationFrame(this.request); removeEventListener('keydown', this.keydown, true);
+    this.manualInput.dispose();
     this.mainSpriteEngine.dispose(); this.doorSpriteEngine.dispose();
-    this.patternFloorMaterial.dispose(); this.patternFloorTexture.dispose();
-    this.patternWallMaterial.dispose(); this.patternWallTexture.dispose();
-    this.patternRoofMaterial.dispose(); this.patternRoofTexture.dispose();
     this.mainRenderer.dispose(); this.doorRenderer.dispose();
   }
 }

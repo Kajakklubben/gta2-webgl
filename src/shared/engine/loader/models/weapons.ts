@@ -37,6 +37,9 @@ export interface WeaponDefinition {
   /** Moving objects of this family are destroyed by a water column before
    * they can resolve a hit or explosion. */
   waterDeath?: boolean;
+  /** Source water-cannon dispatch (model 198): extinguishes fire, applies
+   * pedestrian water-hit packets, and never applies a vehicle damage packet. */
+  waterCannon?: boolean;
   /** Vehicle-mounted sources do not all consume the driver's ammo pool. */
   consumesAmmo?: boolean;
   /** Source weapons report a weapon-fired crime/threat event when emitted. */

@@ -96,6 +96,20 @@ class PlanckContact implements PhysicsContact {
 function shapeFor(shape: PhysicsShape): planck.Shape {
   if (shape.type === 'circle') return new planck.CircleShape(shape.radius);
   if (shape.type === 'box') return new planck.BoxShape(shape.halfWidth, shape.halfHeight, shape.center, shape.angle);
+  const thickness = shape.thickness ?? 0;
+  if (thickness > 0) {
+    const dx = shape.end.x - shape.start.x;
+    const dy = shape.end.y - shape.start.y;
+    const length = Math.hypot(dx, dy);
+    if (length > 1e-9) {
+      return new planck.BoxShape(
+        length / 2,
+        thickness / 2,
+        { x: (shape.start.x + shape.end.x) / 2, y: (shape.start.y + shape.end.y) / 2 },
+        Math.atan2(dy, dx),
+      );
+    }
+  }
   return new planck.EdgeShape(shape.start, shape.end);
 }
 

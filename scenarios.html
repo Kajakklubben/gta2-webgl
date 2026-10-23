@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Gameplay Scenarios · Grand Theft Kayak 2</title>
+  <title>__APPLICATION_TITLE__</title>
   <link rel="stylesheet" href="/src/client/ui/ui.css">
   <style>
     body { margin: 0; min-height: 100vh; overflow: auto; background: #111820; color: #ecf2f8; font: 15px system-ui, sans-serif; touch-action: pan-y; -webkit-text-size-adjust: 100%; overscroll-behavior-x: none; }
@@ -11,25 +11,36 @@
     .scenario-page-shell { min-height: 100vh; padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); box-sizing: border-box; }
     #vehicle-entry-lab { position: static; width: min(900px, 100%); max-height: none; margin: 0 auto; }
     #gameplay-scenario-lab { width: 100%; margin: 0; padding: 0; box-sizing: border-box; }
-    .scenario-viewer-mode { display: flex; align-items: center; gap: 6px; color: #b6c9dc; font-size: 12px; }
-    .scenario-viewer-mode select { min-height: 32px; }
+    .scenario-selection-controls { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 8px; margin-bottom: 10px; }
+    .scenario-selection-controls label { display: grid; gap: 3px; color: #b6c9dc; font-size: 12px; }
+    .scenario-selection-controls label[hidden] { display: none; }
     .gameplay-lab-controls { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
     .gameplay-lab-controls label { display: grid; gap: 3px; color: #b6c9dc; font-size: 12px; }
-    .gameplay-lab-actions { display: flex; align-items: center; gap: 8px; margin: 9px 0; color: #c9d7e4; font-size: 12px; }
-    .gameplay-lab-actions span { margin-left: auto; }
-    #gameplay-scenario-lab button { border: 1px solid #6b86a0; border-radius: 5px; padding: 5px 8px; background: #1b3045; color: #fff; }
+    #gameplay-map-levels { min-height: 92px; }
+    .gameplay-debug-toggle { display: flex !important; align-items: center; justify-content: space-between; gap: 8px; }
+    .gameplay-debug-toggle label { display: flex; align-items: center; gap: 4px; }
+    .gameplay-debug-toggle input { accent-color: #e4b55d; }
+    .entry-lab-actions, .gameplay-lab-actions { display: flex; align-items: center; gap: 8px; margin: 9px 0; color: #c9d7e4; font-size: 12px; }
+    .entry-lab-actions span, .gameplay-lab-actions span { margin-left: auto; }
+    #vehicle-entry-lab button, #gameplay-scenario-lab button { border: 1px solid #6b86a0; border-radius: 5px; padding: 5px 8px; background: #1b3045; color: #fff; }
     #gameplay-preview-stage { position: relative; width: 100%; }
-    #gameplay-preview, #gameplay-sprites { display: block; width: 100%; height: auto; box-sizing: border-box; border: 1px solid #3e5870; border-radius: 5px; image-rendering: pixelated; background: #0a1118; }
-    #gameplay-sprites { position: absolute; inset: 0; pointer-events: none; background: transparent; }
+    #gameplay-preview { display: block; width: 100%; height: auto; box-sizing: border-box; border: 1px solid #3e5870; border-radius: 5px; image-rendering: pixelated; background: #0a1118; }
+    .gameplay-surface-selection { display: grid; gap: 5px; margin: 8px 0; padding: 8px 10px; border: 1px solid #e0ad58; border-radius: 5px; background: #111b28ed; color: #ffe6a8; font: 11px/1.35 Consolas, "Courier New", monospace; }
+    .gameplay-surface-selection[hidden] { display: none; }
+    .gameplay-surface-selection summary { cursor: pointer; }
+    .gameplay-surface-selection pre { margin: 8px 0 0; color: #ffe6a8; font: inherit; white-space: pre-wrap; }
     #gameplay-title { margin: 12px 0 4px; font-size: 17px; }
     #gameplay-status, #gameplay-detail { margin: 4px 0; color: #c9d7e4; }
     #gameplay-status { color: #f6ca66; font-weight: 600; }
+    .gameplay-state-output { display: block; margin: 8px 0; padding: 8px 10px; border: 1px solid #72b7d8; border-radius: 5px; background: #111b28ed; color: #dff5ff; font: 11px/1.35 Consolas, "Courier New", monospace; white-space: pre-wrap; }
+    .gameplay-state-output[hidden] { display: none; }
     @media (max-width: 700px) {
       #vehicle-entry-lab { padding: 10px; border-radius: 6px; }
+      .scenario-selection-controls { grid-template-columns: 1fr; }
       .entry-lab-controls { grid-template-columns: 1fr; }
-      .entry-lab-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+      .entry-lab-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; }
       .entry-lab-actions span { grid-column: 1 / -1; margin-left: 0; text-align: right; }
-      .gameplay-lab-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .gameplay-lab-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .gameplay-lab-actions span { grid-column: 1 / -1; margin-left: 0; text-align: right; }
     }
   </style>
@@ -37,20 +48,27 @@
 <body>
   <main class="scenario-page-shell">
     <section id="vehicle-entry-lab" aria-label="Vehicle scenarios" role="main">
-      <div class="entry-lab-header"><strong>Scenarios</strong><label class="scenario-viewer-mode">Viewer <select id="scenario-viewer-mode" aria-label="Scenario viewer"><option value="vehicle">Vehicle entry / exit</option><option value="gameplay">Jump, impact, and water</option></select></label><button id="close-entry-lab" type="button" aria-label="Back to game">Back to game</button></div>
+      <div class="entry-lab-header"><strong>Scenarios</strong><button id="close-entry-lab" type="button" aria-label="Back to game">Back to game</button></div>
+      <div class="scenario-selection-controls">
+        <label>Scenario <select id="scenario-select" aria-label="Scenario"></select></label>
+        <label id="scenario-car-control">Car <select id="entry-car" aria-label="Scenario car"></select></label>
+      </div>
       <div id="vehicle-entry-viewer">
-        <div class="entry-lab-controls"><label>Car <select id="entry-car"></select></label><label>Action <select id="entry-action"></select></label><label>Scenario / approach <select id="entry-scenario-approach"></select></label><label>Simulation speed <select id="entry-speed" aria-label="Vehicle simulation speed"></select></label></div>
+        <div class="entry-lab-controls"><label>Simulation speed <select id="entry-speed" aria-label="Vehicle simulation speed"></select></label></div>
         <details id="entry-property-coverage" class="entry-property-coverage"><summary>Vehicle metadata</summary><div id="entry-property-cases" role="list" aria-label="Vehicle property test cases"></div><p id="entry-property-summary" class="entry-property-summary"></p></details>
-        <div class="entry-lab-actions"><button id="entry-restart" type="button">Reset</button><button id="entry-play" type="button" aria-pressed="true">Pause</button><button id="entry-step" type="button">Step</button><span><output id="entry-progress" aria-label="Progress">0%</output></span></div>
-        <div class="entry-preview-stage"><canvas id="entry-preview" width="900" height="480" aria-label="Vehicle scenario preview"></canvas><canvas id="entry-overlay" width="900" height="480" aria-label="Vehicle scenario diagnostics"></canvas></div>
+        <div class="entry-lab-actions"><button id="entry-restart" type="button">Reset</button><button id="entry-play" type="button" aria-pressed="true">Pause</button><button id="entry-step" type="button">Step</button><button id="entry-manual" type="button" aria-pressed="false">Manual control</button><span><output id="entry-progress" aria-label="Progress">0%</output></span></div>
+        <div class="entry-preview-stage"><canvas id="entry-preview" width="900" height="480" tabindex="0" aria-label="Vehicle scenario preview"></canvas><canvas id="entry-overlay" width="900" height="480" aria-label="Vehicle scenario diagnostics"></canvas></div>
         <div class="entry-door-caption">Door animation</div>
         <div class="entry-door-stage"><canvas id="entry-door-preview" width="900" height="112" aria-label="Selected door animation frames"></canvas><canvas id="entry-door-overlay" width="900" height="112" aria-label="Selected door animation labels"></canvas></div>
         <h2 id="entry-title">Vehicle scenario</h2><p id="entry-status" class="entry-status"></p><p id="entry-detail" class="entry-detail"></p>
       </div>
       <section id="gameplay-scenario-lab" aria-label="Gameplay scenarios" role="region" hidden>
-        <div class="gameplay-lab-controls"><label>Level / replay <select id="gameplay-scenario"></select></label><label>Simulation speed <select id="gameplay-speed" aria-label="Gameplay simulation speed"></select></label></div>
-        <div class="gameplay-lab-actions"><button id="gameplay-restart" type="button">Reset</button><button id="gameplay-play" type="button" aria-pressed="true">Pause</button><button id="gameplay-step" type="button">Step</button><span><output id="gameplay-progress" aria-label="Gameplay scenario progress">0/0</output></span></div>
-        <div id="gameplay-preview-stage"><canvas id="gameplay-preview" width="900" height="480" aria-label="Gameplay scenario map preview"></canvas><canvas id="gameplay-sprites" width="900" height="480" aria-label="Gameplay actor graphics"></canvas></div>
+        <div class="gameplay-lab-controls"><label>Simulation speed <select id="gameplay-speed" aria-label="Gameplay simulation speed"></select></label><label>Enabled map levels (Cmd/Ctrl-click to toggle) <select id="gameplay-map-levels" multiple size="4" aria-label="Enabled map levels"></select></label><div class="gameplay-debug-toggle" aria-label="Debug"><span>Debug</span><label><input id="gameplay-select-surface" type="checkbox" checked> Select surface</label><label><input id="gameplay-show-player-state" type="checkbox"> Show player/car state</label><label><input id="gameplay-show-car-state" type="checkbox"> Show car state</label></div></div>
+        <div class="gameplay-lab-actions"><button id="gameplay-restart" type="button">Reset</button><button id="gameplay-play" type="button" aria-pressed="true">Pause</button><button id="gameplay-step" type="button">Step</button><button id="gameplay-manual" type="button" aria-pressed="false">Manual control</button><span><output id="gameplay-progress" aria-label="Gameplay scenario progress">0/0</output></span></div>
+        <div id="gameplay-preview-stage"><canvas id="gameplay-preview" width="900" height="480" tabindex="0" aria-label="Gameplay scenario world preview"></canvas></div>
+        <output id="gameplay-player-state-overlay" class="gameplay-state-output" hidden aria-label="Current player and vehicle state"></output>
+        <output id="gameplay-car-state-overlay" class="gameplay-state-output" hidden aria-label="Current car state"></output>
+        <output id="gameplay-surface-selection" class="gameplay-surface-selection" hidden aria-label="Selected gameplay surfaces"></output>
         <h2 id="gameplay-title">Gameplay scenario</h2><p id="gameplay-status" class="entry-status"></p><p id="gameplay-detail" class="entry-detail"></p>
       </section>
     </section>

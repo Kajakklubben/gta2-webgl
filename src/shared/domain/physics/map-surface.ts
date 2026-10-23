@@ -1,4 +1,4 @@
-import type { Block, GameMap } from '../../loader/map-parser';
+import type { Block, GameMap } from '../../engine/loader/map-parser';
 import { GTA2SlopeType } from '../world/gta2-enums';
 import { WORLD } from '../world/world';
 

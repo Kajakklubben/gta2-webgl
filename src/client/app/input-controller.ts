@@ -1,22 +1,42 @@
 import { clearPlayerInputState, type LocalPlayerInputState } from './player-input';
 import { cameraKeys, localPlayerKeyCodes, weaponKeyActions } from './input-bindings';
-import { isGameMenuOpen, setGameMenuOpen } from './main-ui';
+import { handleMenuEscape, isMenuOpen, setGameMenuOpen } from './main-ui';
 
 export function installInputController(options: {
   players: readonly LocalPlayerInputState[];
   getLocalSplitScreen: () => boolean;
   getMultiplayerMode: () => boolean;
+  getCameraDetached: () => boolean;
+  onCameraTilt: (direction: -1 | 1) => void;
   onPauseChanged: (paused: boolean) => void;
   roomState: HTMLElement;
 }) {
-  const { players, getLocalSplitScreen, getMultiplayerMode, onPauseChanged, roomState } = options;
+  const { players, getLocalSplitScreen, getMultiplayerMode, getCameraDetached, onCameraTilt, onPauseChanged, roomState } = options;
   const clear = () => { for (const player of players) clearPlayerInputState(player); };
   const localPlayerIndexForKey = (code: string) => getLocalSplitScreen() && localPlayerKeyCodes[1]!.has(code) ? 1 : 0;
+  const isCameraTiltModifier = (code: string) => getCameraDetached() && !getLocalSplitScreen() && (code === 'ShiftLeft' || code === 'ShiftRight');
+  const cameraTiltDirection = (event: KeyboardEvent): -1 | 1 | undefined => {
+    if (!getCameraDetached() || getLocalSplitScreen() || !event.shiftKey) return undefined;
+    if (event.code === 'KeyW') return -1;
+    if (event.code === 'KeyS') return 1;
+    return undefined;
+  };
   const keydown = (event: KeyboardEvent) => {
     if (event.code === 'Escape') {
       event.preventDefault(); clear();
-      const open = !isGameMenuOpen(); setGameMenuOpen(open);
-      if (!getMultiplayerMode()) onPauseChanged(open);
+      if (!handleMenuEscape()) setGameMenuOpen(true);
+      if (!getMultiplayerMode()) onPauseChanged(isMenuOpen());
+      return;
+    }
+    if (isMenuOpen()) return;
+    if (isCameraTiltModifier(event.code)) {
+      event.preventDefault();
+      return;
+    }
+    const tiltDirection = cameraTiltDirection(event);
+    if (tiltDirection !== undefined) {
+      event.preventDefault();
+      if (!event.repeat) onCameraTilt(tiltDirection);
       return;
     }
     const playerIndex = localPlayerIndexForKey(event.code);
@@ -34,6 +54,11 @@ export function installInputController(options: {
     }
   };
   const keyup = (event: KeyboardEvent) => {
+    if (isMenuOpen()) return;
+    if (isCameraTiltModifier(event.code)) {
+      event.preventDefault();
+      return;
+    }
     const playerIndex = localPlayerIndexForKey(event.code);
     const player = players[playerIndex]!;
     if (player.maskBindings[event.code] !== undefined || cameraKeys.has(event.code) || localPlayerKeyCodes[playerIndex]!.has(event.code)) {

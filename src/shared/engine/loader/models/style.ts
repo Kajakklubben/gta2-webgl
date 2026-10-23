@@ -1,10 +1,8 @@
 /** Decoded structures produced from a GTA2 style asset. */
 
-export interface Pixels {
-  width: number;
-  height: number;
-  data: Uint8Array;
-}
+import type { Pixels } from '../../assets/pixels';
+
+export type { Pixels } from '../../assets/pixels';
 
 export interface CarDoor {
   /** Encoded source coordinate. Values at or beyond +/-64 carry the straight-in flag. */
@@ -78,6 +76,11 @@ export interface MapObjectDefinition {
   hasShadows: boolean;
   /** Number of source ticks before an animated map-object frame advances. */
   frameTicks: number;
+  /** Initial Object_2C animation timer. Positive values make a source
+   * animation finite; negative values loop until another source event. */
+  animationTimer?: number | undefined;
+  /** Source Object_2C callback invoked by the 50-tick explosion window. */
+  explosionReaction?: 'remove' | 'detonate' | undefined;
 }
 
 export interface PedSpriteSet {

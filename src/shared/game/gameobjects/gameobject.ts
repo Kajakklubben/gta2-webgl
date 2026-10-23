@@ -1,6 +1,7 @@
-import { collisionId, defaultCollisionCategory, type CollisionBody, type CollisionQuery } from '../physics/collision-world';
-import type { PhysicsBody } from '../../engine/physics-world';
-import type { SpatialPlacement, SpatialRenderHint } from '../../engine/spatial-depth';
+import type { CollisionBody, CollisionQuery } from '../physics/collision-world';
+import { defaultCollisionCategory } from '../../domain/physics/collision-rules';
+import { GameObject as EngineGameObject, type EngineCollisionShape, type EngineGameObjectCollision, type EngineGameObjectId, type EngineGameObjectPlacement, type EnginePhysicsReadOptions } from '../../engine/game-object';
+import type { PresentationSlot } from '../../engine/presentation-order';
 import type { SurfaceResult } from '../../domain/physics/map-surface';
 import type { HazardState, NpcState, PlayerState, WorldEventInput } from '../../protocol/types';
 import type { WeaponSystem } from '../../domain/combat/weapon-system';
@@ -13,33 +14,9 @@ import type { PlayerObject } from './player';
 import type { VehicleObject } from './vehicle';
 import type { StaticMapObject } from './map-object';
 
-export type CollisionShape = { type: 'box'; width: number; height: number } | { type: 'circle'; radius: number };
-export interface GameObjectCollision {
-  readonly shape: CollisionShape;
-  readonly solid?: boolean;
-  /** Zero is immovable; positive weights share separation between movable objects. */
-  readonly weight?: number;
-  /** Native solver contact response. Defaults match GTA2's non-bouncy ped objects. */
-  readonly restitution?: number;
-  readonly friction?: number;
-  /** Keep circles/ped bodies upright; vehicle boxes may opt into native yaw. */
-  readonly fixedRotation?: boolean;
-  readonly category?: number;
-  readonly mask?: number;
-}
-
-interface ResolvedGameObjectCollision {
-  readonly shape: CollisionShape;
-  readonly solid: boolean;
-  readonly weight: number;
-  readonly restitution: number;
-  readonly friction: number;
-  readonly fixedRotation: boolean;
-  readonly category: number;
-  readonly mask: number;
-}
-
-export type GameObjectId = string | number;
+export type CollisionShape = EngineCollisionShape;
+export type GameObjectCollision = EngineGameObjectCollision;
+export type GameObjectId = EngineGameObjectId;
 export type GameObjectKind = 'player' | 'vehicle' | 'pickup' | 'projectile' | 'npc' | 'hazard' | 'map-object';
 export type GameObjectKey = string;
 
@@ -48,7 +25,7 @@ export function gameObjectKey(kind: GameObjectKind, id: GameObjectId): GameObjec
 }
 
 /** Canonical world placement shared by every placed game object. */
-export interface GameObjectPlacement extends SpatialPlacement {}
+export type GameObjectPlacement = EngineGameObjectPlacement;
 
 /** Engine-facing sprite description consumed by the client renderer. */
 export type SpriteAtlas = 'player' | 'cars' | 'codeObjects' | 'objects';
@@ -77,6 +54,13 @@ export interface CarSpriteLights {
   readonly headlights?: boolean;
   readonly brakeLights?: boolean;
   readonly emergencyLights?: boolean;
+}
+/** A transient source light attached to a rendered game-object layer. The
+ * shared game only describes it; the browser renderer owns the light object. */
+export interface GameObjectLight {
+  readonly color: number;
+  readonly radius: number;
+  readonly intensity: number;
 }
 export interface GameObjectSpriteAttachment {
   readonly sprite: GameObjectSpriteLayer;
@@ -142,14 +126,14 @@ export interface GameObjectSpriteLayer {
   readonly pedRemap?: number;
   readonly placement: GameObjectPlacement;
   readonly opacity?: number;
-  readonly depthTest?: boolean;
-  readonly depthWrite?: boolean;
   readonly alphaTest?: number;
-  /** Semantic intent resolved by the client renderer. */
-  readonly renderDepth?: SpatialRenderHint;
+  /** Semantic map level/band/priority intent resolved by the presentation adapter. */
+  readonly presentation?: PresentationSlot;
   /** Source sprite blend mode for presentation layers. */
   readonly blending?: 'normal' | 'additive';
   readonly fallbackColor?: number;
+  /** Optional renderer-owned dynamic light following this layer. */
+  readonly light?: GameObjectLight;
   /** Presentation scale relative to the decoded source pixels. */
   readonly scale?: number;
   /** Mirror the decoded sprite around its local horizontal axis. */
@@ -194,6 +178,12 @@ export interface GameObjectCombatContext {
   canPlaceHazard(x: number, y: number, z: number): boolean;
   surfaceAt(x: number, y: number, z: number): SurfaceResult;
   queryCircle(query: CollisionQuery): readonly CollisionBody[];
+  /** Optional map raycast used by Explosion_30 to hide targets behind walls. */
+  isExplosionOccluded?: (origin: { x: number; y: number; z: number }, target: { x: number; y: number; z: number }, entity: { kind: 'player' | 'npc' | 'vehicle'; id: string | number }) => boolean;
+  /** Static MOBJ query kept separate from dynamic physics bodies. */
+  queryExplosionObjects?: (query: CollisionQuery) => readonly CollisionBody[];
+  /** Object_2C::OnExplosionNearby dispatch for source-reactive map objects. */
+  onExplosionNearby?: (object: CollisionBody, source: { actor: string; explosionType: number }) => void;
   findPlayer(id: string): PlayerObject | undefined;
   findVehicle(id: number): VehicleObject | undefined;
   findNpc(id: number): NpcObject | undefined;
@@ -201,6 +191,8 @@ export interface GameObjectCombatContext {
   killNpc(target: NpcObject): void;
   damagePlayer(target: PlayerObject, damage: number, killer?: string, cause?: PlayerState['deathCause']): void;
   damageVehicle(target: VehicleObject, damage: number, x?: number, y?: number, sourceModel?: number, attacker?: string): void;
+  /** Source model 198 clears attached vehicle fire without repairing damage. */
+  extinguishVehicleFire(target: VehicleObject): void;
   damageNpc(target: NpcObject, damage: number, killer?: string, sourceModel?: number, impactRotation?: number, cause?: NpcState['deathCause']): void;
   readonly isWaterAt: (point: { x: number; y: number; z: number }) => boolean;
   raiseWanted(player: PlayerObject): void;
@@ -212,13 +204,13 @@ export interface GameObjectCombatContext {
  * actually need. */
 export type ProjectileCombatContext = Pick<GameObjectCombatContext,
   'authoritative' | 'weaponSystem' | 'nextHazardId' | 'spawnEffect' | 'surfaceAt' | 'findPlayer' |
-  'findVehicle' | 'findNpc' | 'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'raiseWanted' | 'queryCircle' | 'emit'>;
+  'findVehicle' | 'findNpc' | 'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'raiseWanted' | 'queryCircle' | 'isWaterAt' | 'emit'>;
 export type ProjectileImpactContext = Pick<GameObjectCombatContext,
   'authoritative' | 'weaponSystem' | 'findPlayer' | 'findVehicle' | 'findNpc' |
-  'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'raiseWanted' | 'emit' | 'nextHazardId' | 'spawnEffect'>;
+  'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'extinguishVehicleFire' | 'raiseWanted' | 'emit' | 'nextHazardId' | 'spawnEffect'>;
 export type HazardCombatContext = Pick<GameObjectCombatContext,
   'authoritative' | 'weaponSystem' | 'nextHazardId' | 'spawnEffect' | 'queryCircle' | 'findPlayer' | 'findVehicle' | 'findNpc' |
-  'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'emit'>;
+  'damagePlayer' | 'damageVehicle' | 'damageNpc' | 'isWaterAt' | 'emit'> & Pick<GameObjectCombatContext, 'isExplosionOccluded' | 'queryExplosionObjects' | 'onExplosionNearby'>;
 export type PlayerDamageContext = Pick<GameObjectCombatContext, 'damagePlayer' | 'emit' | 'spawnEffect'>;
 export type VehicleCollisionContext = Pick<GameObjectCombatContext, 'damageVehicle'>;
 
@@ -251,12 +243,7 @@ export interface GameObjectWorld {
  * replicated state. The coordinate/velocity transfer itself belongs to the
  * common object adapter; individual objects only opt out of fields their
  * body does not own. */
-export interface PhysicsReadOptions {
-  readonly updateRotation?: boolean;
-  readonly updateAngularVelocity?: boolean;
-  readonly updateSpeed?: boolean;
-  readonly afterRead?: () => void;
-}
+export type PhysicsReadOptions = EnginePhysicsReadOptions;
 
 /** Shared state view available to every registered object. The concrete
  * GameState adds typed collections, while this narrow contract keeps object
@@ -280,106 +267,16 @@ export interface GameStateAccess extends GameObjectWorld {
 }
 
 /** Common lifecycle for every simulated/rendered world entity. */
-export abstract class GameObject<TState extends object, TId extends GameObjectId = GameObjectId> {
-  private collisionConfig: readonly Readonly<ResolvedGameObjectCollision>[] = [];
-  /** Collision configuration is hidden from systems; subclasses set it during construction or behavior setup. */
-  get collision(): readonly Readonly<ResolvedGameObjectCollision>[] { return this.collisionConfig; }
-  protected set collision(value: GameObjectCollision) {
-    this.collisionConfig = [Object.freeze({
-      ...value,
-      shape: Object.freeze({ ...value.shape }),
-      solid: value.solid ?? true,
-      weight: value.weight ?? 1,
-      restitution: value.restitution ?? 0,
-      friction: value.friction ?? 0,
-      fixedRotation: value.fixedRotation ?? true,
-      category: value.category ?? defaultCollisionCategory(this.kind),
-      mask: value.mask ?? 0xffff,
-    })];
-  }
+export abstract class GameObject<TState extends object, TId extends GameObjectId = GameObjectId> extends EngineGameObject<TState, TId, GameObjectKind> {
   private worldObject: GameStateAccess | undefined = undefined;
-  get collisionEnabled() { return true; }
-  get blockingWeight() {
-    const first = this.collision[0];
-    if (!first) return 1;
-    return first.weight;
-  }
-
-  private readonly stateData: TState;
 
   protected constructor(
-    readonly id: TId,
+    id: TId,
     state: TState,
-    readonly kind: GameObjectKind,
-  ) { this.stateData = state; }
+    kind: GameObjectKind,
+  ) { super(id, state, kind); }
 
-  /**
-   * Authoritative state is exposed as a read-only view. Behaviours use
-   * `mutableState`; adapters that still need to bridge legacy state APIs use
-   * an explicit object method instead of assigning through this getter.
-   */
-  get state(): Readonly<TState> { return this.stateData; }
-  protected get mutableState(): TState { return this.stateData; }
-
-  /** Physics adapters read velocity through the common object boundary. */
-  readPhysicsVelocity(): { vx?: number; vy?: number; angularVelocity?: number } {
-    const state = this.stateData as { vx?: number; vy?: number; angularVelocity?: number };
-    const result: { vx?: number; vy?: number; angularVelocity?: number } = {};
-    if (state.vx !== undefined) result.vx = state.vx;
-    if (state.vy !== undefined) result.vy = state.vy;
-    if (state.angularVelocity !== undefined) result.angularVelocity = state.angularVelocity;
-    return result;
-  }
-
-  /** Self-action used by physics and collision adapters; callers cannot assign
-   * the object's state fields directly. */
-  protected setVelocity(vx: number, vy: number): void {
-    const state = this.stateData as { vx?: number; vy?: number };
-    if ('vx' in state) state.vx = vx;
-    if ('vy' in state) state.vy = vy;
-  }
-
-  /** Read an adapter body result into the object's canonical placement and
-   * velocity. Surface resolution and other object-specific consequences are
-   * supplied as a callback after the common transfer is complete. */
-  readPhysics(
-    body: PhysicsBody,
-    physicsToWorld: (value: number) => number,
-    options: PhysicsReadOptions = {},
-  ) {
-    const state = this.mutableState as {
-      x: number;
-      y: number;
-      vx?: number;
-      vy?: number;
-      rotation?: number;
-      angularVelocity?: number;
-      speed?: number;
-    };
-    const position = body.getPosition();
-    const velocity = body.getLinearVelocity();
-    state.x = physicsToWorld(position.x);
-    state.y = -physicsToWorld(position.y);
-    if ('vx' in state) state.vx = physicsToWorld(velocity.x);
-    if ('vy' in state) state.vy = -physicsToWorld(velocity.y);
-    if (options.updateRotation !== false && 'rotation' in state) {
-      state.rotation = ((-body.getAngle() % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
-    }
-    if (options.updateAngularVelocity !== false && 'angularVelocity' in state) state.angularVelocity = -body.getAngularVelocity();
-    if (options.updateSpeed !== false && 'speed' in state && typeof state.rotation === 'number' && typeof state.vx === 'number' && typeof state.vy === 'number') {
-      state.speed = state.vx * (-Math.sin(state.rotation)) + state.vy * Math.cos(state.rotation);
-    }
-    options.afterRead?.();
-  }
-
-  /** Physics adapters write the solved pose and velocity through one method. */
-  applyPhysicsResult(pose: GameObjectPlacement, velocity: { vx?: number; vy?: number; angularVelocity?: number }): void {
-    this.placement = pose;
-    const state = this.stateData as { vx?: number; vy?: number; angularVelocity?: number };
-    if (velocity.vx !== undefined && state.vx !== undefined) state.vx = velocity.vx;
-    if (velocity.vy !== undefined && state.vy !== undefined) state.vy = velocity.vy;
-    if (velocity.angularVelocity !== undefined && state.angularVelocity !== undefined) state.angularVelocity = velocity.angularVelocity;
-  }
+  protected override defaultCollisionCategory() { return defaultCollisionCategory(this.kind); }
 
   get key(): GameObjectKey { return gameObjectKey(this.kind, this.id); }
 
@@ -418,22 +315,6 @@ export abstract class GameObject<TState extends object, TId extends GameObjectId
    * that object's action methods. */
   protected get gameState(): GameState { return this.requireWorld() as GameState; }
 
-  /** Read/write placement adapter over the flat protocol state. */
-  get placement(): Readonly<GameObjectPlacement> {
-    const pose = this.mutableState as Partial<GameObjectPlacement>;
-    const layer = (this.mutableState as { collisionLayer?: number }).collisionLayer;
-    const result: GameObjectPlacement = { x: pose.x ?? 0, y: pose.y ?? 0, z: pose.z ?? 0, rotation: pose.rotation ?? 0 };
-    if (layer !== undefined) result.layer = layer;
-    return result;
-  }
-  protected set placement(value: GameObjectPlacement) {
-    const pose = this.mutableState as Partial<GameObjectPlacement>;
-    pose.x = value.x; pose.y = value.y; pose.z = value.z; pose.rotation = value.rotation;
-    const state = this.mutableState as { collisionLayer?: number };
-    if (value.layer === undefined) delete state.collisionLayer;
-    else state.collisionLayer = value.layer;
-  }
-
   abstract update(context: GameObjectUpdateContext): void;
   getSprite(_now: number): GameObjectSprite { throw new Error(`Game object ${this.key} has no sprite`); }
   get isRenderable() { return this.getSprite !== GameObject.prototype.getSprite; }
@@ -444,38 +325,11 @@ export abstract class GameObject<TState extends object, TId extends GameObjectId
    * animation metadata) intact while preventing a later top-level world
    * write from mutating an already-submitted draw command.
    */
-  protected getRenderState(): Readonly<TState> { return { ...this.stateData }; }
+  protected getRenderState(): Readonly<TState> { return { ...this.state }; }
 
   draw(context: GameObjectDrawContext): void {
     if (!this.isRenderable) return;
     context.submit({ kind: this.kind, id: this.id, key: this.key, state: this.getRenderState(), sprite: this.getSprite(context.now) });
-  }
-
-  /** A common collision descriptor used by the authoritative world runtime. */
-  getCollider(): CollisionBody[] {
-    const config = this.collision[0];
-    if (!config) return [];
-    const pose = { ...this.placement };
-    const shape = config.shape;
-    const base = {
-      id: collisionId(this.kind, this.id), objectId: this.id, kind: this.kind,
-      x: pose.x, y: pose.y, z: pose.z,
-      category: config.category, mask: config.mask,
-      solid: config.solid, active: this.collisionEnabled, blockingWeight: this.blockingWeight,
-      restitution: config.restitution, friction: config.friction,
-      fixedRotation: config.fixedRotation, object: this,
-    };
-    const withLayer = <T extends object>(value: T): T & { layer?: number } => {
-      if (pose.layer === undefined) return value;
-      return { ...value, layer: pose.layer };
-    };
-    let radius: number;
-    if (shape.type === 'circle') radius = shape.radius;
-    else radius = Math.hypot(shape.width, shape.height) / 2;
-    if (shape.type === 'box') {
-      return [withLayer({ ...base, radius, box: { width: shape.width, height: shape.height, rotation: pose.rotation } })];
-    }
-    return [withLayer({ ...base, radius })];
   }
 
 }

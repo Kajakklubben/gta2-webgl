@@ -8,8 +8,10 @@ export class PickupObject extends StatefulGameObject<PickupState, number> {
   constructor(state: PickupState, update?: GameObjectUpdateHandler<PickupState>) { super(state.id, state, 'pickup', update); this.collision = { shape: { type: 'circle', radius: 0 }, solid: false, mask: COLLISION_CATEGORY.player | COLLISION_CATEGORY.vehicle }; }
   override get collisionEnabled() { return this.mutableState.active; }
   /** Consume this pickup through the player's action surface. */
-  collect(player: PlayerObject, ammo: number) {
+  collect(player: PlayerObject, ammo: number, equip = true) {
+    const previousWeapon = player.activeWeapon;
     if (!this.mutableState.active || !player.collectPickup(this.mutableState.weapon, ammo)) return false;
+    if (!equip) player.mutablePlayerState.combat.weapon = previousWeapon;
     this.mutableState.active = false;
     return true;
   }
@@ -22,8 +24,8 @@ export class PickupObject extends StatefulGameObject<PickupState, number> {
       animation: 'rotate', frameMs: 120,
       placement: this.placement,
       opacity: this.mutableState.active ? 1 : 0,
-      depthTest: true, depthWrite: false, alphaTest: .01,
-      renderDepth: { band: 'ground' },
+      alphaTest: .01,
+      presentation: { band: 'object' },
       fallbackColor: 0x55d6ff,
     };
   }

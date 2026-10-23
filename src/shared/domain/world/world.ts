@@ -204,6 +204,11 @@ export const WORLD = {
     bulletSpeed: 0xCCC / SOURCE_FIX16_ONE * TICK_RATE,
     /** Particle_8's flame stream advances by dword_6FD2E8=Fix16(0x666). */
     flameSpeed: 0x666 / SOURCE_FIX16_ONE * TICK_RATE,
+    /** Particle_4C state 31 survives through the source terminal flame state. */
+    flameSegmentLifetimeTicks: 27,
+    /** Explosion_30::EmitFireTrail_5 changes forever to a 20-tick ground fire
+     * once the attached moving object has stopped. */
+    molotovFireTicks: 20,
     /** ObjectDefinitions_8CA8: rocket 128 and shotgun 192 use Fix16(0x1999). */
     rocketSpeed: 0x1999 / SOURCE_FIX16_ONE * TICK_RATE,
     /** The electro baton object uses the source's intermediate object speed;
@@ -228,10 +233,12 @@ export const WORLD = {
       carriedVelocity: 0x340,
       /** NewMovingObjUnlessBlocked receives dword_706CF0 as z speed. */
       verticalSpeed: (0x666 / 0x4000) * TICK_RATE,
-      /** Object_2C::gravity is -dword_706F64, dword_706F64=0x20. */
+      /** Object_5C initializes Object_3C::field_1C_z_accel to
+       * kObjectGravity_6F8DA8 = Fix16(-0x8).  dword_706F64=0x20 is the
+       * throw friction argument, not the airborne gravity. */
       // Object_2C::z is stored in map-layer units, unlike x/y which are
       // rendered pixels.  Do not apply the tile-size conversion here.
-      gravity: -(0x20 / SOURCE_FIX16_ONE) * TICK_RATE * TICK_RATE,
+      gravity: -(0x8 / SOURCE_FIX16_ONE) * TICK_RATE * TICK_RATE,
     },
     /** Keep impacts visible even for short-range weapons. */
     minimumTravelTicks: 8,

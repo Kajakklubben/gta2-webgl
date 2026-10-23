@@ -12,22 +12,6 @@ export interface SpatialPlacement {
   layer?: number;
 }
 
-/** Semantic presentation intent. Concrete render backends resolve this to
- * world-space depth and a backend-specific sort key. */
-export type SpatialRenderBand = 'map' | 'ground' | 'actor' | 'vehicle' | 'effect' | 'overlay';
-export type SpatialRenderRelation = 'normal' | 'behind-vehicle' | 'above-vehicle';
-
-export interface SpatialRenderHint {
-  /** Optional semantic pass; the renderer owns the numeric pass ordering. */
-  readonly band?: SpatialRenderBand;
-  /** Visual lift above the physics-resolved support surface. */
-  readonly elevation?: number;
-  /** Authored source draw layer, not a backend renderOrder. */
-  readonly sourceLayer?: number;
-  /** Relative occlusion intent resolved by the renderer. */
-  readonly relation?: SpatialRenderRelation;
-}
-
 /** Result produced by a renderer's spatial depth adapter. */
 export interface ResolvedSpatialDepth {
   readonly worldZ: number;

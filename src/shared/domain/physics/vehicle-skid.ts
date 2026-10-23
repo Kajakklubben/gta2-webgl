@@ -1,6 +1,41 @@
 import { SOURCE_FIX16_ONE, WORLD } from '../world/world';
 import { directionFromRotation, rotationFromDirection, type Vector2 } from './motion-vector';
 
+/** CarPhysics_B0 keeps an oil-spin state for thirty source frames. */
+export const SOURCE_OIL_SPIN_TICKS = 30;
+
+/** Weapon_30 places oil ten pixels to one side of the rear drop point. */
+export const SOURCE_OIL_DROP_SIDE_OFFSET = 10;
+/** The oil object is dropped 24 pixels behind the sprite's rear edge. */
+export const SOURCE_OIL_DROP_REAR_PADDING = 24;
+/** Weapon_30's mine placement uses a one-pixel rear clearance and 18 pixels
+ * of source object offset before adding half the chassis height. */
+export const SOURCE_MINE_DROP_REAR_CLEARANCE = 1;
+export const SOURCE_MINE_DROP_REAR_PADDING = 18;
+
+/** Oil removes most of the authored lateral wheel grip while the vehicle is
+ * crossing the object.  The remaining grip keeps the chassis deterministic
+ * and lets the source forced steering produce the spin rather than teleporting
+ * its heading. */
+export const SOURCE_OIL_GRIP_SCALE = 0.2;
+
+/** CarPhysics_B0 points the front/rear contact forces thirty degrees apart
+ * while field_A0_oil_spin_dir is active. */
+export const SOURCE_OIL_STEER_ANGLE = Math.PI / 6;
+
+/** The retail object collision path excludes train chassis from oil spin. */
+export function isSourceTrainModel(model: number | undefined) {
+  return model === 6 || model === 59 || model === 60 || model === 61;
+}
+
+/** The executable chooses a direction once when the timer is armed and keeps
+ * it for the whole spin.  A stable id-derived bit gives the server and client
+ * the same result without introducing a second random stream. */
+export function sourceOilSpinDirection(vehicleId: number): -1 | 1 {
+  const seed = (Math.imul(Math.abs(Math.trunc(vehicleId)) + 1, 1103515245) + 12345) >>> 0;
+  return (seed & 2) === 0 ? 1 : -1;
+}
+
 /** The source uses four remembered contact points in this order:
  * rear-left, rear-right, front-right, front-left. */
 export type VehicleSkidWheel = 0 | 1 | 2 | 3;

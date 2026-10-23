@@ -108,6 +108,19 @@ export interface CombatState {
 }
 export interface PickupState { id: number; x: number; y: number; z: number; weapon: number; ammo: number; active: boolean; collisionLayer?: number | undefined }
 export type TrafficAiState = 'cruise' | 'yield' | 'brake' | 'turn' | 'stuck' | 'wrecked';
+/** Authoritative controller owner for a vehicle. `inactive` is used while a
+ * player owns the driver seat; it is intentionally distinct from a stopped
+ * or blocked AI car. */
+export type TrafficAiMode = 'inactive' | 'ordinary' | 'scripted' | 'chase' | 'emergency' | 'service';
+/** Source-style high-level task. The task is authoritative metadata, not a
+ * client command, and is optional so old snapshots remain readable. */
+export type TrafficAiTask = 'none' | 'follow-road' | 'route' | 'goto' | 'chase' | 'service' | 'abandoned';
+export type TrafficDirection = 'none' | 'north' | 'south' | 'east' | 'west';
+export type TrafficPlannedTurn = 'none' | 'left' | 'right' | 'u-turn';
+/** Source lane offsets are -2, -1, 0, 1, and 2. */
+export type TrafficLaneTarget = -2 | -1 | 0 | 1 | 2;
+export type TrafficLaneAlignment = 'unknown' | 'left' | 'center' | 'right';
+export type TrafficSpeedClass = 'slow' | 'medium' | 'fast';
 export interface TrafficState {
   id: number; x: number; y: number; z: number; rotation: number; speed: number; color: number;
   health: number; model?: number | undefined;
@@ -121,8 +134,22 @@ export interface TrafficState {
    * the derived presentation phase. `health` remains the public 0..100
    * compatibility value used by older clients. */
   damage?: number | undefined; damageLevel?: number | undefined; damagePhase?: VehicleDamagePhase | undefined;
+  /** Water-cannon suppression persists while the source vehicle remains in a
+   * burning damage phase; the next fire stream clears it. */
+  fireExtinguished?: boolean | undefined;
   /** Source-style AI and vehicle presentation state. */
   aiState?: TrafficAiState | undefined; routeNode?: number | undefined; targetNode?: number | undefined; junction?: number | undefined; signal?: 'green' | 'red' | 'none' | undefined;
+  /** Optional authoritative controller state. These fields are deliberately
+   * optional for compatibility with older snapshots and parked-car fixtures. */
+  aiActive?: boolean | undefined; aiMode?: TrafficAiMode | undefined; aiTask?: TrafficAiTask | undefined;
+  routeId?: number | undefined; routeCursor?: number | undefined;
+  arrowCursor?: number | undefined; arrowRun?: number | undefined;
+  currentDirection?: TrafficDirection | undefined; targetDirection?: TrafficDirection | undefined;
+  plannedTurn?: TrafficPlannedTurn | undefined;
+  laneTarget?: TrafficLaneTarget | undefined; laneAlignment?: TrafficLaneAlignment | undefined;
+  targetSpeed?: number | undefined; speedClass?: TrafficSpeedClass | undefined;
+  yieldTimer?: number | undefined; obstacleTimer?: number | undefined; offRoadTimer?: number | undefined;
+  allowSpecialRoute?: boolean | undefined;
   /** Public-transport service metadata. Ordinary traffic keeps this absent. */
   transport?: 'bus' | 'train' | undefined; serviceStop?: number | undefined; pursuitTarget?: string | undefined;
   brakeLights?: boolean | undefined; headlights?: boolean | undefined; emergencyLights?: boolean | undefined; horn?: boolean | undefined; doors?: number | undefined;
@@ -191,7 +218,7 @@ export interface NpcState {
   deathCause?: 'weapon' | 'run-over' | 'explosion' | 'fire' | 'water' | undefined;
   vehicleId?: number | undefined;
 }
-export interface HazardState { id: number; x: number; y: number; z: number; kind: 'slick' | 'mine' | 'fire' | 'blood' | 'impact' | 'skid' | 'water'; life: number; owner?: string | undefined; collisionLayer?: number | undefined; /** Distinguishes one-shot blast visuals from persistent fire when no source model is present. */ effect?: 'fire' | 'explosion' | undefined; /** Source explosion family: 18/32 small, 19 item/car, or 20 large. */ explosionType?: 'small' | 'item' | 'large' | undefined; /** Authored code-object model for source-specific fire/explosion effects. */ sourceModel?: number | undefined; /** Remaining Explosion_30 timer when this is a source-timed blast. */ sourceTimer?: number | undefined; /** Countdown for an attached source object before it triggers its transition. */ armingTimer?: number | undefined; /** Vehicle that owns an attached source object such as a normal car bomb. */ vehicleId?: number | undefined; rotation?: number | undefined; scale?: number | undefined; variant?: number | undefined }
+export interface HazardState { id: number; x: number; y: number; z: number; kind: 'slick' | 'mine' | 'fire' | 'blood' | 'impact' | 'skid' | 'water'; life: number; owner?: string | undefined; collisionLayer?: number | undefined; /** Distinguishes one-shot blast visuals from persistent fire when no source model is present. */ effect?: 'fire' | 'explosion' | undefined; /** Source explosion family: 18/32 small, 19 item/car, or 20 large. */ explosionType?: 'small' | 'item' | 'large' | undefined; /** Exact Explosion_30 type used for wall-side dispatch and vehicle immunity. */ sourceExplosionType?: number | undefined; /** Authored code-object model for source-specific fire/explosion effects. */ sourceModel?: number | undefined; /** Remaining Explosion_30 timer when this is a source-timed blast. */ sourceTimer?: number | undefined; /** Countdown for an attached source object before it triggers its transition. */ armingTimer?: number | undefined; /** Vehicle that owns an attached source object such as a normal car bomb. */ vehicleId?: number | undefined; rotation?: number | undefined; scale?: number | undefined; variant?: number | undefined }
 export interface MatchState { room: string; status: 'lobby' | 'playing' | 'finished'; maxPlayers: number; elapsed: number; ready: number }
 export interface ChatMessage { id: number; sender: string; name: string; text: string; tick: number }
 interface WorldEventPosition { id: number; tick: number; x: number; y: number; z: number }

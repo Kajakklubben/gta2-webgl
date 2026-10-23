@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { GameWorld } from '../../shared/game/game-world';
-import { parseMap, decodeFace } from '../../shared/loader/map-parser';
+import { parseMap, decodeFace } from '../../shared/engine/loader/map-parser';
 import { mapFixture } from './fixtures';
 import { WeaponId } from '../../shared/domain/combat/weapons';
 

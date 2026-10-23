@@ -28,30 +28,32 @@ export function addPlayer(host: any, id: string, state?: PlayerState) {
     host.registerObject(playerObject);
     if (host.localId) playerObject.syncReplicatedShot();
     host.history.set(id, []);
-    if (!host.localId && !host.gameState.vehicleStates.length && host.trafficModels.length) {
+    if (host.ambientTrafficEnabled && !host.localId && !host.gameState.vehicleStates.length && host.trafficModels.length) {
       const occupied = [...host.gameState.playerStates.values(), ...host.gameState.vehicleStates].map(item => ({ x: item.x, y: item.y, z: item.z }));
       const spawned = host.trafficSpawner.spawnAround(player.x, player.y, host.nextTrafficId, occupied, host.tick, player.z);
       host.nextTrafficId += spawned.length;
       for (const vehicle of spawned) {
-        host.createVehicleBody(vehicle);
         const object = host.createVehicleObject(vehicle);
         host.registerObject(object);
+        host.createVehicleBody(vehicle);
       }
     }
-    // A local world keeps bodies for the player and the currently occupied
+    // A local world keeps a body for the player and the currently occupied
     // chassis so authoritative snapshots can restore their physics state.
     if (!host.localId || id === host.localId) {
       const body = host.createPlayerPhysicsBody(player);
-      host.bodies.set(id, body);
+      playerObject.attachPhysicsBody(body);
     }
     return player;
   }
 export function removePlayer(host: any, id: string) {
-    const body = host.bodies.get(id);
+    const playerObject = host.gameObjects.findPlayer(id);
+    const body = playerObject?.physicsBody;
     if (body) host.destroyPhysicsBody(body);
+    playerObject?.detachPhysicsBody();
     for (const vehicle of host.gameObjects.vehicles) if (occupantForPlayer(vehicle.state, id)) host.detachVehicleOccupant(vehicle.state, id);
-    host.bodies.delete(id); host.history.delete(id); host.recentVehicleEntries.delete(id);
-    host.gameObjects.findPlayer(id)?.despawn();
+    host.history.delete(id); host.recentVehicleEntries.delete(id);
+    playerObject?.despawn();
     host.spawnProtection.delete(id); host.wantedDecay.delete(id);
   }
   /** Start the source-style DoJump state. The ped stays on the map floor for
@@ -159,7 +161,7 @@ export function applyVehicleImpacts(host: any, contacts: readonly CollisionConta
       if (!driverId) continue;
       const occupant = occupantForPlayer(vehicle, driverId);
       if (!occupant || occupant.state !== 'seated') continue;
-      const driver = host.gameState.playerStates.get(driverId), driverObject = driver && host.gameObjects.findPlayer(driver.id), body = driver && host.bodies.get(driver.id);
+      const driver = host.gameState.playerStates.get(driverId), driverObject = driver && host.gameObjects.findPlayer(driver.id), body = driverObject?.physicsBody;
       if (driver && driverObject instanceof PlayerObject) {
         driverObject.followVehicle({ x: vehicle.x, y: vehicle.y, z: vehicle.z, rotation: vehicle.rotation, vx: vehicle.vx, vy: vehicle.vy });
         body?.setPosition({ x: worldToPhysics(driverObject.state.x), y: -worldToPhysics(driverObject.state.y) });

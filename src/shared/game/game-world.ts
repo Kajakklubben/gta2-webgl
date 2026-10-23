@@ -1,9 +1,9 @@
 import { WeaponSystem } from '../domain/combat/weapon-system';
-import type { GameMap } from '../loader/map-parser';
+import type { GameMap } from '../engine/loader/map-parser';
 import { MapSurfaceResolver, type SurfaceResult } from '../domain/physics/map-surface';
 import { STEP } from '../protocol/constants';
 import type { Input, PlayerState, PickupState, TrafficState, HazardState, WorldEvent, WorldEventInput, NpcState } from '../protocol/types';
-import { createHazardObject, HazardObject } from './effects/hazard';
+import { createHazardObject, ExplosionObject, HazardObject } from './effects/hazard';
 import { PickupObject } from './effects/pickup';
 import { PlayerObject } from './gameobjects/player';
 import { NpcObject } from './gameobjects/npc';
@@ -15,12 +15,12 @@ import { PickupSystem } from './pickup-system';
 import { PlayerSystem } from './player-system';
 import { WORLD, physicsToWorld, worldToPhysics } from '../domain/world/world';
 import { resolveMapObjectPlacement } from '../domain/physics/map-object-placement';
-import type { CarPhysics } from '../loader/gci';
-import type { CarInfo } from '../loader/style-parser';
-import type { MapObjectDefinition } from '../loader/models/style';
-import { DEFAULT_MAP_OBJECT_DEFINITIONS } from '../loader/map-object-definitions';
+import type { CarPhysics } from '../engine/loader/gci';
+import type { CarInfo } from '../engine/loader/style-parser';
+import type { MapObjectDefinition } from '../engine/loader/models/style';
+import { DEFAULT_MAP_OBJECT_DEFINITIONS } from '../engine/loader/map-object-definitions';
 import { CarTrafficSpawner } from '../domain/vehicles/car-traffic';
-import type { VehicleBounds } from '../loader/vehicle-bounds';
+import type { VehicleBounds } from '../engine/loader/vehicle-bounds';
 import { VehicleCatalog } from '../domain/vehicles/vehicle-catalog';
 import type { CollisionContact } from './physics/collision-world';
 import { GameWorldPhysics } from './physics/game-world-physics';
@@ -47,6 +47,14 @@ import { createVehicleBody as runCreateVehicleBody, createVehicleObject as runCr
 import { addPlayer as runAddPlayer, applyPedestrianImpacts as runApplyPedestrianImpacts, applyVehicleImpacts as runApplyVehicleImpacts, beginPlayerJump as runBeginPlayerJump, damagePlayer as runDamagePlayer, detachVehicleOccupant as runDetachVehicleOccupant, ejectVehicleOccupants as runEjectVehicleOccupants, emit as runEmit, floor as runFloor, input as runInput, killNpc as runKillNpc, killPlayer as runKillPlayer, raiseWanted as runRaiseWanted, removePlayer as runRemovePlayer, removeVehicleFireHazards as runRemoveVehicleFireHazards, spawnPoint as runSpawnPoint, spawnVehicleFireHazard as runSpawnVehicleFireHazard, syncBlockedBodies as runSyncBlockedBodies, syncVehicleFireHazards as runSyncVehicleFireHazards, updateNpcJumps as runUpdateNpcJumps, updatePlayerJumps as runUpdatePlayerJumps, vehicleDamage as runVehicleDamage } from './runtime/world-operations';
 import { reconcileHazardObjects as runReconcileHazardObjects, reconcileNpcObjects as runReconcileNpcObjects, reconcilePickupObjects as runReconcilePickupObjects, reconcileVehicleObjects as runReconcileVehicleObjects, reconcileVehicleOccupancyLinks as runReconcileVehicleOccupancyLinks, restore as runRestore, restoreVehicleBody as runRestoreVehicleBody, restoreWorld as runRestoreWorld, snapshot as runSnapshot, snapshotWorld as runSnapshotWorld, step as runStep } from './runtime/reconciliation';
 
+export interface GameWorldOptions {
+  /** Keep authored scenario actors while suppressing ambient population. */
+  readonly ambientTraffic?: boolean;
+  readonly ambientPedestrians?: boolean;
+  /** Allow the traffic planner to generate controls for unoccupied cars. */
+  readonly vehicleAi?: boolean;
+}
+
 export class GameWorld {
   /** Every world entity has the same lifecycle surface for future systems and renderers. */
   readonly gameState = new GameState();
@@ -67,9 +75,18 @@ export class GameWorld {
   readonly weaponRaycaster: WeaponRaycaster;
   readonly lagCompensation: LagCompensation;
   readonly physics: GameWorldPhysics;
-  get bodies() { return this.physics.bodies; }
-  get vehicleBodies() { return this.physics.vehicleBodies; }
-  get npcBodies() { return this.physics.npcBodies; }
+  /** Compatibility views for diagnostics and older callers. The binding
+   * itself lives on each GameObject; these maps are rebuilt from that source
+   * and are intentionally not mutation points. */
+  get bodies() {
+    return new Map(this.gameObjects.players.flatMap(object => object.physicsBody ? [[object.id, object.physicsBody] as const] : []));
+  }
+  get vehicleBodies() {
+    return new Map(this.gameObjects.vehicles.flatMap(object => object.physicsBody ? [[object.id, object.physicsBody] as const] : []));
+  }
+  get npcBodies() {
+    return new Map(this.gameObjects.npcs.flatMap(object => object.physicsBody ? [[object.id, object.physicsBody] as const] : []));
+  }
   private get vehicleStepVelocities() { return this.physics.vehicleStepVelocities; }
   readonly weaponSystem = new WeaponSystem();
   readonly playerSystem = new PlayerSystem(this.weaponSystem);
@@ -87,9 +104,15 @@ export class GameWorld {
   readonly vehicleCatalog: VehicleCatalog;
   readonly vehicleDamageController: VehicleDamageController;
   readonly trafficModels: readonly number[];
+  readonly ambientTrafficEnabled: boolean;
+  readonly ambientPedestriansEnabled: boolean;
+  readonly vehicleAiEnabled: boolean;
   nextTrafficId = 1;
   nextNpcId = 1;
-  constructor(readonly level: GameMap, readonly localId?: string, initialPickups: PickupState[] = [], readonly carPhysics: ReadonlyMap<number, CarPhysics> = new Map(), trafficModels: readonly number[] = [], readonly carBounds: ReadonlyMap<number, VehicleBounds> = new Map(), readonly carInfo: ReadonlyMap<number, CarInfo> = new Map(), readonly mapObjectDefinitions: ReadonlyMap<number, MapObjectDefinition> = DEFAULT_MAP_OBJECT_DEFINITIONS) {
+  constructor(readonly level: GameMap, readonly localId?: string, initialPickups: PickupState[] = [], readonly carPhysics: ReadonlyMap<number, CarPhysics> = new Map(), trafficModels: readonly number[] = [], readonly carBounds: ReadonlyMap<number, VehicleBounds> = new Map(), readonly carInfo: ReadonlyMap<number, CarInfo> = new Map(), readonly mapObjectDefinitions: ReadonlyMap<number, MapObjectDefinition> = DEFAULT_MAP_OBJECT_DEFINITIONS, options: GameWorldOptions = {}) {
+    this.ambientTrafficEnabled = options.ambientTraffic !== false;
+    this.ambientPedestriansEnabled = options.ambientPedestrians !== false;
+    this.vehicleAiEnabled = options.vehicleAi !== false;
     this.physics = new GameWorldPhysics(localId);
     this.surfaces = new MapSurfaceResolver(level);
     this.surfaceController = new SurfaceController(this.surfaces);
@@ -98,10 +121,19 @@ export class GameWorld {
     this.projectileController = new ProjectileController({
       weaponSystem: this.weaponSystem,
       projectiles: () => this.gameState.projectiles,
-      physicsWorld: this.physicsWorld,
+      physicsWorld: {
+        rayCast: (start, end, accept) => this.physicsWorld.rayCast(start, end, accept),
+        rayCastHit: (start, end, accept) => this.physics.rayCastHit(start, end, accept),
+        queryCircle: query => this.physicsWorld.queryCircle(query),
+      },
       tick: () => this.tick,
       register: object => this.registerObject(object),
-      ownerVehicleId: actor => this.gameObjects.findPlayer(actor)?.state.vehicleId,
+      ownerVehicleId: actor => {
+        const player = this.gameObjects.findPlayer(actor);
+        if (player) return player.state.vehicleId;
+        const match = /^npc:(\d+)$/.exec(actor);
+        return match ? this.gameObjects.findNpc(Number(match[1]))?.state.vehicleId : undefined;
+      },
       isWaterAt: point => this.pedestrianNavigation.isWaterAt(point),
       spawnEffect: effect => this.registerObject(createHazardObject({ ...effect, id: this.hazardId++ })),
       surfaceAt: point => this.surfaces.resolve({ x: point.x, y: point.y, height: point.z }),
@@ -204,9 +236,9 @@ export class GameWorld {
     for (const player of [...this.gameState.playerStates.values()]) if (!this.gameObjects.findPlayer(player.id)) this.registerObject(new PlayerObject(player));
     for (const pickup of [...this.gameState.pickupStates]) if (!this.gameObjects.findPickup(pickup.id)) this.registerObject(new PickupObject(pickup));
     for (const vehicle of [...this.gameState.vehicleStates]) if (!this.gameObjects.findVehicle(vehicle.id)) {
-      this.createVehicleBody(vehicle);
       const object = this.createVehicleObject(vehicle);
       this.registerObject(object);
+      this.createVehicleBody(vehicle);
     }
     for (const npc of [...this.gameState.npcStates]) if (!this.gameObjects.findNpc(npc.id)) {
       this.registerObject(this.createNpcObject(npc));
@@ -258,12 +290,41 @@ export class GameWorld {
       },
       surfaceAt: (x, y, z) => this.surfaces.resolve({ x, y, height: z }),
       queryCircle: query => this.physicsWorld.queryCircle(query),
+      isExplosionOccluded: (origin, target) => {
+        const hit = this.physics.rayCastHit(origin, target, fixture => mapFixtureMatches(fixture, Math.max(0, Math.min(7, Math.ceil(origin.z))), 'bullet'));
+        return hit !== undefined && hit.fraction < .999;
+      },
+      queryExplosionObjects: query => this.gameObjects.mapObjects.flatMap(object => {
+        const body = object.getCollider()[0];
+        if (!body || (query.kinds && !query.kinds.includes('map-object'))) return [];
+        if (query.layer !== undefined && body.layer !== undefined && query.layer !== body.layer) return [];
+        if (Math.abs(body.z - query.z) > (query.floorTolerance ?? WORLD.interaction.sameFloor)) return [];
+        if (Math.hypot(body.x - query.x, body.y - query.y) > query.radius + body.radius) return [];
+        return [body];
+      }),
+      onExplosionNearby: (body, source) => {
+        if (body.kind !== 'map-object') return;
+        const object = this.gameObjects.mapObjects.find(candidate => String(candidate.id) === String(body.objectId));
+        if (!object || !object.definition.explosionReaction) return;
+        object.deferDespawn();
+        if (object.definition.explosionReaction !== 'detonate') return;
+        const explosion = createHazardObject({
+          id: this.hazardId++, x: object.state.x, y: object.state.y, z: object.state.z,
+          kind: 'fire', life: 26, owner: source.actor, effect: 'explosion', explosionType: 'item', sourceExplosionType: source.explosionType, sourceModel: object.state.model,
+        });
+        if (explosion instanceof ExplosionObject) {
+          explosion.armBlast({ actor: source.actor, weapon: 0, radius: WORLD.projectile.sourceSmallExplosionRadius, damage: 0, pellets: 1, selfDamage: false, height: 2, knockback: 6, sourceModel: object.state.model });
+          this.registerObject(explosion);
+          explosion.resolveBlast(this.gameObjectCombatContext());
+        }
+      },
       findPlayer: id => this.gameObjects.findPlayer(id),
       findVehicle: id => this.gameObjects.findVehicle(id),
       findNpc: id => this.gameObjects.findNpc(id),
       killNpc: target => this.killNpc(target),
       damagePlayer: (target, damage, killer, cause) => this.damagePlayer(target.state, damage, killer, cause),
       damageVehicle: (target, damage, x, y, sourceModel, attacker) => { this.vehicleDamage(target.state, damage, x, y, sourceModel, attacker); },
+      extinguishVehicleFire: target => { this.vehicleDamageController.extinguishFire(target.state); },
       damageNpc: (target, damage, killer, sourceModel, impactRotation, cause) => { target.receiveWeaponHit(damage, sourceModel, killer, this.gameObjectCombatContext(), impactRotation, cause); },
       isWaterAt: point => this.pedestrianNavigation.isWaterAt(point),
       raiseWanted: player => this.raiseWanted(player.state),
@@ -295,8 +356,9 @@ export class GameWorld {
    * native player body. Vehicle occupants remain body-static here because
    * their chassis owns the integration and resynchronizes the ped pose. */
   preparePlayerBodies() {
-    for (const [id, body] of this.bodies) {
-      const player = this.gameObjects.findPlayer(id);
+    for (const player of this.gameObjects.players) {
+      const body = player.physicsBody;
+      if (!body) continue;
       if (!(player instanceof PlayerObject)) continue;
       if (player.state.vehicleId !== undefined) {
         body.setLinearVelocity({ x: 0, y: 0 });
@@ -308,14 +370,14 @@ export class GameWorld {
   createVehiclePhysicsBody(vehicle: TrafficState) { return this.physics.createVehicleBody(vehicle, this.vehicleCatalog, state => this.collisionLayer(state)); }
   createVehicleBody(vehicle: TrafficState) { return runCreateVehicleBody(this, vehicle); }
   destroyVehicleBody(id: number) { return runDestroyVehicleBody(this, id); }
-  updateVehicleBodyLayer(vehicle: TrafficState, body = this.vehicleBodies.get(vehicle.id)) { return runUpdateVehicleBodyLayer(this, vehicle, body); }
+  updateVehicleBodyLayer(vehicle: TrafficState, body = this.gameObjects.findVehicle(vehicle.id)?.physicsBody) { return runUpdateVehicleBodyLayer(this, vehicle, body); }
   updateUnoccupiedVehicleDynamics(dt: number) { return runUpdateUnoccupiedVehicleDynamics(this, dt); }
   updateVehicleFloor(vehicle: TrafficState, dt = STEP) { return runUpdateVehicleFloor(this, vehicle, dt); }
   prepareVehicleBodies(starts: ReadonlyMap<number, { x: number; y: number; rotation: number }>, dt = STEP) {
     runPrepareVehicleBodies(this, starts, dt);
     this.vehicleStepVelocities.clear();
     for (const vehicle of this.gameState.vehicleStates) {
-      const body = this.vehicleBodies.get(vehicle.id);
+      const body = this.gameObjects.findVehicle(vehicle.id)?.physicsBody;
       if (!body) continue;
       const velocity = body.getLinearVelocity();
       this.vehicleStepVelocities.set(vehicle.id, { x: physicsToWorld(velocity.x), y: -physicsToWorld(velocity.y) });
@@ -352,9 +414,10 @@ export class GameWorld {
       vehicle.state.passengers.splice(0, vehicle.state.passengers.length, ...vehicle.state.passengers.map(passenger => passenger === oldId ? `npc:${npcId}` : passenger));
       delete (vehicle.state as TrafficState).aiState;
     }
-    const body = this.bodies.get(id);
+    const body = playerObject.physicsBody;
     if (body) this.physics.destroyBody(body);
-    this.bodies.delete(id); this.history.delete(id); this.recentVehicleEntries.delete(id);
+    playerObject.detachPhysicsBody();
+    this.history.delete(id); this.recentVehicleEntries.delete(id);
     playerObject.despawn();
     this.spawnProtection.delete(id); this.wantedDecay.delete(id);
     this.registerObject(this.createNpcObject(npc));

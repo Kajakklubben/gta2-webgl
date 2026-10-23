@@ -38,7 +38,11 @@ export type ClientTrafficDto = WirePick<TrafficState,
   'collisionLayer' | 'grounded' | 'verticalVelocity' | 'vx' | 'vy' | 'angularVelocity' |
   'throttle' | 'brakePressure' | 'handbrakeForce' |
   'damageFrame' | 'damageMask' | 'wrecked' | 'wreckModel' | 'paint' | 'damagePhase' |
-  'aiState' | 'routeNode' | 'targetNode' | 'junction' | 'signal' | 'transport' | 'serviceStop' | 'pursuitTarget' | 'brakeLights' |
+  'aiState' | 'routeNode' | 'targetNode' | 'junction' | 'signal' |
+  'aiActive' | 'aiMode' | 'aiTask' | 'routeId' | 'routeCursor' | 'arrowCursor' | 'arrowRun' |
+  'currentDirection' | 'targetDirection' | 'plannedTurn' | 'laneTarget' | 'laneAlignment' |
+  'targetSpeed' | 'speedClass' | 'yieldTimer' | 'obstacleTimer' | 'offRoadTimer' | 'allowSpecialRoute' |
+  'transport' | 'serviceStop' | 'pursuitTarget' | 'brakeLights' |
   'headlights' | 'emergencyLights' | 'horn' | 'turretRotation' | 'mountedWeapons' | 'trailerId' | 'passengers' | 'occupants' |
   'doorStates' | 'doorLock'>;
 
@@ -48,7 +52,7 @@ export type ClientNpcDto = WirePick<NpcState,
   'animationProgress' | 'animationStraightEntry' | 'target' | 'weapon' | 'weaponAmmo' | 'weaponCooldown' | 'pathIndex' | 'path' | 'pathPointIndex' | 'pathGoal' |
   'patrolRoute' | 'patrolPointIndex' | 'waitTimer' | 'panicTimer' | 'deathTimer' | 'deathPose' | 'killer' | 'shockCounter' | 'electrocuted' | 'shots' | 'onFire' | 'fireTimer' | 'crossingRoad' | 'faction' | 'threatenedBy' | 'threatTimer' | 'jump' | 'drowningTimer' | 'deathCause' | 'vehicleId'>;
 
-export type ClientHazardDto = WirePick<HazardState, 'id' | 'x' | 'y' | 'z' | 'kind' | 'life' | 'owner' | 'collisionLayer' | 'effect' | 'explosionType' | 'sourceModel' | 'sourceTimer' | 'armingTimer' | 'vehicleId' | 'rotation' | 'scale' | 'variant'>;
+export type ClientHazardDto = WirePick<HazardState, 'id' | 'x' | 'y' | 'z' | 'kind' | 'life' | 'owner' | 'collisionLayer' | 'effect' | 'explosionType' | 'sourceExplosionType' | 'sourceModel' | 'sourceTimer' | 'armingTimer' | 'vehicleId' | 'rotation' | 'scale' | 'variant'>;
 export type ClientEventDto = WorldEvent;
 
 export interface ClientSnapshot {
@@ -110,6 +114,12 @@ export function toClientTraffic(vehicle: TrafficState): ClientTrafficDto {
     handbrakeForce: vehicle.handbrakeForce, damageFrame: vehicle.damageFrame, damageMask: vehicle.damageMask,
     wrecked: vehicle.wrecked, wreckModel: vehicle.wreckModel, paint: vehicle.paint, damagePhase: vehicle.damagePhase,
     aiState: vehicle.aiState, routeNode: vehicle.routeNode, targetNode: vehicle.targetNode, junction: vehicle.junction,
+    aiActive: vehicle.aiActive, aiMode: vehicle.aiMode, aiTask: vehicle.aiTask,
+    routeId: vehicle.routeId, routeCursor: vehicle.routeCursor, arrowCursor: vehicle.arrowCursor, arrowRun: vehicle.arrowRun,
+    currentDirection: vehicle.currentDirection, targetDirection: vehicle.targetDirection, plannedTurn: vehicle.plannedTurn,
+    laneTarget: vehicle.laneTarget, laneAlignment: vehicle.laneAlignment, targetSpeed: vehicle.targetSpeed,
+    speedClass: vehicle.speedClass, yieldTimer: vehicle.yieldTimer, obstacleTimer: vehicle.obstacleTimer,
+    offRoadTimer: vehicle.offRoadTimer, allowSpecialRoute: vehicle.allowSpecialRoute,
     signal: vehicle.signal, brakeLights: vehicle.brakeLights, headlights: vehicle.headlights,
     emergencyLights: vehicle.emergencyLights, horn: vehicle.horn, turretRotation: vehicle.turretRotation, mountedWeapons: vehicle.mountedWeapons ? [...vehicle.mountedWeapons] : undefined, trailerId: vehicle.trailerId, transport: vehicle.transport, serviceStop: vehicle.serviceStop, pursuitTarget: vehicle.pursuitTarget, passengers: [...vehicle.passengers],
     occupants: vehicle.occupants.map(occupant => ({ ...occupant })), doorStates: vehicle.doorStates.map(door => ({ ...door })), doorLock: vehicle.doorLock,

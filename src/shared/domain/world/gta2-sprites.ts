@@ -101,6 +101,8 @@ export const GTA2_SOURCE_EFFECT_SPRITES = {
   explosionSmall: { start: 305 + 20, count: 16 },
   /** Explosion type 20 animates through def112+56..+71. */
   explosionLarge: { start: 305 + 56, count: 16 },
+  /** Explosion_30::SpawnFlashParticle uses the single def112+37 sprite. */
+  explosionFlash: { start: 305 + 37, count: 1 },
   /** Fire trails start at def112+96 and use frames through +103. */
   fireTrail: { start: 305 + 96, count: 8 },
   /** Car fire levels 2/3 use Particle_4C's def112+147 sequence. */
@@ -144,6 +146,18 @@ export const GTA2_SOURCE_PROJECTILE_FRAME_TICKS: Partial<Record<number, number>>
   [GTA2_SOURCE_OBJECT_MODELS.flamethrowerFire]: 1,
   [GTA2_SOURCE_OBJECT_MODELS.grenade]: 2,
 };
+
+/**
+ * Particle_4C::UpdateCollisionBurst_state_31_34 advances the first four
+ * flame states every source tick, then holds each later state for one extra
+ * tick. The source particle remains allocated through its terminal states;
+ * the projectile lifetime is kept separately in WORLD.projectile so the
+ * collision stream and the authored animation share the same reach.
+ */
+export const GTA2_FLAME_SEGMENT_FRAME_TICKS = [
+  1, 1, 1, 1,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+] as const;
 
 /** Authored projectile animations used by the WebGL presentation. */
 export const GTA2_WEAPON_PROJECTILE_SPRITES: Record<number, Gta2SpriteRange> = {

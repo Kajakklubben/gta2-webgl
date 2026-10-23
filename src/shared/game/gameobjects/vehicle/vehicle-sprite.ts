@@ -34,7 +34,7 @@ export class VehicleSpriteState {
         brakeLights: this.state.brakeLights ?? false,
         emergencyLights: this.state.emergencyLights ?? false,
       },
-      depthTest: true, depthWrite: false, alphaTest: .01, fallbackColor: 0x6d7888,
+      alphaTest: .01, fallbackColor: 0x6d7888,
     };
     if (burnedOut) {
       const result = { ...base, variant: 'base' as const };

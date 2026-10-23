@@ -8,7 +8,7 @@ import { PlayerObject } from '../gameobjects/player';
 import type { GameWorld } from '../game-world';
 
 export function maintainNpcs(world: GameWorld) {
-  if (world.localId || !world.gameState.playerStates.size || !world.pedestrianNavigation.nodes.length) return;
+  if (world.ambientPedestriansEnabled === false || world.localId || !world.gameState.playerStates.size || !world.pedestrianNavigation.nodes.length) return;
   const players = [...world.gameState.playerStates.values()];
   for (const npc of [...world.gameState.npcStates]) {
     if (players.some(player => Math.hypot(npc.x - player.x, npc.y - player.y) <= PEDESTRIAN_DESPAWN_DISTANCE)) continue;
@@ -138,7 +138,7 @@ export function arrestPlayer(world: GameWorld, target: PlayerState, officerId?: 
   object.setPose({ ...spawn, rotation: 0, vx: 0, vy: 0 });
   target.combat.health = 100; target.combat.respawn = 0; target.combat.attacking = false; target.combat.shots = [];
   target.wanted = 0; target.jump = undefined; target.animation = undefined;
-  world.bodies.get(target.id)?.setPosition({ x: worldToPhysics(target.x), y: -worldToPhysics(target.y) });
+  world.gameObjects.findPlayer(target.id)?.physicsBody?.setPosition({ x: worldToPhysics(target.x), y: -worldToPhysics(target.y) });
   world.emit({ type: 'hit', actor: officerId === undefined ? undefined : `npc:${officerId}`, target: target.id, damage: 0, lethal: false, x: target.x, y: target.y, z: target.z });
   return true;
 }

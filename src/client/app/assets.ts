@@ -1,7 +1,7 @@
-import type { AssetName } from '../../shared/loader/asset-loaders';
-import { MULTIPLAYER_MAPS, type MultiplayerMapDefinition } from '../../shared/loader/multiplayer-maps';
+import type { AssetReader } from '../../shared/engine/assets/reader';
+import { MULTIPLAYER_MAPS, type MultiplayerMapDefinition } from '../../shared/engine/loader/multiplayer-maps';
 
-/** Browser asset transport. Parsing remains in shared typed loaders. */
+/** Browser asset transport. Parsing remains inside the engine-owned loader. */
 export function staticAssetUrl(name: string): URL {
   if (!name) throw new Error('Cannot build an asset URL without an asset name.');
   const path = name.split('/').map(part => encodeURIComponent(part)).join('/');
@@ -13,11 +13,11 @@ export function staticAssetUrl(name: string): URL {
   return new URL(path, assetRoot);
 }
 
-export async function fetchAsset(name: AssetName): Promise<Uint8Array> {
+export const fetchAsset: AssetReader = async (name) => {
   const response = await fetch(staticAssetUrl(name));
   if (!response.ok) throw new Error(`Cannot load ${name} (HTTP ${response.status}). Place your GTA2 files in assets/ and restart.`);
   return new Uint8Array(await response.arrayBuffer());
-}
+};
 
 /** Return the map bundles the authoritative server was able to load. */
 export async function fetchAvailableMultiplayerMaps(): Promise<readonly MultiplayerMapDefinition[]> {
@@ -41,4 +41,4 @@ export async function fetchAvailableMultiplayerMaps(): Promise<readonly Multipla
   }
 }
 
-export { loadClientAssets } from '../../shared/loader/bundle';
+export { loadClientAssets } from '../../shared/engine/loader/bundle';

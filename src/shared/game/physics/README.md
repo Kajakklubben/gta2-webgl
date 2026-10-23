@@ -11,4 +11,7 @@ expose how many native worlds the engine uses.
 - `map-collision.ts`, `body-factory.ts`, `player-bodies.ts`, and
   `npc-bodies.ts` construct GTA2-specific body and shape descriptors;
 - `map-fixtures.ts` interprets map fixture metadata; and
-- `vehicle-contact-handler.ts` translates engine contacts into GTA2 effects.
+- `map-contact-handler.ts` reports generic game-object bodies blocked by static
+  map geometry so the entity pass does not rewind them through a solved wall;
+- `vehicle-contact-handler.ts` translates vehicle contacts into GTA2 damage
+  and impact effects. It does not own map separation.

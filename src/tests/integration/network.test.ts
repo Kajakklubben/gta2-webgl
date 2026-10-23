@@ -10,7 +10,7 @@ import { checkAssets } from '../../server/assets';
 import { attachMultiplayer } from '../../server/multiplayer';
 import { GameWorld } from '../../shared/game/game-world';
 import { startServer } from '../../server/main';
-import { parseMap } from '../../shared/loader/map-parser';
+import { parseMap } from '../../shared/engine/loader/map-parser';
 import type { ServerMessage, Snapshot } from '../../shared/protocol/types';
 import { WEAPONS } from '../../shared/domain/combat/weapons';
 import { mapFixture, styleFixture } from '../unit/fixtures';

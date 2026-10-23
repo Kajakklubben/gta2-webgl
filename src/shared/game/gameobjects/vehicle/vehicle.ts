@@ -5,12 +5,12 @@ import { MobileGameObject, type GameObjectUpdateHandler, type MobilePose } from 
 import { integrateVehicle } from '../../../domain/physics/vehicle-integration';
 import type { VehicleControl, VehicleGeometry, VehicleGroundContact, VehicleIntegrationOptions } from '../../../domain/physics/vehicle-kinematics';
 import { directionFromRotation, type Vector2 } from '../../../domain/physics/motion-vector';
-import { skidSegmentRotation, sourceSkidObjectModel, vehicleSkidWheelPoints } from '../../../domain/physics/vehicle-skid';
+import { isSourceTrainModel, SOURCE_OIL_SPIN_TICKS, skidSegmentRotation, sourceOilSpinDirection, sourceSkidObjectModel, vehicleSkidWheelPoints } from '../../../domain/physics/vehicle-skid';
 import { vehicleMass } from '../../../domain/physics/vehicle-kinematics';
-import type { CarPhysics } from '../../../loader/gci';
-import type { CarInfo } from '../../../loader/style-parser';
+import type { CarPhysics } from '../../../engine/loader/gci';
+import type { CarInfo } from '../../../engine/loader/style-parser';
 import { WORLD } from '../../../domain/world/world';
-import { DEFAULT_VEHICLE_BOUNDS, type VehicleBounds } from '../../../loader/vehicle-bounds';
+import { DEFAULT_VEHICLE_BOUNDS, type VehicleBounds } from '../../../engine/loader/vehicle-bounds';
 import { sourceDamageForImpact, type VehicleDamageTransition } from '../../../domain/combat/vehicle-damage';
 import { hasWreckModel, resolveWreckModel } from '../../../domain/world/gta2-sprites';
 import type { SurfaceResult } from '../../../domain/physics/map-surface';
@@ -33,6 +33,8 @@ export class VehicleObject extends MobileGameObject<TrafficState, number> {
   private readonly playerController: VehiclePlayerController;
   private readonly aiController: VehicleAiController;
   private controlAdapter: VehicleControlAdapter;
+  private oilSpinTimer = 0;
+  private oilSpinDirectionValue: -1 | 1 = 1;
 
   constructor(
     state: TrafficState,
@@ -180,19 +182,30 @@ export class VehicleObject extends MobileGameObject<TrafficState, number> {
       sourceModel !== 254 && sourceModel !== 265 && sourceModel !== 192 && sourceModel !== 277;
   }
 
+  /** Car_BC::IsImmuneToExplosionType_43B850. Trains are separately excluded
+   * by the source blast loop; the tank's rocket/flame-proof flags reject every
+   * explosion family except the large type 20 dispatch. */
+  canReceiveExplosion(explosionType: number) {
+    if (this.mutableState.transport === 'train' || isSourceTrainModel(this.info?.model ?? this.mutableState.model)) return false;
+    const model = this.info?.model ?? this.mutableState.model;
+    return model !== 54 || explosionType === 20;
+  }
+
   fireCarBomb(actor: PlayerObject, instant: boolean, combat: GameObjectCombatContext) {
     return this.playerController.fireCarBomb(actor, instant, combat);
   }
 
   spinOutOnOil() {
-    if (!this.alive) return false;
-    let direction = -1;
-    if (this.mutableState.id % 2 === 0) direction = 1;
-    if (this.mutableState.angularVelocity && Math.abs(this.mutableState.angularVelocity) > .001) direction = Math.sign(this.mutableState.angularVelocity);
-    this.mutableState.angularVelocity = direction * Math.max(.22, Math.abs(this.mutableState.angularVelocity));
-    this.mutableState.throttle = Math.max(this.mutableState.throttle, .8);
+    if (!this.alive || this.mutableState.transport === 'train' || isSourceTrainModel(this.info?.model ?? this.mutableState.model)) return false;
+    if (this.oilSpinTimer <= 0) this.oilSpinDirectionValue = sourceOilSpinDirection(this.mutableState.id);
+    this.oilSpinTimer = SOURCE_OIL_SPIN_TICKS;
     return true;
   }
+
+  /** Exposed for deterministic tests and telemetry without replicating a new
+   * protocol field. The authoritative source state remains the private timer. */
+  get oilSpinTicksRemaining() { return this.oilSpinTimer; }
+  get oilSpinDirection() { return this.oilSpinTimer > 0 ? this.oilSpinDirectionValue : 0; }
 
   markCollisionCooldown(ticks = 18) { this.mutableState.collisionCooldown = Math.max(0, Math.floor(ticks)); }
 
@@ -330,6 +343,22 @@ export class VehicleObject extends MobileGameObject<TrafficState, number> {
         height: this.bounds.height,
       };
     }
-    return integrateVehicle(this.mutableState, control, physics ?? this.physics, dt, wheelBase, footprint, this.groundContact, { advancePose: false, ...options });
+    const oilDirection = this.oilSpinDirection;
+    const sourceControl: VehicleControl & { sourceOilSpinDirection?: -1 | 1 } = oilDirection === 0 ? control : {
+      ...control,
+      // ApplyForcedSteering_559DD0 enables forward gas and replaces player
+      // steering for the duration of the source oil timer.
+      throttle: Math.max(control.throttle, 1),
+      steer: oilDirection,
+      brake: false,
+      handbrake: false,
+      slippery: true,
+      sourceOilSpinDirection: oilDirection,
+    };
+    const integrationOptions = { advancePose: false, ...options };
+    if (oilDirection !== 0) integrationOptions.applyDrivetrainForces = true;
+    const result = integrateVehicle(this.mutableState, sourceControl, physics ?? this.physics, dt, wheelBase, footprint, this.groundContact, integrationOptions);
+    if (oilDirection !== 0 && dt > 0) this.oilSpinTimer = Math.max(0, this.oilSpinTimer - Math.max(1, Math.round(dt * WORLD.tickRate)));
+    return result;
   }
 }

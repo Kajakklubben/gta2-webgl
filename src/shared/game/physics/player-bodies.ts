@@ -21,5 +21,6 @@ export function createPlayerPhysicsBody(runtime: PhysicsRuntime, player: PlayerS
   // Char_B4 movement is swept against map edges; keep the same continuous
   // collision behavior for a fast ped crossing a thin wall.
   body.setBullet(true);
+  body.setUserData({ kind: 'player', id: player.id });
   return body;
 }

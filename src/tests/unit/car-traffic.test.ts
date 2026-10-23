@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { GameWorld } from '../../shared/game/game-world';
 import { CarTrafficSpawner } from '../../shared/domain/vehicles/car-traffic';
-import { parseMap } from '../../shared/loader/map-parser';
+import { parseMap } from '../../shared/engine/loader/map-parser';
 import type { TrafficState } from '../../shared/protocol/types';
 import { mapFixture } from './fixtures';
 

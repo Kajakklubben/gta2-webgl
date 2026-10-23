@@ -24,8 +24,8 @@ export function installVehicleContactHandling(
     let other = contact.getFixtureA().getBody();
     if (body === contact.getFixtureA().getBody()) other = contact.getFixtureB().getBody();
 
-    // Map walls are one-sided static edges in the source collision pass.
-    // Remove the rebound normal while preserving tangent motion.
+    // Map separation is handled by the generic solver. This adapter only
+    // translates the contact into GTA2 vehicle impact consequences.
     if (other.getType() === 'static') {
       const manifold = contact.getWorldManifold();
       const normal = manifold?.normal;
@@ -39,12 +39,6 @@ export function installVehicleContactHandling(
         };
         let towardOther = { x: normal.x, y: normal.y };
         if (vehicleIsA) towardOther = { x: -normal.x, y: -normal.y };
-        const velocity = body.getLinearVelocity();
-        const normalVelocity = velocity.x * towardOther.x + velocity.y * towardOther.y;
-        if (normalVelocity > 0) {
-          body.setLinearVelocity({ x: velocity.x - normalVelocity * towardOther.x, y: velocity.y - normalVelocity * towardOther.y });
-        }
-
         if (options.localId) return;
         const incomingPhysics = { x: worldToPhysics(incoming.x), y: -worldToPhysics(incoming.y) };
         const impact = Math.max(0, -(incomingPhysics.x * towardOther.x + incomingPhysics.y * towardOther.y)) * WORLD.physicsUnitsPerWorldUnit;

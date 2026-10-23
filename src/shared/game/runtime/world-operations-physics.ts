@@ -4,15 +4,15 @@ import type { PlayerState } from '../../protocol/types';
 
 /** Synchronize the map physics backend after shared GameObject blocking. */
 export function syncBlockedBodies(host: any) {
-  for (const [id, body] of host.bodies) {
-    const object = host.gameObjects.findPlayer(id);
-    if (!object) continue;
+  for (const object of host.gameObjects.players) {
+    const body = object.physicsBody;
+    if (!body) continue;
     const pose = object.placement, velocity = object.readPhysicsVelocity();
     body.setPosition({ x: worldToPhysics(pose.x), y: -worldToPhysics(pose.y) });
     body.setLinearVelocity({ x: worldToPhysics(velocity.vx ?? 0), y: -worldToPhysics(velocity.vy ?? 0) });
   }
   for (const object of host.gameObjects.vehicles) {
-    const vehicle = object.state, body = host.vehicleBodies.get(object.id);
+    const vehicle = object.state, body = object.physicsBody;
     if (!body) continue;
     body.setPosition({ x: worldToPhysics(vehicle.x), y: -worldToPhysics(vehicle.y) });
     body.setLinearVelocity({ x: worldToPhysics(vehicle.vx), y: -worldToPhysics(vehicle.vy) });

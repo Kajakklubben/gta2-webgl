@@ -3,7 +3,7 @@ export interface EntityPhysicsBackend<TObject, TBody, TQuery, TContact, TStart> 
   sync(objects: Iterable<TObject>): void;
   queryCircle(query: TQuery): TBody[];
   contacts(filter?: (a: TBody, b: TBody) => boolean): TContact[];
-  resolveBlocking(dt?: number, starts?: ReadonlyMap<string, TStart>): TContact[];
+  resolveBlocking(dt?: number, starts?: ReadonlyMap<string, TStart>, mapBlockedBodies?: ReadonlySet<string>): TContact[];
 }
 
 /** The map backend can be Planck, another 2D solver, or a test double. */
@@ -37,7 +37,12 @@ export interface PhysicsFixture {
 export type PhysicsShape =
   | { readonly type: 'circle'; readonly radius: number }
   | { readonly type: 'box'; readonly halfWidth: number; readonly halfHeight: number; readonly center?: PhysicsVector; readonly angle?: number }
-  | { readonly type: 'edge'; readonly start: PhysicsVector; readonly end: PhysicsVector };
+  /**
+   * A segment may optionally carry a small solid thickness.  This keeps map
+   * geometry expressible as authored segments while allowing a backend to
+   * recover a movable object that starts partially across a wall.
+   */
+  | { readonly type: 'edge'; readonly start: PhysicsVector; readonly end: PhysicsVector; readonly thickness?: number };
 
 export interface PhysicsFixtureDefinition {
   readonly shape: PhysicsShape;
@@ -117,6 +122,13 @@ export interface PhysicsContact {
 
 export type PhysicsRayCastCallback = (fixture: PhysicsFixture, point: PhysicsVector, normal: PhysicsVector, fraction: number) => number;
 
+export interface PhysicsRayCastHit {
+  readonly fixture: PhysicsFixture;
+  readonly point: PhysicsVector;
+  readonly normal: PhysicsVector;
+  readonly fraction: number;
+}
+
 /** Native solver operations are implemented by the engine, never by game code. */
 export interface PhysicsRuntime {
   createBody(definition?: PhysicsBodyDefinition): PhysicsBody;
@@ -138,6 +150,7 @@ export interface PhysicsRuntime {
  */
 export class PhysicsWorld<TObject, TBody, TQuery, TContact, TStart> {
   private readonly mapContacts: MapContact[] = [];
+  private readonly mapBlockedBodies = new Set<string>();
 
   constructor(
     private readonly entities: EntityPhysicsBackend<TObject, TBody, TQuery, TContact, TStart>,
@@ -147,9 +160,13 @@ export class PhysicsWorld<TObject, TBody, TQuery, TContact, TStart> {
   sync(objects: Iterable<TObject>) { this.entities.sync(objects); }
   queryCircle(query: TQuery) { return this.entities.queryCircle(query); }
   contacts(filter?: (a: TBody, b: TBody) => boolean) { return this.entities.contacts(filter); }
-  resolveBlocking(dt?: number, starts?: ReadonlyMap<string, TStart>) { return this.entities.resolveBlocking(dt, starts); }
+  resolveBlocking(dt?: number, starts?: ReadonlyMap<string, TStart>) { return this.entities.resolveBlocking(dt, starts, this.mapBlockedBodies); }
   rayCast(start: { x: number; y: number }, end: { x: number; y: number }, accept?: (fixture: unknown) => boolean) { return this.map.rayCast(start, end, accept); }
-  step(dt: number) { this.map.step(dt); }
+  step(dt: number) {
+    this.mapBlockedBodies.clear();
+    this.map.step(dt);
+  }
+  recordMapBlockedBody(bodyId: string) { this.mapBlockedBodies.add(bodyId); }
   recordMapContact(contact: MapContact) { this.mapContacts.push(contact); }
   drainMapContacts() { return this.mapContacts.splice(0); }
 }

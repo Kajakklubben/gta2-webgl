@@ -13,6 +13,61 @@ export class VehicleAiController implements VehicleControlAdapter {
 
   constructor(private readonly vehicle: VehicleObject) {}
 
+  private resetToOrdinaryFallback() {
+    const state = this.vehicle.mutableVehicleState;
+    state.aiActive = true;
+    state.aiMode = 'ordinary';
+    state.aiTask = 'follow-road';
+    state.aiState = state.wrecked ? 'wrecked' : 'cruise';
+    state.allowSpecialRoute = false;
+    delete state.routeId;
+    delete state.routeCursor;
+    delete state.arrowCursor;
+    delete state.arrowRun;
+    delete state.targetDirection;
+    delete state.plannedTurn;
+    delete state.laneTarget;
+    delete state.laneAlignment;
+    delete state.targetSpeed;
+    delete state.speedClass;
+    delete state.yieldTimer;
+    delete state.obstacleTimer;
+    delete state.offRoadTimer;
+    delete state.pursuitTarget;
+    delete state.serviceStop;
+    state.signal = 'none';
+    state.horn = false;
+    state.brakeLights = false;
+  }
+
+  private initializeAutonomousState() {
+    const state = this.vehicle.mutableVehicleState;
+    if (state.aiMode === 'inactive' || state.aiActive === false) {
+      this.resetToOrdinaryFallback();
+      return;
+    }
+    if (state.aiMode === undefined) {
+      if (state.pursuitTarget !== undefined) {
+        state.aiMode = 'chase';
+        state.aiTask = 'chase';
+      } else if (state.transport !== undefined || state.serviceStop !== undefined) {
+        state.aiMode = 'service';
+        state.aiTask = 'service';
+      } else {
+        state.aiMode = 'ordinary';
+        state.aiTask = 'follow-road';
+      }
+    }
+    state.aiActive = true;
+    if (state.aiTask === undefined) {
+      state.aiTask = state.aiMode === 'chase' || state.aiMode === 'emergency'
+        ? 'chase'
+        : state.aiMode === 'service' ? 'service'
+          : state.aiMode === 'scripted' ? (state.routeId === undefined ? 'goto' : 'route')
+            : 'follow-road';
+    }
+  }
+
   /** Remove traffic-only decisions before a player-controlled input is
    * applied. Route nodes remain map metadata, but they are no longer an
    * active AI command while the driver is a player. */
@@ -20,7 +75,27 @@ export class VehicleAiController implements VehicleControlAdapter {
     const state = this.vehicle.mutableVehicleState;
     const firstPlayerTick = this.controlMode !== 'player';
     this.controlMode = 'player';
+    state.aiActive = false;
+    state.aiMode = 'inactive';
+    state.aiTask = 'none';
     delete state.aiState;
+    // RouteNode/targetNode/junction/currentDirection describe where the car
+    // came from and remain useful inert navigation metadata. Everything below
+    // is an active controller decision and must not survive player takeover.
+    delete state.routeId;
+    delete state.routeCursor;
+    delete state.arrowCursor;
+    delete state.arrowRun;
+    delete state.targetDirection;
+    delete state.plannedTurn;
+    delete state.laneTarget;
+    delete state.laneAlignment;
+    delete state.targetSpeed;
+    delete state.speedClass;
+    delete state.yieldTimer;
+    delete state.obstacleTimer;
+    delete state.offRoadTimer;
+    delete state.allowSpecialRoute;
     state.signal = 'none';
     delete state.serviceStop;
     delete state.pursuitTarget;
@@ -34,7 +109,10 @@ export class VehicleAiController implements VehicleControlAdapter {
 
   /** Mark the chassis as available to the traffic controller again. */
   setAutonomousControlMode() {
+    const wasPlayerControlled = this.controlMode === 'player';
     this.controlMode = 'ai';
+    if (wasPlayerControlled) this.resetToOrdinaryFallback();
+    else this.initializeAutonomousState();
   }
 
   isDriven() {

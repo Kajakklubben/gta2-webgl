@@ -1,5 +1,5 @@
 import { SOURCE_FIX16_ONE, WORLD, sourceFixedPerTickToWorld, tilesPerSecondToWorld } from '../world/world';
-import type { CarPhysics } from '../../loader/gci';
+import type { CarPhysics } from '../../engine/loader/gci';
 import { directionFromRotation, type Vector2 } from './motion-vector';
 import { vehicleGear } from './vehicle-kinematics-gears';
 export { vehicleGear } from './vehicle-kinematics-gears';

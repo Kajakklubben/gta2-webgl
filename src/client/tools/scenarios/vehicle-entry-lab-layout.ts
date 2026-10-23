@@ -1,14 +1,11 @@
-import * as THREE from "three";
-import type { Block, Face, GameMap, TrafficMapMetadata } from "../../../shared/loader/map-parser";
-import { GTA2SlopeType } from "../../../shared/domain/world/gta2-enums";
-import type { CarInfo } from "../../../shared/loader/style-parser";
+import type { GameMap } from "../../../shared/engine/loader/map-parser";
+import type { CarInfo } from "../../../shared/engine/loader/style-parser";
 import type { PlayerState, TrafficState, VehicleSeatRole } from "../../../shared/protocol/types";
 import { vehicleDoorDefinitions, vehicleSeatDefinitions, type VehicleDoorPoint } from "../../../shared/domain/vehicles/vehicle-occupancy";
-import { tileToWorld } from "../../../shared/domain/world/world";
 import { newCombat } from "../../../shared/domain/combat/weapons";
 import { scenarioWorldPlacement, type VehicleEntryApproach, type VehicleEntryScenarioId, type VehicleExitScenarioId } from "./vehicle-entry-scenarios";
-import type { VehicleBounds } from "../../../shared/loader/vehicle-bounds";
-import { SCENARIO_ROOM_RADIUS } from './scenario-view';
+import type { VehicleBounds } from "../../../shared/engine/loader/vehicle-bounds";
+import { createScenarioLevel as createSharedScenarioLevel } from './scenario-view';
 
 export type EntryScenarioId = VehicleEntryScenarioId;
 export type ExitScenarioId = VehicleExitScenarioId;
@@ -68,22 +65,22 @@ export function propertyTags(info: CarInfo, seats: number) {
   return tags.join(' · ');
 }
 
-export function makePreviewVehicle(model: number, x: number, y: number, id: number, doorLock?: TrafficState['doorLock']): TrafficState {
-  const vehicle: TrafficState = { id, x, y, z: 0, rotation: 0, speed: 0, vx: 0, vy: 0, angularVelocity: 0, throttle: 0, brakePressure: 1, handbrakeForce: 0, color: 0xffffff, health: 100, model, passengers: [], occupants: [], doorStates: [] };
+export function makePreviewVehicle(model: number, x: number, y: number, id: number, doorLock?: TrafficState['doorLock'], z = 0): TrafficState {
+  const vehicle: TrafficState = { id, x, y, z, rotation: 0, speed: 0, vx: 0, vy: 0, angularVelocity: 0, throttle: 0, brakePressure: 1, handbrakeForce: 0, color: 0xffffff, health: 100, model, passengers: [], occupants: [], doorStates: [] };
   if (doorLock !== undefined) vehicle.doorLock = doorLock;
   return vehicle;
 }
 
-export function makePreviewPlayer(start: { x: number; y: number }): PlayerState {
+export function makePreviewPlayer(start: { x: number; y: number }, z = 0): PlayerState {
   return {
-    id: 'entry-scenario-player', x: start.x, y: start.y, z: 0, rotation: 0, vx: 0, vy: 0,
+    id: 'entry-scenario-player', x: start.x, y: start.y, z, rotation: 0, vx: 0, vy: 0,
     name: 'Scenario player', color: 0xf6ca66, score: 0, kills: 0, deaths: 0, ready: true, armor: 0, money: 0, wanted: 0, team: 0, combat: { ...newCombat(), ammo: [60] },
   };
 }
 
 export function makePreviewBlockade(model: number, vehicle: TrafficState, placement: { x: number; y: number; rotation?: number }, id: number): TrafficState {
   const worldPlacement = scenarioWorldPlacement({ x: vehicle.x, y: vehicle.y }, placement, vehicle.rotation);
-  const blockade = makePreviewVehicle(model, worldPlacement.x, worldPlacement.y, id, 'locked');
+  const blockade = makePreviewVehicle(model, worldPlacement.x, worldPlacement.y, id, 'locked', vehicle.z);
   blockade.rotation = worldPlacement.rotation;
   return blockade;
 }
@@ -104,99 +101,9 @@ export function vehicleBlockadePlacement(
   return { ...placement, y: direction * (targetBounds.height + blockadeBounds.height) * .5 + direction * clearance };
 }
 
-export function emptyTrafficMetadata(): TrafficMapMetadata {
-  return { roadNodes: [], junctions: [], horizontalSegments: [], verticalSegments: [], trafficLightZones: [], arrowBlockerZones: [], busStopZones: [] };
-}
-
-/**
- * Build the deterministic room used by every entry replay. It deliberately
- * contains one flat floor and four authored wall faces. The scenario vehicle
- * is always at the room centre; blocked approaches use locked vehicle objects
- * rather than turning map geometry into an artificial obstacle.
- */
+/** Place entry/exit replays on the authored Tiny Town road. */
 export function createScenarioLevel(source: GameMap) {
-  const targetX = 128, targetY = 128, wallRadius = SCENARIO_ROOM_RADIUS, roomRadius = SCENARIO_ROOM_RADIUS;
-  const emptyFace = (): Face => ({ tileNumber: 0, flat: false, flip: false, rotation: 0, wall: false, bulletWall: false });
-  const floorFace = (): Face => ({ tileNumber: 1, flat: false, flip: false, rotation: 0, wall: false, bulletWall: false });
-  const wallFace = (): Face => ({ tileNumber: 1, flat: false, flip: false, rotation: 0, wall: true, bulletWall: true });
-  const map = Array.from({ length: 256 }, () => Array.from({ length: 256 }, () => [] as (Block | undefined)[]));
-  for (let x = targetX - roomRadius; x <= targetX + roomRadius; x++) for (let y = targetY - roomRadius; y <= targetY + roomRadius; y++) {
-    const boundary = Math.abs(x - targetX) === wallRadius || Math.abs(y - targetY) === wallRadius;
-    // Every position has a solid layer-0 support surface. Air-backed columns
-    // are reserved for actual water/open-space cells by gameplay probes.
-    const groundType = 2;
-    map[x]![y]![0] = {
-      Left: emptyFace(), Right: emptyFace(), Top: emptyFace(), Bottom: emptyFace(),
-      Lid: floorFace(),
-      slopeType: GTA2SlopeType.Flat,
-      groundType,
-      arrows: 0,
-    };
-    if (boundary) {
-      // GTA2 walls are blocks above the floor, not coloured strips on the
-      // floor. A layer-1 block rises from the layer-0 lid; its side faces are
-      // the red wall surfaces and its lid is the roof on the far side.
-      const sideX = x === targetX - wallRadius || x === targetX + wallRadius;
-      const sideY = y === targetY - wallRadius || y === targetY + wallRadius;
-      let leftFace = emptyFace();
-      let rightFace = emptyFace();
-      let topFace = emptyFace();
-      let bottomFace = emptyFace();
-      if (sideX) {
-        leftFace = wallFace();
-        rightFace = wallFace();
-      }
-      if (sideY) {
-        topFace = wallFace();
-        bottomFace = wallFace();
-      }
-      map[x]![y]![1] = {
-        Left: leftFace,
-        Right: rightFace,
-        Top: topFace,
-        Bottom: bottomFace,
-        Lid: floorFace(),
-        slopeType: GTA2SlopeType.Flat,
-        groundType: 2,
-        arrows: 0,
-      };
-    }
-  }
-  const level: GameMap = {
-    map,
-    objects: [],
-    zones: [],
-    animations: source.animations,
-    lights: [],
-    roads: [],
-    traffic: emptyTrafficMetadata(),
-    format: source.format,
-  };
-  return { level, origin: { x: tileToWorld(targetX), y: -tileToWorld(targetY) } };
-}
-
-/** Keep the diagnostic map synthetic while making wall faces read as a
- * surface. Nearest filtering and repeat wrapping preserve a crisp pixel-style
- * checker pattern at every viewport size. */
-export function createCheckerTexture(lightColor: string, darkColor: string) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 16;
-  canvas.height = 16;
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('Unable to create checker pattern canvas');
-  context.fillStyle = lightColor;
-  context.fillRect(0, 0, 16, 16);
-  context.fillStyle = darkColor;
-  context.fillRect(0, 0, 8, 8);
-  context.fillRect(8, 8, 8, 8);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestFilter;
-  texture.needsUpdate = true;
-  return texture;
+  return createSharedScenarioLevel(source, 'entry');
 }
 
 export function cross(ax: number, ay: number, bx: number, by: number) { return ax * by - ay * bx; }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { Pixels } from '../../shared/loader/style-parser';
+import type { Pixels } from '../../shared/engine/assets/pixels';
 export function pixelTexture(pixels: Pixels | undefined) {
   if (!pixels) throw new Error('Missing decoded tile texture');
   const texture = new THREE.DataTexture(pixels.data, pixels.width, pixels.height, THREE.RGBAFormat);

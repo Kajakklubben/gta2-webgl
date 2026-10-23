@@ -1,7 +1,7 @@
 import type { GameObjectSpriteLayer } from '../../../shared/game/gameobjects/gameobject';
 import { sourceFrameMs } from '../../../shared/domain/animation';
-import { selectSpriteFrames, type SpriteFrameBlend } from './frame-interpolation';
-import type { Pixels } from '../../../shared/loader/models/style';
+import { selectSpriteFrames, type SpriteFrameBlend } from '../../../shared/engine/assets/animation';
+import type { Pixels } from '../../../shared/engine/assets/pixels';
 
 export interface ResolvedAnimationFrames {
   readonly current: readonly Pixels[];

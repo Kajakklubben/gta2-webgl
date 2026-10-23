@@ -1,4 +1,5 @@
-import type { Pixels, Style } from '../../../shared/loader/models/style';
+import type { Style } from '../../../shared/engine/loader/models/style';
+import type { Pixels } from '../../../shared/engine/assets/pixels';
 import type { GameObjectSpriteLayer } from '../../../shared/game/gameobjects/gameobject';
 import { deltaIndices } from '../sprite/cars';
 

@@ -23,4 +23,11 @@ describe('shared world z projection', () => {
     expect(camera.aspect).toBeCloseTo(640 / 480);
     expect(Math.atan2(-200 - camera.position.y, camera.position.z)).toBeCloseTo(TOP_DOWN_PITCH);
   });
+
+  it('applies detached-camera X tilt after the overhead look-at', () => {
+    const camera = createTopDownCamera(640, 480);
+    const rotationX = Math.PI / 4;
+    setTopDownCamera(camera, 100, -200, 400, 640, 480, rotationX);
+    expect(camera.rotation.x).toBeCloseTo(rotationX);
+  });
 });

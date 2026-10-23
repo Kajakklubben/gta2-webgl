@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Block, Face, GameMap } from '../../shared/loader/map-parser';
+import type { Block, Face, GameMap } from '../../shared/engine/loader/map-parser';
 import { GameWorld } from '../../shared/game/game-world';
 import { newCombat } from '../../shared/domain/combat/weapons';
 import type { NpcState, PlayerState, TrafficState } from '../../shared/protocol/types';

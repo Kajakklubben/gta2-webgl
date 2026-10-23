@@ -19,6 +19,7 @@ export const GAMEPLAY_SCENARIO_IDS = [
   'player-water',
   'driver-water',
   'npc-water',
+  'tiny-town-rendering',
 ] as const;
 
 export type VehicleEntryScenarioId = typeof VEHICLE_ENTRY_SCENARIO_IDS[number];
@@ -26,7 +27,7 @@ export type VehicleExitScenarioId = typeof VEHICLE_EXIT_SCENARIO_IDS[number];
 export type GameplayScenarioId = typeof GAMEPLAY_SCENARIO_IDS[number];
 export type ScenarioId = VehicleEntryScenarioId | VehicleExitScenarioId | GameplayScenarioId;
 export type ScenarioKind = 'vehicle-entry' | 'vehicle-exit' | 'gameplay';
-export type ScenarioLevelId = 'entry' | 'road' | 'water';
+export type ScenarioLevelId = 'entry' | 'road' | 'water' | 'tiny-town';
 export type ScenarioActorKind = 'player' | 'npc' | 'vehicle' | 'blockade';
 export type ScenarioInput = 'none' | 'jump-right' | 'drive-right';
 export type VehicleEntryCompletion = 'vehicle-entry-succeeds' | 'vehicle-entry-rejected';
@@ -38,13 +39,16 @@ export type GameplayScenarioCompletion =
   | 'npc-car-impact'
   | 'player-water'
   | 'driver-water'
-  | 'npc-water';
+  | 'npc-water'
+  | 'tiny-town-rendering';
 export type ScenarioCompletion = VehicleEntryCompletion | VehicleExitCompletion | GameplayScenarioCompletion;
 
 export interface ScenarioPlacement {
   /** World-pixel offset from the scenario origin. */
   readonly x: number;
   readonly y: number;
+  /** Optional authored support height in continuous map-layer units. */
+  readonly z?: number;
   readonly rotation?: number;
 }
 
@@ -59,7 +63,12 @@ export interface ScenarioActorDefinition {
   readonly placement: ScenarioPlacement;
   readonly runtimeId?: number;
   readonly model?: number | 'selected';
+  readonly label?: string;
   readonly velocity?: ScenarioVelocity;
+  /** Initial vehicle control state for a replayed moving chassis. */
+  readonly throttle?: number;
+  readonly brakePressure?: number;
+  readonly handbrakeForce?: number;
   readonly driver?: string;
   readonly vehicleId?: number;
 }
@@ -68,10 +77,10 @@ export interface ScenarioArrange {
   /** Default actor setup. Alternate setups are listed in `variants`. */
   readonly actors: readonly ScenarioActorDefinition[];
   readonly variants?: readonly ScenarioVariantDefinition[];
+  /** Use the authored vehicle catalog instead of the replay fallback chassis. */
+  readonly vehicleCatalog?: boolean;
   readonly occupiedSeats?: readonly number[] | 'all';
   readonly locked?: boolean;
-  /** Load the real vehicle metadata instead of the minimal scenario physics. */
-  readonly vehicleCatalog?: boolean;
 }
 
 export interface ScenarioAct {
@@ -120,7 +129,7 @@ export interface VehicleExitScenarioDefinition extends ScenarioDefinitionBase {
 export interface GameplayScenarioDefinition extends ScenarioDefinitionBase {
   readonly id: GameplayScenarioId;
   readonly kind: 'gameplay';
-  readonly level: 'road' | 'water';
+  readonly level: 'road' | 'water' | 'tiny-town';
   readonly assert: ScenarioAssert & { readonly completion: GameplayScenarioCompletion };
 }
 

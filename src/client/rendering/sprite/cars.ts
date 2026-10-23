@@ -1,4 +1,4 @@
-import type { CarInfo, Style } from '../../../shared/loader/models/style';
+import type { CarInfo, Style } from '../../../shared/engine/loader/models/style';
 import type { CarSpriteLights, GameObjectSpriteLayer, SpriteDefinitionRef, SpritePaletteRef } from '../../../shared/game/gameobjects/gameobject';
 import { GTA2_CAR_DAMAGE_SLOTS } from '../../../shared/domain/world/gta2-sprites';
 export { hasWreckModel, resolveWreckModel } from '../../../shared/domain/world/gta2-sprites';

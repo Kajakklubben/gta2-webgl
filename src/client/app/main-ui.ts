@@ -1,6 +1,7 @@
 import type { loadClientAssets } from './assets';
 import { pickups } from '../rendering/sprite';
-import { DEFAULT_MULTIPLAYER_MAP_ID, MULTIPLAYER_MAPS, type MultiplayerMapDefinition } from '../../shared/loader/multiplayer-maps';
+import { DEFAULT_MULTIPLAYER_MAP_ID, MULTIPLAYER_MAPS, type MultiplayerMapDefinition } from '../../shared/engine/loader/multiplayer-maps';
+import { createMenuSystem } from './menu-system';
 
 const message = document.querySelector<HTMLParagraphElement>('#message')!;
 const reconnect = document.querySelector<HTMLButtonElement>('#reconnect')!;
@@ -12,28 +13,18 @@ export const setStatus = (text: string, state: 'loading' | 'error' = 'loading') 
 const lobby = document.querySelector<HTMLDivElement>('#lobby')!;
 const modeInput = document.querySelector<HTMLSelectElement>('#mode')!;
 const openMenu = document.querySelector<HTMLButtonElement>('#open-menu')!;
-const menuResume = document.querySelector<HTMLButtonElement>('#menu-resume')!;
 const gameMenu = document.querySelector<HTMLElement>('#game-menu')!;
 const menuBackdrop = document.querySelector<HTMLDivElement>('#menu-backdrop')!;
 const localMenu = document.querySelector<HTMLElement>('#local-menu')!;
 const localMenuTitle = document.querySelector<HTMLElement>('#local-menu-title')!;
 const closeLocalMenu = document.querySelector<HTMLButtonElement>('#close-local-menu')!;
-const openSinglePlayer = document.querySelector<HTMLButtonElement>('#open-single-player')!;
-const openSplitScreen = document.querySelector<HTMLButtonElement>('#open-split-screen')!;
 const localMapInput = document.querySelector<HTMLSelectElement>('#local-map')!;
 const startLocalGame = document.querySelector<HTMLButtonElement>('#start-local-game')!;
-const openLobby = document.querySelector<HTMLButtonElement>('#open-lobby')!;
-const openScoreboard = document.querySelector<HTMLButtonElement>('#open-scoreboard')!;
-const openChat = document.querySelector<HTMLButtonElement>('#open-chat')!;
-const openDebug = document.querySelector<HTMLButtonElement>('#open-debug')!;
+const closeLobby = document.querySelector<HTMLButtonElement>('#close-lobby')!;
+const graphicsMenu = document.querySelector<HTMLElement>('#graphics-menu')!;
+const closeChat = document.querySelector<HTMLButtonElement>('#close-chat')!;
 const debugMenu = document.querySelector<HTMLElement>('#debug-menu')!;
 const closeDebug = document.querySelector<HTMLButtonElement>('#close-debug')!;
-const debugTabGraphs = document.querySelector<HTMLButtonElement>('#debug-tab-graphs')!;
-const debugTabPlayer = document.querySelector<HTMLButtonElement>('#debug-tab-player')!;
-const debugTabCamera = document.querySelector<HTMLButtonElement>('#debug-tab-camera')!;
-const debugGraphs = document.querySelector<HTMLElement>('#debug-graphs')!;
-const debugPlayer = document.querySelector<HTMLElement>('#debug-player')!;
-const debugCamera = document.querySelector<HTMLElement>('#debug-camera')!;
 const debugGiveAllWeapons = document.querySelector<HTMLButtonElement>('#debug-give-all-weapons')!;
 const debugPedestrianGraph = document.querySelector<HTMLInputElement>('#debug-pedestrian-graph')!;
 const debugTraffic = document.querySelector<HTMLInputElement>('#debug-traffic')!;
@@ -42,17 +33,13 @@ const debugZones = document.querySelector<HTMLInputElement>('#debug-zones')!;
 const debugPoliceAttack = document.querySelector<HTMLInputElement>('#debug-police-attack')!;
 const debugVehicleDoors = document.querySelector<HTMLInputElement>('#debug-vehicle-doors')!;
 const debugClosestDoor = document.querySelector<HTMLInputElement>('#debug-closest-door')!;
-const debugShowCoordinates = document.querySelector<HTMLInputElement>('#debug-show-coordinates')!;
-const debugCoordinates = document.querySelector<HTMLOutputElement>('#debug-coordinates')!;
-const debugCoordinateOverlay = document.querySelector<HTMLOutputElement>('#debug-coordinate-overlay')!;
 const debugShowPlayerState = document.querySelector<HTMLInputElement>('#debug-show-player-state')!;
 const debugPlayerStateOverlay = document.querySelector<HTMLOutputElement>('#debug-player-state-overlay')!;
+const debugMapTileOverlay = document.querySelector<HTMLOutputElement>('#debug-map-tile-overlay')!;
+const debugTilePicker = document.querySelector<HTMLInputElement>('#debug-tile-picker')!;
+const debugMapLevels = document.querySelector<HTMLSelectElement>('#debug-map-levels')!;
 const debugResetWorld = document.querySelector<HTMLButtonElement>('#debug-reset-world')!;
 const debugCameraMode = document.querySelector<HTMLSelectElement>('#debug-camera-mode')!;
-const debugCameraSpeedZoom = document.querySelector<HTMLInputElement>('#debug-camera-speed-zoom')!;
-const debugCameraLookahead = document.querySelector<HTMLInputElement>('#debug-camera-lookahead')!;
-const debugSpriteFrameInterpolation = document.querySelector<HTMLInputElement>('#debug-sprite-frame-interpolation')!;
-const debugFps = document.querySelector<HTMLInputElement>('#debug-fps')!;
 const nameInput = document.querySelector<HTMLInputElement>('#name')!;
 const roomInput = document.querySelector<HTMLInputElement>('#room')!;
 const teamInput = document.querySelector<HTMLSelectElement>('#team')!;
@@ -141,60 +128,136 @@ export function setLocalMapOptions(maps: readonly MultiplayerMapDefinition[], se
 setMapOptions(MULTIPLAYER_MAPS, localStorage.getItem('gta2-map') || DEFAULT_MULTIPLAYER_MAP_ID);
 setLocalMapOptions(MULTIPLAYER_MAPS, localStorage.getItem('gta2-map') || DEFAULT_MULTIPLAYER_MAP_ID);
 
-export const setLobbyOpen = (open: boolean) => {
-  lobby.hidden = !open;
-  openLobby.setAttribute('aria-expanded', String(open));
-  if (open) openLobby.textContent = 'Close multiplayer';
-  else openLobby.textContent = 'Multiplayer';
-};
-export const setLocalMenuOpen = (open: boolean, mode: 'singleplayer' | 'split-screen' = 'singleplayer') => {
-  localMenu.hidden = !open;
-  if (open) localMenuTitle.textContent = mode === 'split-screen' ? 'Split screen' : 'Single player';
-};
-export const setScoreboardOpen = (open: boolean) => {
-  scoreboard.hidden = !open;
-  openScoreboard.setAttribute('aria-expanded', String(open));
-  if (open) openScoreboard.textContent = 'Close score';
-  else openScoreboard.textContent = 'Score';
-};
-export const setChatOpen = (open: boolean) => {
-  chat.hidden = !open;
-  openChat.setAttribute('aria-expanded', String(open));
-  if (open) openChat.textContent = 'Close chat';
-  else openChat.textContent = 'Chat';
-};
-let gameMenuOpen = false;
-export const setGameMenuOpen = (open: boolean) => {
-  gameMenuOpen = open;
-  gameMenu.hidden = !open;
-  menuBackdrop.hidden = !open;
-  openMenu.setAttribute('aria-expanded', String(open));
-  if (open) {
-    menuResume.focus({ preventScroll: true });
-  } else if (document.activeElement instanceof HTMLElement && gameMenu.contains(document.activeElement)) {
-    openMenu.focus({ preventScroll: true });
+const menuSystem = createMenuSystem(menuBackdrop, [
+  {
+    id: 'game',
+    surface: gameMenu,
+    trigger: openMenu,
+    initialFocusId: 'menu-resume',
+    render: {
+      title: 'GTA2',
+      headerClass: 'game-menu-header',
+      entryContainerClass: 'game-menu-actions',
+      entryContainerTag: 'ul',
+      entries: [
+        { kind: 'action', id: 'menu-resume', label: 'Resume', action: 'resume' },
+        { kind: 'action', id: 'open-single-player', label: 'Single player', action: 'singleplayer' },
+        { kind: 'action', id: 'open-split-screen', label: 'Split screen', action: 'split-screen' },
+        { kind: 'action', id: 'open-lobby', label: 'Multiplayer', action: 'multiplayer' },
+        { kind: 'action', id: 'open-graphics', label: 'Graphics', action: 'graphics' },
+        { kind: 'action', id: 'open-scoreboard', label: 'Scoreboard', action: 'scoreboard' },
+        { kind: 'action', id: 'open-chat', label: 'Chat', action: 'chat' },
+        { kind: 'action', id: 'open-debug', label: 'Debug', action: 'debug' },
+      ],
+    },
+  },
+  { id: 'local', surface: localMenu, triggerId: 'open-single-player', initialFocus: localMapInput },
+  { id: 'lobby', surface: lobby, triggerId: 'open-lobby', initialFocus: nameInput },
+  {
+    id: 'graphics',
+    surface: graphicsMenu,
+    triggerId: 'open-graphics',
+    initialFocusId: 'debug-camera-speed-zoom',
+    render: {
+      title: 'Graphics',
+      headerClass: 'menu-surface-header',
+      entryContainerClass: 'menu-actions',
+      back: { id: 'close-graphics', label: 'Back' },
+      entries: [
+        { kind: 'checkbox', id: 'debug-camera-speed-zoom', label: 'Speed zoom-out', checked: true },
+        { kind: 'checkbox', id: 'debug-camera-lookahead', label: 'Look ahead at speed', checked: true },
+        { kind: 'checkbox', id: 'debug-sprite-frame-interpolation', label: 'Sprite frame interpolation', checked: true },
+        { kind: 'checkbox', id: 'debug-fps', label: 'FPS counter' },
+      ],
+    },
+  },
+  { id: 'scoreboard', surface: scoreboard, triggerId: 'open-scoreboard' },
+  { id: 'chat', surface: chat, triggerId: 'open-chat', initialFocus: chatInput },
+  { id: 'debug', surface: debugMenu, triggerId: 'open-debug', initialFocus: debugPedestrianGraph },
+], { onAction: handleMenuAction });
+
+const menuResume = menuSystem.element<HTMLButtonElement>('game', 'menu-resume');
+const openSinglePlayer = menuSystem.element<HTMLButtonElement>('game', 'open-single-player');
+const openSplitScreen = menuSystem.element<HTMLButtonElement>('game', 'open-split-screen');
+const openLobby = menuSystem.element<HTMLButtonElement>('game', 'open-lobby');
+const openGraphics = menuSystem.element<HTMLButtonElement>('game', 'open-graphics');
+const closeGraphics = menuSystem.element<HTMLButtonElement>('graphics', 'close-graphics');
+const openScoreboard = menuSystem.element<HTMLButtonElement>('game', 'open-scoreboard');
+const openChat = menuSystem.element<HTMLButtonElement>('game', 'open-chat');
+const openDebug = menuSystem.element<HTMLButtonElement>('game', 'open-debug');
+const debugCameraSpeedZoom = menuSystem.element<HTMLInputElement>('graphics', 'debug-camera-speed-zoom');
+const debugCameraLookahead = menuSystem.element<HTMLInputElement>('graphics', 'debug-camera-lookahead');
+const debugSpriteFrameInterpolation = menuSystem.element<HTMLInputElement>('graphics', 'debug-sprite-frame-interpolation');
+const debugFps = menuSystem.element<HTMLInputElement>('graphics', 'debug-fps');
+
+let selectedLocalMode: 'singleplayer' | 'split-screen' = 'singleplayer';
+
+function handleMenuAction(action: string) {
+  switch (action) {
+    case 'resume': setGameMenuOpen(false); break;
+    case 'singleplayer': selectedLocalMode = 'singleplayer'; setLocalMenuOpen(true, selectedLocalMode); break;
+    case 'split-screen': selectedLocalMode = 'split-screen'; setLocalMenuOpen(true, selectedLocalMode); break;
+    case 'multiplayer': setLobbyOpen(true); break;
+    case 'graphics': menuSystem.open('graphics'); break;
+    case 'scoreboard': setScoreboardOpen(true); break;
+    case 'chat': setChatOpen(true); break;
+    case 'debug': setDebugMenuOpen(true); break;
   }
-};
-export const isGameMenuOpen = () => gameMenuOpen;
-setLobbyOpen(false); setLocalMenuOpen(false); setScoreboardOpen(false); setChatOpen(false);
+}
+
+export function setLobbyOpen(open: boolean) {
+  if (open) menuSystem.open('lobby', { focus: nameInput });
+  else menuSystem.dismiss('lobby');
+}
+export function setMultiplayerMenuMode(enabled: boolean) {
+  for (const button of [openSinglePlayer, openSplitScreen]) {
+    button.hidden = enabled;
+    const item = button.closest('li');
+    if (item) item.hidden = enabled;
+  }
+  for (const value of ['singleplayer', 'local']) {
+    const option = modeInput.querySelector<HTMLOptionElement>(`option[value="${value}"]`);
+    if (option) option.hidden = enabled;
+  }
+  if (enabled) modeInput.value = 'online';
+}
+export function setLocalMenuOpen(open: boolean, mode: 'singleplayer' | 'split-screen' = 'singleplayer') {
+  if (open) {
+    localMenuTitle.textContent = mode === 'split-screen' ? 'Split screen' : 'Single player';
+    menuSystem.open('local', { focus: localMapInput });
+  } else menuSystem.backIf('local');
+}
+export const getSelectedLocalMode = () => selectedLocalMode;
+export function setScoreboardOpen(open: boolean) {
+  if (open) menuSystem.open('scoreboard');
+  else menuSystem.dismiss('scoreboard');
+}
+export function setChatOpen(open: boolean) {
+  if (open) menuSystem.open('chat', { focus: chatInput });
+  else menuSystem.dismiss('chat');
+}
+export function setGameMenuOpen(open: boolean) {
+  if (open) menuSystem.openRoot('game');
+  else menuSystem.closeAll();
+}
+export function setDebugMenuOpen(open: boolean) {
+  if (open) menuSystem.open('debug', { focus: debugPedestrianGraph });
+  else menuSystem.backIf('debug');
+}
+export const isGameMenuOpen = () => menuSystem.isOpen('game');
+export const isMenuOpen = (id?: string) => menuSystem.isOpen(id);
+export const handleMenuEscape = () => menuSystem.handleEscape();
+setLobbyOpen(false); setLocalMenuOpen(false); setScoreboardOpen(false); setChatOpen(false); setDebugMenuOpen(false);
 setGameMenuOpen(false);
-openMenu.onclick = () => setGameMenuOpen(!gameMenuOpen);
-menuResume.onclick = () => setGameMenuOpen(false);
-menuBackdrop.onclick = () => setGameMenuOpen(false);
-const menuButtons = [menuResume, openSinglePlayer, openSplitScreen, openLobby, openScoreboard, openChat, openDebug];
-gameMenu.addEventListener('keydown', event => {
-  if (!gameMenuOpen || !['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) return;
-  event.preventDefault();
-  const current = Math.max(0, menuButtons.indexOf(document.activeElement as HTMLButtonElement));
-  const direction = event.code === 'ArrowUp' || event.code === 'ArrowLeft' ? -1 : 1;
-  menuButtons[(current + direction + menuButtons.length) % menuButtons.length]!.focus({ preventScroll: true });
-});
-openLobby.onclick = () => { setLobbyOpen(Boolean(lobby.hidden)); setGameMenuOpen(false); };
-openSinglePlayer.onclick = () => { setLocalMenuOpen(true, 'singleplayer'); setGameMenuOpen(false); };
-openSplitScreen.onclick = () => { setLocalMenuOpen(true, 'split-screen'); setGameMenuOpen(false); };
+openMenu.onclick = () => menuSystem.toggleRoot('game');
+menuBackdrop.onclick = () => menuSystem.handleEscape();
+closeLobby.onclick = () => setLobbyOpen(false);
 closeLocalMenu.onclick = () => setLocalMenuOpen(false);
-openScoreboard.onclick = () => { setScoreboardOpen(Boolean(scoreboard.hidden)); setGameMenuOpen(false); };
-openChat.onclick = () => { setChatOpen(Boolean(chat.hidden)); setGameMenuOpen(false); };
+closeChat.onclick = () => setChatOpen(false);
+closeDebug.onclick = () => setDebugMenuOpen(false);
+scoreboard.addEventListener('click', event => {
+  if ((event.target as HTMLElement).closest('[data-menu-back]')) setScoreboardOpen(false);
+});
 
 const drawnHudWeapons = new WeakMap<HTMLCanvasElement, number>();
 export function drawHudWeaponIcon(style: Awaited<ReturnType<typeof loadClientAssets>>['style']['style'], weapon: number, target: HTMLCanvasElement) {
@@ -216,10 +279,9 @@ export function drawHudWeaponIcon(style: Awaited<ReturnType<typeof loadClientAss
 }
 
 export const ui = {
-  message, reconnect, status, lobby, openMenu, menuResume, gameMenu, menuBackdrop, localMenu, localMenuTitle, closeLocalMenu, openSinglePlayer, openSplitScreen, localMapInput, startLocalGame, openLobby, openScoreboard, openChat, openDebug, debugMenu, closeDebug,
-  debugTabGraphs, debugTabPlayer, debugTabCamera, debugPlayer, debugCamera, debugGraphs,
+  message, reconnect, status, lobby, openMenu, menuResume, gameMenu, menuBackdrop, localMenu, localMenuTitle, closeLocalMenu, openSinglePlayer, openSplitScreen, localMapInput, startLocalGame, openLobby, graphicsMenu, openGraphics, closeGraphics, openScoreboard, openChat, openDebug, debugMenu, closeDebug,
   debugGiveAllWeapons,
-  debugPedestrianGraph, debugTraffic, debugCar, debugZones, debugPoliceAttack, debugVehicleDoors, debugClosestDoor, debugShowCoordinates, debugCoordinates, debugCoordinateOverlay, debugShowPlayerState, debugPlayerStateOverlay, debugResetWorld, debugCameraMode, debugCameraSpeedZoom, debugCameraLookahead, debugSpriteFrameInterpolation, debugFps,
+  debugPedestrianGraph, debugTraffic, debugCar, debugZones, debugPoliceAttack, debugVehicleDoors, debugClosestDoor, debugShowPlayerState, debugPlayerStateOverlay, debugMapTileOverlay, debugTilePicker, debugMapLevels, debugResetWorld, debugCameraMode, debugCameraSpeedZoom, debugCameraLookahead, debugSpriteFrameInterpolation, debugFps,
   nameInput, roomInput, teamInput, mapInput, join, readyButton, localReset, localLeave, roomState, scoreboard, feed, chat, chatLog, chatInput,
   modeInput,
   fpsCounter, weaponHint, localPaused, localResume, localPauseLeave,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GameWorld } from '../../shared/game/game-world';
-import { parseMap } from '../../shared/loader/map-parser';
-import type { CarInfo, CarDoor } from '../../shared/loader/style-parser';
+import { parseMap } from '../../shared/engine/loader/map-parser';
+import type { CarInfo, CarDoor } from '../../shared/engine/loader/style-parser';
 import type { NpcState, TrafficState } from '../../shared/protocol/types';
 import { mapFixture, npcDefaults } from './fixtures';
 import { vehicleDoorAlignment, vehicleDoorDefinitions, vehicleDoorPoint, vehicleDoorRenderDelta, vehicleEntryAlignmentPhase, vehicleExitAlignmentPhase, vehicleSeatDefinitions } from '../../shared/domain/vehicles/vehicle-occupancy';

@@ -1,5 +1,5 @@
-import type { CarInfo } from '../../loader/style-parser';
-import type { VehicleBounds } from '../../loader/vehicle-bounds';
+import type { CarInfo } from '../../engine/loader/style-parser';
+import type { VehicleBounds } from '../../engine/loader/vehicle-bounds';
 import { normalizeRotation } from '../physics/motion-vector';
 import { WORLD } from '../world/world';
 import type { TrafficState, VehicleSeatRole } from '../../protocol/types';

@@ -3,8 +3,9 @@ import { GameWorld } from '../../shared/game/game-world';
 import { resolveMapObjectPlacement } from '../../shared/domain/physics/map-object-placement';
 import { authoredLocationToWorld } from '../../shared/domain/world/world';
 import { mapFixture } from './fixtures';
-import { parseMap } from '../../shared/loader/map-parser';
-import { DEFAULT_MAP_OBJECT_DEFINITIONS } from '../../shared/loader/map-object-definitions';
+import { parseMap } from '../../shared/engine/loader/map-parser';
+import { createMapObjectDefinitions, DEFAULT_MAP_OBJECT_DEFINITIONS } from '../../shared/engine/loader/map-object-definitions';
+import { createStaticMapObject } from '../../shared/game/gameobjects/map-object';
 
 it('places and blocks an MOBJ from its authored cube coordinate and floor', () => {
   const level = parseMap(mapFixture());
@@ -40,4 +41,22 @@ it('uses the source ground type when an authored support has no lid tile', () =>
   block.Lid = { ...block.Lid, tileNumber: 0 };
   const placement = resolveMapObjectPlacement(level, { x: 85.5, y: 190.5, rotation: 0, type: 7 });
   expect(placement).toMatchObject({ x: 85 * 64, y: -190 * 64, z: 4, collisionLayer: 4, grounded: true });
+});
+
+it('plays the finite retail model-8 animation before switching to its next definition', () => {
+  const pixel = (width: number, height: number) => ({ width, height, data: new Uint8Array(width * height * 4) });
+  const definitions = createMapObjectDefinitions(
+    [{ model: 8, sprites: 5 }, { model: 9, sprites: 1 }],
+    { 8: Array.from({ length: 5 }, () => pixel(14, 14)), 9: [pixel(16, 12)] },
+  );
+  const object = createStaticMapObject(8, { x: 0, y: 0, z: 0, collisionLayer: 3, grounded: true }, 0, 8, definitions.get(8)!);
+  expect(object.getSprite(0)).toMatchObject({ model: 8, frame: 0 });
+  const context = { tick: 0, dt: 1 / 30, world: undefined as never };
+  for (let tick = 1; tick <= 4; tick++) {
+    object.update({ ...context, tick });
+    expect(object.getSprite(tick)).toMatchObject({ model: 8, frame: tick });
+  }
+  object.update({ ...context, tick: 5 });
+  expect(object.getSprite(5)).toMatchObject({ model: 9, frame: 0 });
+  expect(object.state.model).toBe(8);
 });

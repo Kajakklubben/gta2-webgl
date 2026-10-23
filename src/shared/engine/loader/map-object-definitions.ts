@@ -1,4 +1,5 @@
-import type { MapObjectDefinition, ObjectInfo, Pixels } from './models/style';
+import type { MapObjectDefinition, ObjectInfo } from './models/style';
+import type { Pixels } from '../assets/pixels';
 
 type SourceMapObjectMetadata = Omit<MapObjectDefinition, 'model' | 'spriteCount' | 'width' | 'height' | 'depth'>;
 
@@ -19,7 +20,9 @@ const SOURCE_MAP_OBJECTS: Readonly<Record<number, SourceMapObjectMetadata>> = {
   5: { behavior: 'static', nextDefinition: 156, collisionBucket: 4, blocksMovement: true, drawLayer: 10, spriteFlags: 0, hasShadows: false, frameTicks: 0 },
   6: { behavior: 'static', nextDefinition: 151, collisionBucket: 3, blocksMovement: true, drawLayer: 2, spriteFlags: 0, hasShadows: false, frameTicks: 0 },
   7: { behavior: 'static', nextDefinition: 157, collisionBucket: 4, blocksMovement: true, drawLayer: 10, spriteFlags: 0, hasShadows: false, frameTicks: 0 },
-  8: { behavior: 'animated', nextDefinition: 9, collisionBucket: 3, blocksMovement: true, drawLayer: 3, spriteFlags: 0, hasShadows: false, frameTicks: 1 },
+  // Object_2C starts model 8 with timer=1, advances one of its five OBJI
+  // frames per tick, then TickObject(9) when the frame counter wraps.
+  8: { behavior: 'animated', nextDefinition: 9, collisionBucket: 3, blocksMovement: true, drawLayer: 3, spriteFlags: 0, hasShadows: false, frameTicks: 1, animationTimer: 1 },
   9: { behavior: 'static', nextDefinition: 0, collisionBucket: 3, blocksMovement: true, drawLayer: 3, spriteFlags: 0, hasShadows: false, frameTicks: 0 },
   10: { behavior: 'static', nextDefinition: 0, collisionBucket: 3, blocksMovement: true, drawLayer: 7, spriteFlags: 0, hasShadows: false, frameTicks: 4 },
   11: { behavior: 'static', nextDefinition: 123, collisionBucket: 4, blocksMovement: true, drawLayer: 10, spriteFlags: 0, hasShadows: false, frameTicks: 0 },

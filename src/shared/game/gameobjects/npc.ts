@@ -21,6 +21,10 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     this.collision = { shape: { type: 'circle', radius: 12 }, solid: false, restitution: 0, friction: .15 };
   }
 
+  /** Mutable action port for the NPC weapon runtime. The public state getter
+   * remains read-only to systems that only observe replicated ped state. */
+  get mutableNpcState() { return this.mutableState; }
+
   recordShot(shot: CombatShot & { projectile: true }): number;
   recordShot(shot: CombatShot): number | undefined;
   recordShot(shot: CombatShot) {
@@ -231,7 +235,10 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     this.mutableState.shockCounter = Math.min(WORLD.combat.electrocutionThreshold, this.mutableState.shockCounter + amount);
     this.mutableState.state = 'panic';
     this.mutableState.vx = 0; this.mutableState.vy = 0;
-    if (this.mutableState.shockCounter >= WORLD.combat.electrocutionThreshold) this.mutableState.electrocuted = true;
+    if (this.mutableState.shockCounter >= WORLD.combat.electrocutionThreshold) {
+      this.mutableState.electrocuted = true;
+      if (this.mutableState.health > 0) this.mutableState.animation = 'electrocuted';
+    }
   }
 
   addThreat(actor: string, duration = 45) {
@@ -252,7 +259,10 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     this.mutableState.fireTimer = 0;
     this.mutableState.state = 'flee';
     this.mutableState.animation = 'running';
-    if (threatId && !threatId.startsWith('npc:')) this.mutableState.target = threatId;
+    if (threatId) {
+      this.addThreat(threatId);
+      if (!threatId.startsWith('npc:')) this.mutableState.target = threatId;
+    }
     this.mutableState.panicTimer = Math.max(this.mutableState.panicTimer ?? 0, 30);
     if (combat?.authoritative) {
       this.spawn(createHazardObject({
@@ -330,6 +340,7 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
    * force the panic animation, baton objects electrocute without inventing a
    * new health packet, and ordinary objects use the authored NPC packet. */
   receiveWeaponHit(damage: number, sourceModel?: number, killer?: string, combat?: Pick<GameObjectCombatContext, 'authoritative' | 'nextHazardId'>, impactRotation?: number, cause: NpcState['deathCause'] = 'weapon') {
+    if (killer && this.mutableState.health > 0) this.addThreat(killer);
     if (sourceModel === 277) {
       let shockDamage = 5;
       if (damage > 0) shockDamage = damage;
@@ -341,6 +352,15 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     if (sourceModel === GTA2_SOURCE_OBJECT_MODELS.fireHitting) {
       this.setOnFire(combat, killer);
       return this.mutableState.health > 0;
+    }
+    if (sourceModel === GTA2_SOURCE_OBJECT_MODELS.bulletOnFire) {
+      // Ped::HandlePedHitByObject model 198 is the fire-truck water stream:
+      // clear the attached fire first, then apply its small NPC packet.
+      this.putOutFire();
+      const wasAlive = this.mutableState.health > 0;
+      const alive = this.applyDamage(Math.max(1, damage), 'panic', 'walking');
+      if (wasAlive && !alive) this.mutableState.deathCause = cause;
+      return alive;
     }
     if (sourceModel === GTA2_SOURCE_OBJECT_MODELS.flamethrowerImpact) {
       this.applyDamage(Math.max(1, damage), 'panic', 'walking');
@@ -370,7 +390,10 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
   tickStatus(combat: Pick<GameObjectCombatContext, 'authoritative' | 'isWaterAt' | 'killNpc' | 'spawnEffect'>) {
     if (this.mutableState.shockCounter > 0) {
       this.mutableState.shockCounter = Math.max(0, this.mutableState.shockCounter - 1);
-      if (this.mutableState.shockCounter === 0) this.mutableState.electrocuted = false;
+      if (this.mutableState.shockCounter === 0) {
+        this.mutableState.electrocuted = false;
+        if (this.mutableState.animation === 'electrocuted' && this.mutableState.health > 0) this.mutableState.animation = 'walking';
+      }
     }
     if (!combat.authoritative || this.mutableState.health <= 0) return;
     if (this.mutableState.drowningTimer !== undefined) {
@@ -410,7 +433,9 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     }
     this.mutableState.shots = this.mutableState.shots.map(shot => ({ ...shot, life: shot.life - 1 })).filter(shot => shot.life > 0);
     const combat = context.combat;
-    if (combat) this.tickStatus(combat);
+    if (combat) {
+      this.tickStatus(combat);
+    }
   }
   override getCollider() {
     const collider = super.getCollider();
@@ -428,7 +453,7 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
       let opacity = 0;
       if (this.mutableState.vehicleId === undefined) opacity = 1;
       const pedDefinition = this.mutableState.kind === 'police' ? 2 : 1;
-      let sprite: GameObjectSprite = { atlas: 'player', definition: { bank: 'ped', sourceId: pedDefinition }, animation, frameTicks: definition.frameTicks, loop: definition.loop, placement, opacity, depthTest: true, depthWrite: false, alphaTest: .01, shadow: { opacity: .28, scale: .55, offsetY: 4 }, ...extra };
+      let sprite: GameObjectSprite = { atlas: 'player', definition: { bank: 'ped', sourceId: pedDefinition }, animation, frameTicks: definition.frameTicks, loop: definition.loop, placement, opacity, alphaTest: .01, shadow: { opacity: .28, scale: .55, offsetY: 4 }, ...extra };
       if (definition.frameTicksByFrame) sprite = { ...sprite, frameTicksByFrame: definition.frameTicksByFrame };
       if (typeof remap === 'number') sprite = { ...sprite, pedRemap: remap };
       return sprite;
@@ -476,7 +501,7 @@ export class NpcObject extends MobileGameObject<NpcState, number> {
     }
     if (stateAnimation === 'firing') return base('firing', { animationKey: `npc:${this.mutableState.id}:fire` });
     if (stateAnimation === 'throwing' || stateAnimation === 'throwingIdle') return base(stateAnimation, { animationKey: `npc:${this.mutableState.id}:throw` });
-    if (stateAnimation === 'jumping') return base('jumping', { animationKey: `npc:${this.mutableState.id}:jump`, renderDepth: { elevation: this.mutableState.jump?.height ?? 0 } });
+    if (stateAnimation === 'jumping') return base('jumping', { animationKey: `npc:${this.mutableState.id}:jump`, presentation: { elevation: this.mutableState.jump?.height ?? 0 } });
     if (stateAnimation === 'lying' || stateAnimation === 'lyingReverse') return base(stateAnimation, { animationKey: `npc:${this.mutableState.id}:${stateAnimation}` });
     if (stateAnimation === 'armedRunning' || stateAnimation === 'armedWalking') return base(stateAnimation, { animationKey: `npc:${this.mutableState.id}:${stateAnimation}` });
     if (stateAnimation === 'armed') {

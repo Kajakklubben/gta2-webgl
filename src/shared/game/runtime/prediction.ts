@@ -25,9 +25,9 @@ export function locallyDrivenVehicle(host: any): TrafficState[] {
 /** Keep exactly one client-side chassis body for the locally driven vehicle. */
 export function syncPredictedVehicleBody(host: any) {
   const driven = locallyDrivenVehicle(host);
-  for (const id of [...host.vehicleBodies.keys()]) if (!driven.some(vehicle => vehicle.id === id)) host.destroyVehicleBody(id);
+  for (const object of host.gameObjects.vehicles) if (object.physicsBody && !driven.some(vehicle => vehicle.id === object.id)) host.destroyVehicleBody(object.id);
   for (const vehicle of driven) {
-    if (host.vehicleBodies.has(vehicle.id)) continue;
+    if (host.gameObjects.findVehicle(vehicle.id)?.physicsBody) continue;
     const body = host.createVehicleBody(vehicle);
     if (body) host.updateVehicleBodyLayer(vehicle, body);
   }

@@ -1,8 +1,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { readFile, realpath, readdir } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
-import { ASSET_NAMES } from '../shared/loader/asset-loaders';
-import { MULTIPLAYER_MAPS, type MultiplayerMapDefinition } from '../shared/loader/multiplayer-maps';
+import { ASSET_NAMES } from '../shared/engine/loader/asset-loaders';
+import { MULTIPLAYER_MAPS, type MultiplayerMapDefinition } from '../shared/engine/loader/multiplayer-maps';
 import { assetDirectory } from './assets';
 
 const types: Record<string, string> = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.gmp': 'application/octet-stream', '.sty': 'application/octet-stream', '.scr': 'application/octet-stream', '.wav': 'audio/wav' };

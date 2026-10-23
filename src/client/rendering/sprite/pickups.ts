@@ -28,10 +28,8 @@ export function spriteFor(state: Pick<PickupState, 'weapon' | 'x' | 'y' | 'z' | 
     frameMs: 120,
     placement: { x: state.x, y: state.y, z: state.z, rotation: 0, ...(state.collisionLayer === undefined ? {} : { layer: state.collisionLayer }) },
     opacity: state.active ? 1 : 0,
-    depthTest: true,
-    depthWrite: false,
     alphaTest: .01,
-    renderDepth: { band: 'ground' },
+    presentation: { band: 'object' },
     fallbackColor: 0x55d6ff,
   };
 }

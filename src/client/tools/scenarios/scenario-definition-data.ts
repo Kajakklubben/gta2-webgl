@@ -39,13 +39,17 @@ function entryVariants(blockades: readonly ScenarioPlacement[]): readonly Scenar
     actors: [
       vehicleActor(centeredVehicle),
       ...blockadeActors(blockades),
-      { id: 'entry-player', kind: 'player' as const, placement: playerPlacements[approach] },
+      { id: 'entry-scenario-player', kind: 'player' as const, placement: playerPlacements[approach] },
     ],
   }));
 }
 
 function exitVariants(blockades: readonly ScenarioPlacement[]): readonly ScenarioVariantDefinition[] {
-  return [{ id: 'default', actors: [vehicleActor(centeredVehicle), ...blockadeActors(blockades)] }];
+  return [{ id: 'default', actors: [
+    { ...vehicleActor(centeredVehicle), driver: 'entry-scenario-player' },
+    ...blockadeActors(blockades),
+    { id: 'entry-scenario-player', kind: 'player', vehicleId: 1, placement: centeredVehicle },
+  ] }];
 }
 
 function arrangeVariants(
@@ -160,7 +164,7 @@ const gameplayDefinitions: readonly GameplayScenarioDefinition[] = [
     id: 'npc-jump-over-car', kind: 'gameplay', level: 'road', title: 'NPC jump over a car',
     description: 'A low-speed car clips an NPC and exercises the source CanJumpOver/DoJump branch.',
     arrange: { actors: [
-      { ...vehicleActor({ x: -72, y: 0, rotation: gameplayForward }), velocity: { x: 150, y: 0 } },
+      { ...vehicleActor({ x: -40, y: 0, rotation: gameplayForward }), velocity: { x: 150, y: 0 } },
       { id: 'scenario-npc', kind: 'npc', runtimeId: 1, placement: { x: 0, y: 0, rotation: gameplayForward } },
     ] },
     act: { input: 'none', maxTicks: 40 },
@@ -170,8 +174,8 @@ const gameplayDefinitions: readonly GameplayScenarioDefinition[] = [
     id: 'player-car-impact', kind: 'gameplay', level: 'road', title: 'Player killed by car impact',
     description: 'An empty car crosses the player above the unconditional lethal impact threshold.',
     arrange: { actors: [
-      { ...vehicleActor({ x: -140, y: 0, rotation: gameplayForward }), velocity: { x: 2_200, y: 0 } },
-      { id: 'scenario-player', kind: 'player', placement: { x: 40, y: 0, rotation: gameplayForward } },
+      { ...vehicleActor({ x: -80, y: 0, rotation: gameplayForward }), velocity: { x: 2_200, y: 0 } },
+      { id: 'scenario-player', kind: 'player', placement: { x: 0, y: 0, rotation: gameplayForward } },
     ] },
     act: { input: 'none', maxTicks: 20 },
     assert: { expected: 'player health reaches zero and respawn starts', completion: 'player-car-impact' },
@@ -180,8 +184,8 @@ const gameplayDefinitions: readonly GameplayScenarioDefinition[] = [
     id: 'npc-car-impact', kind: 'gameplay', level: 'road', title: 'NPC killed by car impact',
     description: 'A fast car crosses an ordinary NPC and records the source run-over cause.',
     arrange: { actors: [
-      { ...vehicleActor({ x: -140, y: 0, rotation: gameplayForward }), velocity: { x: 2_200, y: 0 } },
-      { id: 'scenario-npc', kind: 'npc', runtimeId: 1, placement: { x: 40, y: 0, rotation: gameplayForward } },
+      { ...vehicleActor({ x: -80, y: 0, rotation: gameplayForward }), velocity: { x: 2_200, y: 0 } },
+      { id: 'scenario-npc', kind: 'npc', runtimeId: 1, placement: { x: 0, y: 0, rotation: gameplayForward } },
     ] },
     act: { input: 'none', maxTicks: 20 },
     assert: { expected: 'NPC dies with deathCause=run-over', completion: 'npc-car-impact' },
@@ -201,7 +205,7 @@ const gameplayDefinitions: readonly GameplayScenarioDefinition[] = [
     arrange: { actors: [
       { id: 'scenario-driver', kind: 'player', vehicleId: 1, placement: { x: -128, y: 0, rotation: gameplayForward } },
       { ...vehicleActor({ x: -128, y: 0, rotation: gameplayForward }), velocity: { x: 180, y: 0 }, driver: 'scenario-driver' },
-    ], vehicleCatalog: true },
+    ] },
     act: { input: 'drive-right', inputActor: 'scenario-driver', maxTicks: 80 },
     assert: { expected: 'driver drowns and detaches from the car', completion: 'driver-water' },
   },
@@ -213,6 +217,25 @@ const gameplayDefinitions: readonly GameplayScenarioDefinition[] = [
     ] },
     act: { input: 'none', maxTicks: 30 },
     assert: { expected: 'NPC dies with deathCause=water', completion: 'npc-water' },
+  },
+  {
+    id: 'tiny-town-rendering', kind: 'gameplay', level: 'tiny-town', title: 'Tiny Town · five drawing positions',
+    description: 'Five parked cars share one camera: on the slope, at separate left-side positions below and above the see-through bridge, below the solid structure, and at the additional captured position.',
+    arrange: {
+      vehicleCatalog: true,
+      actors: [
+        // These offsets are relative to TINY_TOWN_RENDERING_TILE (78.5, 188.5),
+        // whose world origin is (5024, -12064). They are the positions captured
+        // from the authored Tiny Town view, rather than synthetic test anchors.
+        { id: 'slope-car', kind: 'vehicle', runtimeId: 1, model: 'selected', label: 'Slope', placement: { x: -132.04, y: -62.54, z: 2.47, rotation: gameplayForward } },
+        { id: 'bridge-under-car', kind: 'vehicle', runtimeId: 2, model: 'selected', label: 'Under bridge · left', placement: { x: -411.88, y: 5.83, z: 2, rotation: 0 } },
+        { id: 'bridge-over-car', kind: 'vehicle', runtimeId: 3, model: 'selected', label: 'Over bridge · left', placement: { x: -240.82, y: 37.05, z: 4, rotation: gameplayForward } },
+        { id: 'solid-under-car', kind: 'vehicle', runtimeId: 4, model: 'selected', label: 'Under solid', placement: { x: 362.27, y: 88.54, z: 4, rotation: 0 } },
+        { id: 'captured-position-car', kind: 'vehicle', runtimeId: 5, model: 'selected', label: 'Captured position', placement: { x: -65.74, y: -135.39, z: 2.99, rotation: 1.54 } },
+      ],
+    },
+    act: { input: 'none', maxTicks: 1 },
+    assert: { expected: 'render order matches z1 lid → Car 2 → z2 lids → z3 lids → Car 1 → Car 5 → Cars 3/4 → z5 lid', completion: 'tiny-town-rendering' },
   },
 ];
 

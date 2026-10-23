@@ -1,5 +1,5 @@
 import type { SpriteDefinitionRef, SpritePaletteRef } from '../../../shared/game/gameobjects/gameobject';
-import type { Style } from '../../../shared/loader/models/style';
+import type { Style } from '../../../shared/engine/loader/models/style';
 import { cars, objects, pedestrians } from '../sprite';
 
 export interface SpriteDefinitionSummary {

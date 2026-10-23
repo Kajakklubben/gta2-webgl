@@ -14,13 +14,28 @@ export function npcDefaults() {
 }
 
 export function mapFixture() {
-  const data = new Uint8Array(256 * 256 * 4 + 4 + 12 + 4 + 12), view = new DataView(data.buffer);
+  // Keep the fixture's useful cells in the same authored locations as the
+  // Tiny Town scenario anchors: a road crossing near (80,178) and a water
+  // edge beginning at (22,180). The payload is still a small synthetic GMP,
+  // but the scenario code consumes the decoded source map unchanged.
+  const data = new Uint8Array(256 * 256 * 4 + 4 + 28 + 4 + 36), view = new DataView(data.buffer);
   for (let y = 180; y < 200; y++) for (let x = 75; x < 95; x++) view.setUint32((y * 256 + x) * 4, 1, true);
+  for (let y = 177; y <= 179; y++) for (let x = 53; x <= 94; x++) view.setUint32((y * 256 + x) * 4, 3, true);
+  for (let y = 161; y <= 200; y++) for (let x = 22; x <= 27; x++) view.setUint32((y * 256 + x) * 4, 5, true);
   let offset = 256 * 256 * 4;
+  view.setUint32(offset, 7, true); offset += 4;
+  view.setUint32(offset, 0, true);
+  view.setUint32(offset + 4, 4 | (3 << 8), true);
+  view.setUint32(offset + 8, 0, true);
+  view.setUint32(offset + 12, 2 | (1 << 8), true);
+  view.setUint32(offset + 16, 1, true);
+  view.setUint32(offset + 20, 1, true);
+  view.setUint32(offset + 24, 2, true);
+  offset += 28;
   view.setUint32(offset, 3, true); offset += 4;
-  view.setUint32(offset, 0, true); view.setUint32(offset + 4, 4 | (3 << 8), true); view.setUint32(offset + 8, 0, true); offset += 12;
-  view.setUint32(offset, 1, true); offset += 4;
   view.setUint16(offset + 8, 1, true);
+  view.setUint16(offset + 12 + 8, 1, true); view.setUint8(offset + 12 + 11, 1);
+  view.setUint16(offset + 24 + 8, 608, true); view.setUint8(offset + 24 + 11, 3);
   return binary('GBMP', [chunk('JUNK', new Uint8Array([1, 2])), chunk('DMAP', data)]);
 }
 export function styleFixture() {

@@ -108,7 +108,7 @@ export function renderVehicleEntryLab(host: any) {
     let outcome = 'active';
     if (host.phase === 'blocked') outcome = 'rejected';
     if (host.phase === 'exited') outcome = 'exited';
-    if (host.phase === 'seated' && layout.action === 'enter') outcome = 'seated';
+    if (host.phase === 'seated' && (layout.action === 'enter' || host.entryInputSent)) outcome = 'seated';
     host.title.textContent = `${name} · ${scenario.title}`;
     const locked = host.selectedAction === 'enter' && (scenario as VehicleEntryScenario).locked;
     let status = 'rejected · no accessible door';
@@ -139,6 +139,7 @@ export function renderVehicleEntryLab(host: any) {
     host.panel.dataset['scenario'] = host.selectedScenario;
     host.panel.dataset['action'] = host.selectedAction;
     host.panel.dataset['approach'] = host.selectedApproach;
+    host.panel.dataset['controlMode'] = host.manualControl ? 'manual' : 'scripted';
     host.panel.dataset['simulationSpeed'] = String(host.simulationSpeed);
     host.panel.dataset['phase'] = host.phase;
     host.panel.dataset['outcome'] = outcome;

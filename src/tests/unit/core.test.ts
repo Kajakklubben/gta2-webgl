@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { mapWallSegments, parseMap, decodeFace } from '../../shared/loader/map-parser';
-import { decodeCarInfoFlags, parseCarRecycling, parseStyle } from '../../shared/loader/style-parser';
-import { parseRoadGraph } from '../../shared/loader/map-parser';
-import { parseCarNames, parseCarPhysics } from '../../shared/loader/gci';
-import { readChunks } from '../../shared/loader/binary';
+import { mapWallSegments, parseMap, decodeFace } from '../../shared/engine/loader/map-parser';
+import { decodeCarInfoFlags, parseCarRecycling, parseStyle } from '../../shared/engine/loader/style-parser';
+import { parseRoadGraph } from '../../shared/engine/loader/map-parser';
+import { parseCarNames, parseCarPhysics } from '../../shared/engine/loader/gci';
+import { readChunks } from '../../shared/engine/loader/binary';
 import { GameWorld } from '../../shared/game/game-world';
 import { FixedClock } from '../../shared/engine/fixed-clock';
 import { blockFloor } from '../../shared/domain/physics/map-surface';

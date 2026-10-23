@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { decodeScrPickups } from '../../shared/loader/scr';
+import { decodeScrPickups } from '../../shared/engine/loader/scr';
 
 function baseWithObject(object: number, x: number, y: number, z: number, type = 47, modelOffset = 24) {
   const bytes = new Uint8Array(82_656);

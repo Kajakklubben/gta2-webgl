@@ -1,8 +1,9 @@
 // Slope and UV rules preserved from the original renderer; all GPU meshes use BufferGeometry.
 import * as THREE from 'three';
 import { GTA2FaceType as FaceType, GTA2MapLimits, GTA2SlopeType as SlopeType } from '../../../shared/domain/world/gta2-enums';
-import { WORLD } from '../../../shared/domain/world/world';
+import { WORLD, worldSurfaceZ } from '../../../shared/domain/world/world';
 import { faceGeometry, pixelTexture } from '../textures';
+import { presentationSortKey } from '../spatial-depth';
 import { installSlopeEdge } from './map-render-slope-edge.js';
 import { installSlopeLid } from './map-render-slope-lid.js';
 import { installSlopeUv } from './map-render-slope-uv.js';
@@ -32,11 +33,15 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
 		this.tileCache = new Array();
 		this.flatTileCache = new Array();
 		this.doubleSidedFlatTileCache = new Array();
-		this.flatOccludingTileCache = new Array();
+		this.nonOccludingTileCache = new Array();
+		this.surfaceTileCache = new Array();
+		this.surfaceFlatTileCache = new Array();
+		this.surfaceDoubleSidedFlatTileCache = new Array();
+		this.enabledLevels = new Set(Array.from({ length: GTA2MapLimits.Layers }, (_, level) => level));
 		this.animations = [];
 		this.animationFrames = new Map();
 		this.materialFactory = undefined;
-		this.renderOrder = 0;
+		this.renderOrder = undefined;
 		
 		this.visibleSceneObjects = new Array(); //All the tiles currently drawn
 
@@ -54,17 +59,25 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
         // mobile GPUs and does not match GTA2's renderer.
         const frameClock = Math.floor((now ?? performance.now()) / 16.6667);
         for (const animation of this.animations) {
-            const material = this.tileCache[animation.base];
-            if (!material || !animation.tiles.length) continue;
+			const materials = [
+				this.tileCache[animation.base],
+				this.nonOccludingTileCache[animation.base],
+				this.surfaceTileCache[animation.base],
+				this.surfaceFlatTileCache[animation.base],
+				this.surfaceDoubleSidedFlatTileCache[animation.base],
+			].filter(Boolean);
+            if (!materials.length || !animation.tiles.length) continue;
             const cycle = Math.floor(frameClock / Math.max(1, animation.frameRate));
             const frame = animation.repeat && cycle >= animation.repeat * animation.tiles.length ? animation.tiles.length - 1 : cycle % animation.tiles.length;
             if (this.animationFrames.get(animation.base) === frame) continue;
             const pixels = this.style.tiles[animation.tiles[frame]];
             if (!pixels) continue;
-            const previous = material.map;
-            material.map = pixelTexture(pixels);
-            material.needsUpdate = true;
-            previous?.dispose();
+            for (const material of materials) {
+                const previous = material.map;
+                material.map = pixelTexture(pixels);
+                material.needsUpdate = true;
+                previous?.dispose();
+            }
             this.animationFrames.set(animation.base, frame);
         }
         var camX, camY, camW, camH, visibleSceneObject;
@@ -138,12 +151,15 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
         this.mapData = mapData;
         this.animations = mapData.animations || [];
 		this.materialFactory = options?.materialFactory;
-		this.renderOrder = options?.renderOrder ?? 0;
+		this.renderOrder = options?.renderOrder;
 		this.visibleSceneObjects = [];
 		this.tileCache = new Array();
 		this.flatTileCache = new Array();
 		this.doubleSidedFlatTileCache = new Array();
-		this.flatOccludingTileCache = new Array();
+		this.nonOccludingTileCache = new Array();
+		this.surfaceTileCache = new Array();
+		this.surfaceFlatTileCache = new Array();
+		this.surfaceDoubleSidedFlatTileCache = new Array();
 		this.animationFrames = new Map();
 		// Keep the same coordinate-indexed cache shape as the retail culler,
 		// but leave cells undefined until they are visible.
@@ -159,6 +175,18 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
 			if (block != undefined) tileObject.add(this.CreateBlock(x, y, z, block));
 		}
 		return tileObject;
+	};
+
+	MapRender.prototype.setEnabledLevels = function(levels) {
+		this.enabledLevels = new Set(levels.filter(level => Number.isInteger(level) && level >= 0 && level < GTA2MapLimits.Layers));
+		if (!this.scene || !this.scene.traverse) return;
+		this.scene.traverse(object => {
+			const face = object.userData?.gta2MapFace;
+			if (face && Number.isInteger(face.z)) {
+				object.visible = this.enabledLevels.has(face.z);
+				if (object.userData?.gta2RenderPass) object.userData.gta2BaseVisible = object.visible;
+			}
+		});
 	};
 	
 
@@ -212,6 +240,7 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
 	MapRender.prototype.CreatePolygon = function(x, y, z, face, type, block, forceFlat, doubleSided, outwardFlat) {
         var geometry, wireMaterial;
 	    var material;
+		const surface = type == FaceType.Lid;
 		var renderFace = forceFlat && !face.flat ? { ...face, flat: true } : face;
 	    if (!face.tileNumber) {
 			
@@ -219,11 +248,25 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
 	         material = new THREE.MeshBasicMaterial({ color: 0xFF00FF });
 	    }
 	    else {
-			// A flat lid is still a real horizontal map surface.  It is authored
-			// with alpha around the edge, but its opaque pixels must populate the
-			// depth buffer so actors on a lower road pass under an upper bridge.
-			// Flat wall art keeps the legacy non-writing material below.
-			material = this.materialFactory?.(renderFace, type, block) ?? this.getTile(renderFace.tileNumber, renderFace.flat, doubleSided, type == FaceType.Lid);
+			material = this.materialFactory?.(renderFace, type, block, surface ? 'surface' : 'occluder')
+			?? this.getTile(renderFace.tileNumber, renderFace.flat, doubleSided,
+				surface,
+				!surface);
+			if (material.depthTest !== true || material.depthWrite !== true) {
+				// Every map face participates in the depth buffer. The explicit GTA2
+				// pass still controls category order, while depth resolves overlap
+				// within each pass.
+				material.depthTest = true;
+				material.depthWrite = true;
+				material.needsUpdate = true;
+			}
+			if (surface && (!material.transparent || material.opacity !== 1)) {
+				// Lids and bridge surfaces use the transparent queue while preserving
+				// full opacity. The explicit pass pipeline controls category order.
+				material.transparent = true;
+				material.opacity = 1;
+				material.needsUpdate = true;
+			}
 	    }
 
 
@@ -265,7 +308,23 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
 	    }
 
 	    var edge = new THREE.Group();
-	    edge.renderOrder = this.renderOrder;
+	    edge.userData.gta2MapFace = { x, y, z, type };
+		edge.visible = this.enabledLevels.has(z);
+		// Keep both structural faces and horizontal lids at their authored block
+		// level. A lower-level lid must not be submitted after an upper slope wall.
+	    const facePriority = type == FaceType.Lid ? 1 : 0;
+	    const mapLevel = z;
+		edge.userData.gta2RenderPass = {
+			mapLevel,
+			band: surface ? 'map-surface' : 'map-wall',
+		};
+		edge.userData.gta2BaseVisible = edge.visible;
+		edge.renderOrder = this.renderOrder ?? presentationSortKey(
+			mapLevel,
+			'map',
+			facePriority,
+			worldSurfaceZ(z),
+		);
 
 	    var x = x * tileSize;
 	    var y = y * tileSize;
@@ -338,16 +397,18 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
 		}
 		
 		const buffer = faceGeometry(geometry);
-        for (const mat of materialList) edge.add(new THREE.Mesh(buffer, mat));
+	    for (const mat of materialList) edge.add(new THREE.Mesh(buffer, mat));
 
 	    //scene.add(edge);
 		return edge;
 	}
 	
-	MapRender.prototype.getTile = function(tileNo, flat, doubleSided, depthWrite) {
-	    var cacheStore = flat
-			? (depthWrite ? this.flatOccludingTileCache : (doubleSided ? this.doubleSidedFlatTileCache : this.flatTileCache))
-			: this.tileCache;
+	MapRender.prototype.getTile = function(tileNo, flat, doubleSided, surface, occluding = true) {
+	    var cacheStore = surface
+			? (flat ? (doubleSided ? this.surfaceDoubleSidedFlatTileCache : this.surfaceFlatTileCache) : this.surfaceTileCache)
+			: (flat
+				? (doubleSided ? this.doubleSidedFlatTileCache : this.flatTileCache)
+				: (occluding ? this.tileCache : this.nonOccludingTileCache));
 	    var cache = cacheStore[tileNo];
 	    if (cache != undefined)
 	        return cache;
@@ -357,7 +418,7 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
 	    // material so the authored slope geometry can be built, but it has no
 	    // texture to decode.
 	    if (tileNo >= 992 && tileNo <= 1023 && !this.style.tiles[tileNo]) {
-	        var reservedMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, side: THREE.FrontSide });
+	        var reservedMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, side: THREE.FrontSide });
 	        cacheStore[tileNo] = reservedMaterial;
 	        return reservedMaterial;
 	    }
@@ -370,7 +431,7 @@ var rightSlopeTypesTriangles = [SlopeType.DiagonalFacingRight, SlopeType.RightLo
 	// source-facing winding/culling; supported flat wall art is explicitly
 	// double-sided on its structural plane, while unanchored flat pairs use the
 	// opposite-face rule in addFlatPair.
-	    var material = new THREE.MeshBasicMaterial({ map: texture, transparent: !!flat, depthTest: true, depthWrite: flat ? !!depthWrite : true, alphaTest: flat ? 0.01 : 0, side: doubleSided ? THREE.DoubleSide : THREE.FrontSide });
+	    var material = new THREE.MeshBasicMaterial({ map: texture, transparent: !!flat, alphaTest: flat ? 0.01 : 0, side: doubleSided ? THREE.DoubleSide : THREE.FrontSide });
 
 	    cacheStore[tileNo] = material;
 

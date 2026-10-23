@@ -10,21 +10,21 @@ import {
   GTA2RoadArrowBits,
   GTA2RoadGraphLimits,
   GTA2SlopeType,
-} from '../domain/world/gta2-enums';
-import { tileToWorld } from '../domain/world/world';
+} from '../../domain/world/gta2-enums';
+import { tileToWorld } from '../../domain/world/world';
 import type {
   Block, Face, GameMap, MapLight, MapObject, MapWallSegment, MapZone, RoadArrowSet,
-  RoadJunction, RoadNode, TileAnimation, TrafficMapMetadata,
+  RoadJunction, RoadLink, RoadLinkSet, RoadNode, TileAnimation, TrafficMapMetadata,
 } from './models/map';
 
 export type {
   Block, Face, GameMap, MapLight, MapObject, MapWallSegment, MapZone, RoadArrowSet,
-  RoadJunction, RoadNode, RoadSegment, TileAnimation, TrafficMapMetadata,
+  RoadJunction, RoadLink, RoadLinkSet, RoadNode, RoadSegment, TileAnimation, TrafficMapMetadata,
 } from './models/map';
 
 // Preserve the original map-module names for existing renderer and gameplay
 // callers while keeping the definitions in the shared enum module.
-export { GTA2Direction, GTA2FaceType as FaceType, GTA2MapChunk, GTA2MapFormat, GTA2MapZoneType as MapZoneType, GTA2SlopeType as SlopeType } from '../domain/world/gta2-enums';
+export { GTA2Direction, GTA2FaceType as FaceType, GTA2MapChunk, GTA2MapFormat, GTA2MapZoneType as MapZoneType, GTA2SlopeType as SlopeType } from '../../domain/world/gta2-enums';
 
 const zoneTypeNames: Record<number, string> = {
   [GTA2MapZoneType.General]: 'general', [GTA2MapZoneType.Navigation]: 'navigation',
@@ -92,9 +92,78 @@ export function decodeRoadArrows(arrows: number): { green: RoadArrowSet; red: Ro
   };
 }
 
-/** Decode the fixed-size junction/segment arrays written by the GMP editor. */
-export function parseRoadGraph(bytes?: Uint8Array): Pick<TrafficMapMetadata, 'junctions' | 'horizontalSegments' | 'verticalSegments'> {
-  if (!bytes) return { junctions: [], horizontalSegments: [], verticalSegments: [] };
+export type RoadGraphLayout = 'auto' | 'legacy' | 'source';
+
+export interface ParseRoadGraphOptions {
+  layout?: RoadGraphLayout;
+}
+
+const SOURCE_ROAD_GRAPH = {
+  junctionCapacity: 545,
+  junctionBytes: 16,
+  segmentCapacity: 545,
+  segmentBytes: 8,
+  countsBytes: 6,
+} as const;
+
+interface RoadGraphCounts {
+  junctionCount: number;
+  horizontalCount: number;
+  verticalCount: number;
+}
+
+function readRoadGraphCounts(bytes: Uint8Array, offset: number, junctionCapacity: number, segmentCapacity: number): RoadGraphCounts | undefined {
+  if (offset < 0 || offset + 6 > bytes.length) return undefined;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const counts = {
+    junctionCount: view.getUint16(offset, true),
+    horizontalCount: view.getUint16(offset + 2, true),
+    verticalCount: view.getUint16(offset + 4, true),
+  };
+  if (counts.junctionCount > junctionCapacity || counts.horizontalCount > segmentCapacity || counts.verticalCount > segmentCapacity) return undefined;
+  return counts;
+}
+
+function decodeRoadLink(view: DataView, offset: number): RoadLink {
+  const raw = view.getUint16(offset, true);
+  return { raw, index: raw & 0x1ff, length: (raw >>> 9) & 0x3f, enabled: !!(raw & 0x8000) };
+}
+
+function parseSourceRoadGraph(bytes: Uint8Array): Pick<TrafficMapMetadata, 'junctions' | 'horizontalSegments' | 'verticalSegments'> {
+  const junctionOffset = 0;
+  const horizontalOffset = SOURCE_ROAD_GRAPH.junctionCapacity * SOURCE_ROAD_GRAPH.junctionBytes;
+  const verticalOffset = horizontalOffset + SOURCE_ROAD_GRAPH.segmentCapacity * SOURCE_ROAD_GRAPH.segmentBytes;
+  const countsOffset = verticalOffset + SOURCE_ROAD_GRAPH.segmentCapacity * SOURCE_ROAD_GRAPH.segmentBytes;
+  const minimumLength = countsOffset + SOURCE_ROAD_GRAPH.countsBytes;
+  if (bytes.length < minimumLength) throw new Error('Invalid RGEN chunk size');
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const counts = readRoadGraphCounts(bytes, countsOffset, SOURCE_ROAD_GRAPH.junctionCapacity, SOURCE_ROAD_GRAPH.segmentCapacity);
+  if (!counts) throw new Error('Invalid RGEN counts');
+  const junctions: RoadJunction[] = [];
+  for (let index = 0; index < counts.junctionCount; index++) {
+    const offset = junctionOffset + index * SOURCE_ROAD_GRAPH.junctionBytes;
+    const linkData: RoadLinkSet = {
+      north: decodeRoadLink(view, offset),
+      south: decodeRoadLink(view, offset + 2),
+      east: decodeRoadLink(view, offset + 4),
+      west: decodeRoadLink(view, offset + 6),
+    };
+    junctions.push({
+      index,
+      links: { north: linkData.north.index, south: linkData.south.index, east: linkData.east.index, west: linkData.west.index },
+      searchType: view.getUint32(offset + 8, true),
+      minX: bytes[offset + 12]!, minY: bytes[offset + 13]!, maxX: bytes[offset + 14]!, maxY: bytes[offset + 15]!,
+      linkData,
+    });
+  }
+  const readSegments = (base: number, count: number) => Array.from({ length: count }, (_, index) => {
+    const offset = base + index * SOURCE_ROAD_GRAPH.segmentBytes;
+    return { junction1: view.getUint16(offset, true), junction2: view.getUint16(offset + 2, true), minX: bytes[offset + 4]!, minY: bytes[offset + 5]!, maxX: bytes[offset + 6]!, maxY: bytes[offset + 7]! };
+  });
+  return { junctions, horizontalSegments: readSegments(horizontalOffset, counts.horizontalCount), verticalSegments: readSegments(verticalOffset, counts.verticalCount) };
+}
+
+function parseLegacyRoadGraph(bytes: Uint8Array): Pick<TrafficMapMetadata, 'junctions' | 'horizontalSegments' | 'verticalSegments'> {
   const junctionOffset = 0;
   const horizontalOffset = GTA2RoadGraphLimits.JunctionCapacity * GTA2RoadGraphLimits.JunctionBytes;
   const verticalOffset = horizontalOffset + GTA2RoadGraphLimits.SegmentCapacity * GTA2RoadGraphLimits.SegmentBytes;
@@ -102,12 +171,10 @@ export function parseRoadGraph(bytes?: Uint8Array): Pick<TrafficMapMetadata, 'ju
   const minimumLength = countsOffset + GTA2RoadGraphLimits.CountsBytes;
   if (bytes.length < minimumLength) throw new Error('Invalid RGEN chunk size');
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const junctionCount = view.getUint16(countsOffset, true);
-  const horizontalCount = view.getUint16(countsOffset + 2, true);
-  const verticalCount = view.getUint16(countsOffset + 4, true);
-  if (junctionCount > GTA2RoadGraphLimits.JunctionCapacity || horizontalCount > GTA2RoadGraphLimits.SegmentCapacity || verticalCount > GTA2RoadGraphLimits.SegmentCapacity) throw new Error('Invalid RGEN counts');
+  const counts = readRoadGraphCounts(bytes, countsOffset, GTA2RoadGraphLimits.JunctionCapacity, GTA2RoadGraphLimits.SegmentCapacity);
+  if (!counts) throw new Error('Invalid RGEN counts');
   const junctions: RoadJunction[] = [];
-  for (let index = 0; index < junctionCount; index++) {
+  for (let index = 0; index < counts.junctionCount; index++) {
     const offset = junctionOffset + index * GTA2RoadGraphLimits.JunctionBytes;
     junctions.push({ index, links: { north: bytes[offset]!, south: bytes[offset + 1]!, east: bytes[offset + 2]!, west: bytes[offset + 3]! }, searchType: bytes[offset + 4]!, minX: bytes[offset + 5]!, minY: bytes[offset + 6]!, maxX: bytes[offset + 7]!, maxY: bytes[offset + 8]! });
   }
@@ -115,7 +182,30 @@ export function parseRoadGraph(bytes?: Uint8Array): Pick<TrafficMapMetadata, 'ju
     const offset = base + index * GTA2RoadGraphLimits.SegmentBytes;
     return { junction1: view.getUint16(offset, true), junction2: view.getUint16(offset + 2, true), minX: bytes[offset + 4]!, minY: bytes[offset + 5]!, maxX: bytes[offset + 6]!, maxY: bytes[offset + 7]! };
   });
-  return { junctions, horizontalSegments: readSegments(horizontalOffset, horizontalCount), verticalSegments: readSegments(verticalOffset, verticalCount) };
+  return { junctions, horizontalSegments: readSegments(horizontalOffset, counts.horizontalCount), verticalSegments: readSegments(verticalOffset, counts.verticalCount) };
+}
+
+/** Decode the fixed-size junction/segment arrays written by the GMP editor.
+ *
+ * Retail RGEN records use the source-sized 16-byte junction layout, including
+ * packed Link_2 values. The legacy compact layout is retained for existing
+ * synthetic fixtures and older callers; it has no enabled/length bits, so the
+ * routing helper treats its numeric links as enabled unit-cost edges.
+ */
+export function parseRoadGraph(bytes?: Uint8Array, options: ParseRoadGraphOptions = {}): Pick<TrafficMapMetadata, 'junctions' | 'horizontalSegments' | 'verticalSegments'> {
+  if (!bytes) return { junctions: [], horizontalSegments: [], verticalSegments: [] };
+  if (options.layout === 'source') return parseSourceRoadGraph(bytes);
+  if (options.layout === 'legacy') return parseLegacyRoadGraph(bytes);
+
+  const sourceCountsOffset = SOURCE_ROAD_GRAPH.junctionCapacity * SOURCE_ROAD_GRAPH.junctionBytes
+    + SOURCE_ROAD_GRAPH.segmentCapacity * SOURCE_ROAD_GRAPH.segmentBytes * 2;
+  const legacyCountsOffset = GTA2RoadGraphLimits.JunctionCapacity * GTA2RoadGraphLimits.JunctionBytes
+    + GTA2RoadGraphLimits.SegmentCapacity * GTA2RoadGraphLimits.SegmentBytes * 2;
+  const sourceCounts = readRoadGraphCounts(bytes, sourceCountsOffset, SOURCE_ROAD_GRAPH.junctionCapacity, SOURCE_ROAD_GRAPH.segmentCapacity);
+  const legacyCounts = readRoadGraphCounts(bytes, legacyCountsOffset, GTA2RoadGraphLimits.JunctionCapacity, GTA2RoadGraphLimits.SegmentCapacity);
+  const sourceHasRecords = sourceCounts !== undefined && (sourceCounts.junctionCount > 0 || sourceCounts.horizontalCount > 0 || sourceCounts.verticalCount > 0);
+  if (sourceHasRecords || (sourceCounts !== undefined && legacyCounts === undefined)) return parseSourceRoadGraph(bytes);
+  return parseLegacyRoadGraph(bytes);
 }
 
 export function parseMap(bytes: Uint8Array): GameMap {
@@ -221,7 +311,7 @@ export function parseMap(bytes: Uint8Array): GameMap {
   const roads: RoadNode[] = [], roadIndex = new Map<string, number>();
   for (let x = GTA2MapLimits.InteriorMinTile; x < GTA2MapLimits.InteriorMaxTileExclusive; x++) for (let y = GTA2MapLimits.InteriorMinTile; y < GTA2MapLimits.InteriorMaxTileExclusive; y++) for (let z = 0; z < GTA2MapLimits.Layers; z++) {
     const block = map[x]?.[y]?.[z];
-    if (!block || !(block.arrows & GTA2RoadArrowBits.GreenMask)) continue;
+    if (!block || !(block.arrows & (GTA2RoadArrowBits.GreenMask | GTA2RoadArrowBits.RedMask))) continue;
     const arrows = decodeRoadArrows(block.arrows);
     roadIndex.set(`${x},${y},${z}`, roads.length); roads.push({ x, y, z, arrows: block.arrows, ...arrows, next: [], specialNext: [] });
   }

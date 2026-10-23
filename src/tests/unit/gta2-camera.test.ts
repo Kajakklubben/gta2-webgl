@@ -87,4 +87,15 @@ describe('source-shaped GTA2 camera', () => {
     expect(frame.floorZ).toBe(0);
     expect(camera.targetPose.x).toBeGreaterThan(100);
   });
+
+  it('tilts the detached camera around the world X axis', () => {
+    const camera = new Gta2Camera();
+    camera.update(player(), [], 1 / 30);
+    camera.setMode('debug');
+    camera.rotateX(Gta2Camera.PITCH_STEP);
+    expect(camera.targetPose.rotationX).toBeCloseTo(Gta2Camera.PITCH_STEP);
+    expect(camera.update(player(), [], 1 / 30).pose.rotationX).toBeCloseTo(Gta2Camera.PITCH_STEP);
+    camera.rotateX(-Gta2Camera.PITCH_STEP);
+    expect(camera.targetPose.rotationX).toBeCloseTo(0);
+  });
 });

@@ -13,9 +13,7 @@ import type { HazardState, WorldEvent } from '../../protocol/types';
 import type { PendingProjectile } from './types';
 
 export type PhysicsPhaseHost = {
-  readonly bodies: Map<string, PhysicsBody>;
-  readonly players: Map<string, PlayerState>;
-  readonly playerObjectFor: (id: string) => PlayerObject | undefined;
+  readonly playerObjects: readonly PlayerObject[];
   readonly preparePlayerBodies: () => void;
   prepareVehicleBodies: (starts: ReadonlyMap<number, { x: number; y: number; rotation: number }>, dt: number) => void;
   readVehicleBodies: (dt: number) => void;
@@ -35,9 +33,10 @@ export function runPhysicsPhase(host: PhysicsPhaseHost, context: WorldPhaseConte
   host.physicsStep(context.dt);
   host.readVehicleBodies(context.dt);
   host.readNpcBodies();
-  for (const [id, body] of host.bodies) {
-    const playerObject = host.playerObjectFor(id), player = playerObject?.state;
-    if (!player || !playerObject) continue;
+  for (const playerObject of host.playerObjects) {
+    const body = playerObject.physicsBody;
+    const player = playerObject.state;
+    if (!body) continue;
     const position = body.getPosition();
     // Entry motion is an authored ped transition toward a door. The source
     // state machine owns that pose until it reaches the outside marker; do
@@ -148,6 +147,7 @@ export type LifecyclePhaseHost = {
   readonly server: boolean;
   readonly wreckFireTicks: number;
   updateGameObjects: (dt: number, playerOnly?: boolean) => void;
+  runNpcCombatPhase: () => void;
   tickPlayerStatus: (playerOnly?: boolean) => void;
   updatePlayerJumps: (dt: number, playerOnly?: boolean) => void;
   updateNpcJumps: (dt: number) => void;
@@ -169,6 +169,7 @@ export function runLifecyclePhase(host: LifecyclePhaseHost, context: WorldPhaseC
   host.events.splice(0, host.events.length);
   const playerOnly = context.state.playerOnly;
   host.updateGameObjects(context.dt, playerOnly);
+  if (!playerOnly) host.runNpcCombatPhase();
   host.updatePlayerJumps(context.dt, playerOnly);
   if (!playerOnly) host.updateNpcJumps(context.dt);
   if (!playerOnly) host.updateVehicleOccupancyTransitions(context.dt);
@@ -192,7 +193,7 @@ export function runLifecyclePhase(host: LifecyclePhaseHost, context: WorldPhaseC
     if (!vehicleObject) continue;
     vehicleObject.tickCollisionCooldown();
     const transition = vehicleObject.tickDamage();
-    if (vehicle.damagePhase === 'burning') host.spawnVehicleFireHazard(vehicle, 9_000);
+    if (vehicle.damagePhase === 'burning' && !vehicle.fireExtinguished) host.spawnVehicleFireHazard(vehicle, 9_000);
     if (transition.turnedToWreck) {
       vehicleObject.completeWreck();
       host.removeVehicleFireHazards(vehicle, 'explosion');

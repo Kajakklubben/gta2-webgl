@@ -1,4 +1,4 @@
-import type { CarPhysics } from '../../loader/gci';
+import type { CarPhysics } from '../../engine/loader/gci';
 import { sourceFixedPerTickToWorld } from '../world/world';
 
 export function vehicleGear(linearSpeed: number, physics?: CarPhysics) {

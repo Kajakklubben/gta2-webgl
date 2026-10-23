@@ -5,13 +5,14 @@ import { DEFAULT_STEP_SECONDS } from '../../shared/protocol/constants';
 import type { ChatMessage, MatchState } from '../../shared/protocol/types';
 import type { ClientSnapshot } from '../../shared/protocol/client-dto';
 import { Renderer } from '../rendering/renderer';
-import { AudioBus } from './audio';
+import { AudioBus, SOURCE_AUDIO_PAN_HALF_WIDTH, SOURCE_EVENT_AUDIO_MAX_DISTANCE, SOURCE_WEAPON_AUDIO_MAX_DISTANCE } from './audio';
+import type { AudioPosition, AudioSpatialization } from './audio-spatial';
 
-import { createPlayerHud, isGameMenuOpen, setGameMenuOpen, setLobbyOpen, setLocalMapOptions, setLocalMenuOpen, setMapOptions, setStatus, ui } from './main-ui';
-import { multiplayerMapById } from '../../shared/loader/multiplayer-maps';
-import type { CarInfo } from '../../shared/loader/style-parser';
+import { createPlayerHud, getSelectedLocalMode, isMenuOpen, setDebugMenuOpen, setLobbyOpen, setLocalMapOptions, setMapOptions, setMultiplayerMenuMode, setStatus, ui } from './main-ui';
+import { multiplayerMapById } from '../../shared/engine/loader/multiplayer-maps';
+import type { CarInfo } from '../../shared/engine/loader/style-parser';
 import { createPlayerInputState } from './player-input';
-import { DEBUG_SETTINGS_STORAGE_KEY, PLAYER_SESSION_STORAGE_KEY, readDebugSettings, type DebugSettings, type DebugTab } from './debug-settings';
+import { DEBUG_SETTINGS_STORAGE_KEY, PLAYER_SESSION_STORAGE_KEY, readDebugSettings, type DebugSettings } from './debug-settings';
 import { localPlayerIds, localPlayerMaskBindings } from './input-bindings';
 import { installInputController } from './input-controller';
 import { installTouchControls } from './touch-controls';
@@ -22,9 +23,11 @@ import { createLocalSession } from './local-session';
 import { createGameLoop } from './game-loop';
 import { connectMultiplayer } from './game-client-network';
 import { createGameFrame } from './game-client-frame';
+import { updateMapTileDebugOverlay } from './tile-debug-overlay';
+import { populateMapLevelSelect, selectedMapLevels, setSelectedMapLevels } from './map-level-select';
 
 
-  const { reconnect, status, openMenu, menuResume, menuBackdrop, openDebug, debugMenu, closeDebug, debugTabGraphs, debugTabPlayer, debugTabCamera, debugGraphs, debugPlayer, debugCamera, debugGiveAllWeapons, debugPedestrianGraph, debugTraffic, debugCar, debugZones, debugPoliceAttack, debugVehicleDoors, debugClosestDoor, debugShowCoordinates, debugCoordinates, debugCoordinateOverlay, debugShowPlayerState, debugPlayerStateOverlay, debugResetWorld, debugCameraMode, debugCameraSpeedZoom, debugCameraLookahead, debugSpriteFrameInterpolation, debugFps, nameInput, roomInput, teamInput, mapInput, modeInput, join, readyButton, localReset, localLeave, roomState, scoreboard, feed, chatLog, chatInput, fpsCounter, weaponHint, localPaused, localResume, localPauseLeave } = ui;
+  const { reconnect, status, openMenu, menuResume, menuBackdrop, openDebug, closeDebug, debugGiveAllWeapons, debugPedestrianGraph, debugTraffic, debugCar, debugZones, debugPoliceAttack, debugVehicleDoors, debugClosestDoor, debugShowPlayerState, debugPlayerStateOverlay, debugMapTileOverlay, debugTilePicker, debugMapLevels, debugResetWorld, debugCameraMode, debugCameraSpeedZoom, debugCameraLookahead, debugSpriteFrameInterpolation, debugFps, nameInput, roomInput, teamInput, mapInput, modeInput, join, readyButton, localReset, localLeave, roomState, scoreboard, feed, chatLog, chatInput, fpsCounter, weaponHint, localPaused, localResume, localPauseLeave } = ui;
 
 const localPlayerInputs = localPlayerIds.map((id, index) => createPlayerInputState(id, localPlayerMaskBindings[index]!));
 const playerHuds = localPlayerIds.map((id, index) => createPlayerHud(id, `PLAYER ${index + 1}`));
@@ -35,8 +38,9 @@ const setMultiplayerMenuActionsEnabled = (enabled: boolean) => {
 let localSplitScreen = false;
 let multiplayerMode = false;
 let localPausedState = false;
+let tiltCamera: (direction: -1 | 1) => void = () => {};
 openMenu.addEventListener('click', () => { if (!multiplayerMode) { localPausedState = true; localPaused.hidden = true; } });
-const resumeFromMenu = () => { if (!multiplayerMode && isGameMenuOpen() === false) { localPausedState = false; localPaused.hidden = true; } };
+const resumeFromMenu = () => { if (!multiplayerMode && isMenuOpen() === false) { localPausedState = false; localPaused.hidden = true; } };
 menuResume.addEventListener('click', resumeFromMenu);
 menuBackdrop.addEventListener('click', resumeFromMenu);
 for (const menuAction of [ui.openLobby, ui.openScoreboard, ui.openChat, ui.openDebug]) menuAction.addEventListener('click', resumeFromMenu);
@@ -44,6 +48,8 @@ const inputController = installInputController({
   players: localPlayerInputs,
   getLocalSplitScreen: () => localSplitScreen,
   getMultiplayerMode: () => multiplayerMode,
+  getCameraDetached: () => debugCameraMode.value === 'detached',
+  onCameraTilt: direction => tiltCamera(direction),
   onPauseChanged: paused => { localPausedState = paused; localPaused.hidden = true; },
   roomState,
 });
@@ -67,14 +73,19 @@ async function boot() {
   multiplayerMode = !staticBuild && startup.mode === 'multiplayer';
   setMultiplayerMenuActionsEnabled(multiplayerMode);
   modeInput.value = multiplayerMode ? 'online' : localSplitScreen ? 'local' : 'singleplayer';
+  setMultiplayerMenuMode(multiplayerMode);
   setMapOptions(availableMaps, bootstrap.selectedMapId ?? activeMapId ?? '');
   setLocalMapOptions(availableMaps, bootstrap.selectedMapId ?? activeMapId ?? '');
   const level = assets.map.map, style = assets.style.style;
   setStatus('Building scene…');
-  const renderer = new Renderer(level, style, startup.view ? { initialView: startup.view } : undefined), clock = new FixedClock(DEFAULT_STEP_SECONDS);
+  populateMapLevelSelect(debugMapLevels);
+  const renderer = new Renderer(level, style, {
+    ...(startup.view ? { initialView: startup.view } : {}),
+    onTileSelected: selection => updateMapTileDebugOverlay(debugMapTileOverlay, selection),
+  }), clock = new FixedClock(DEFAULT_STEP_SECONDS);
+  tiltCamera = direction => renderer.rotateCameraX(direction);
   const storedDebugSettings = readDebugSettings();
-  let storedTab: DebugTab = 'graphs';
-  if (storedDebugSettings.tab === 'player' || storedDebugSettings.tab === 'camera') storedTab = storedDebugSettings.tab;
+  if (Array.isArray(storedDebugSettings.mapLevels)) setSelectedMapLevels(debugMapLevels, storedDebugSettings.mapLevels);
   let storedCameraMode: 'follow' | 'detached' = startup.view ? 'detached' : 'follow';
   if (!startup.view && storedDebugSettings.cameraMode === 'detached') storedCameraMode = 'detached';
   if (typeof storedDebugSettings.pedestrianGraph === 'boolean') debugPedestrianGraph.checked = storedDebugSettings.pedestrianGraph;
@@ -89,14 +100,12 @@ async function boot() {
   if (typeof storedDebugSettings.cameraLookahead === 'boolean') debugCameraLookahead.checked = storedDebugSettings.cameraLookahead;
   if (typeof storedDebugSettings.spriteFrameInterpolation === 'boolean') debugSpriteFrameInterpolation.checked = storedDebugSettings.spriteFrameInterpolation;
   if (typeof storedDebugSettings.fpsCounter === 'boolean') debugFps.checked = storedDebugSettings.fpsCounter;
-  if (typeof storedDebugSettings.showCoordinates === 'boolean') debugShowCoordinates.checked = storedDebugSettings.showCoordinates;
   if (typeof storedDebugSettings.showPlayerState === 'boolean') debugShowPlayerState.checked = storedDebugSettings.showPlayerState;
-  let activeDebugTab: DebugTab = storedTab;
+  if (typeof storedDebugSettings.tilePicker === 'boolean') debugTilePicker.checked = storedDebugSettings.tilePicker;
   const saveDebugSettings = () => {
     let cameraMode: 'follow' | 'detached' = 'follow';
     if (debugCameraMode.value === 'detached') cameraMode = 'detached';
     const settings: DebugSettings = {
-      tab: activeDebugTab,
       pedestrianGraph: debugPedestrianGraph.checked,
       traffic: debugTraffic.checked,
       car: debugCar.checked,
@@ -109,25 +118,12 @@ async function boot() {
       cameraLookahead: debugCameraLookahead.checked,
       spriteFrameInterpolation: debugSpriteFrameInterpolation.checked,
       fpsCounter: debugFps.checked,
-      showCoordinates: debugShowCoordinates.checked,
       showPlayerState: debugShowPlayerState.checked,
+      tilePicker: debugTilePicker.checked,
+      mapLevels: selectedMapLevels(debugMapLevels),
     };
     try { localStorage.setItem(DEBUG_SETTINGS_STORAGE_KEY, JSON.stringify(settings)); } catch { /* Storage may be unavailable. */ }
   };
-  const setDebugTab = (tab: DebugTab) => {
-    activeDebugTab = tab;
-    debugGraphs.hidden = tab !== 'graphs';
-    debugPlayer.hidden = tab !== 'player';
-    debugCamera.hidden = tab !== 'camera';
-    for (const [button, selected] of [[debugTabGraphs, tab === 'graphs'], [debugTabPlayer, tab === 'player'], [debugTabCamera, tab === 'camera']] as const) {
-      button.setAttribute('aria-selected', String(selected));
-    }
-    saveDebugSettings();
-  };
-  debugTabGraphs.onclick = () => setDebugTab('graphs');
-  debugTabPlayer.onclick = () => setDebugTab('player');
-  debugTabCamera.onclick = () => setDebugTab('camera');
-  setDebugTab(storedTab);
   let cameraMode: 'follow' | 'detached' = 'follow';
   if (debugCameraMode.value === 'detached') cameraMode = 'detached';
   renderer.setCameraMode(cameraMode);
@@ -137,13 +133,12 @@ async function boot() {
   const audio = new AudioBus();
   const gameSurface = document.querySelector<HTMLElement>('#game')!;
   const playerDebugOverlay = createPlayerDebugOverlay({
-    coordinates: debugCoordinates,
-    coordinateOverlay: debugCoordinateOverlay,
     stateOverlay: debugPlayerStateOverlay,
   }, {
     getLocalId: () => id,
     getSplitScreen: () => localSplitScreen,
     getEnabled: () => debugShowPlayerState.checked,
+    getRenderOrder: vehicleId => renderer.getVehicleRenderOrder(vehicleId),
   });
   let socket: WebSocket | undefined, game: Gta2Game | undefined;
   const touchControls = installTouchControls({
@@ -202,10 +197,6 @@ async function boot() {
     openDebug.textContent = 'Debug';
     if (visible) openDebug.textContent = 'Debug ✓';
   };
-  const setDebugMenuOpen = (open: boolean) => {
-    debugMenu.hidden = !open;
-    openDebug.setAttribute('aria-expanded', String(open));
-  };
   const setDebugGroups = () => {
     const groups = {
       pedestrianGraph: debugPedestrianGraph.checked,
@@ -235,30 +226,30 @@ async function boot() {
   debugCameraLookahead.addEventListener('change', () => { renderer.setCameraLookahead(debugCameraLookahead.checked); saveDebugSettings(); });
   debugSpriteFrameInterpolation.addEventListener('change', () => { renderer.setSpriteFrameInterpolation(debugSpriteFrameInterpolation.checked); saveDebugSettings(); });
   debugFps.addEventListener('change', saveDebugSettings);
-  const updateCoordinateOverlayVisibility = () => { debugCoordinateOverlay.hidden = !debugShowCoordinates.checked; };
-  debugShowCoordinates.addEventListener('change', () => { updateCoordinateOverlayVisibility(); saveDebugSettings(); });
-  updateCoordinateOverlayVisibility();
   const updatePlayerStateOverlayVisibility = () => { debugPlayerStateOverlay.hidden = !debugShowPlayerState.checked; };
   debugShowPlayerState.addEventListener('change', () => { updatePlayerStateOverlayVisibility(); saveDebugSettings(); });
+  renderer.setTilePickerEnabled(debugTilePicker.checked);
+  debugTilePicker.addEventListener('change', () => { renderer.setTilePickerEnabled(debugTilePicker.checked); saveDebugSettings(); });
+  renderer.setMapLevelsEnabled(selectedMapLevels(debugMapLevels));
+  debugMapLevels.addEventListener('change', () => { renderer.setMapLevelsEnabled(selectedMapLevels(debugMapLevels)); saveDebugSettings(); });
   updatePlayerStateOverlayVisibility();
-  openDebug.onclick = () => {
-    setDebugMenuOpen(debugMenu.hasAttribute('hidden'));
-    setGameMenuOpen(false);
-    // Opening debug from the paused game menu closes that menu. Keep the
-    // single-player clock/input state in sync with the visible UI.
-    resumeFromMenu();
-  };
   closeDebug.onclick = () => setDebugMenuOpen(false);
   const showEvents = (events: ClientSnapshot['events'] | undefined) => {
+    const listener = authoritative?.players.find(player => player.id === id) ?? game?.gameState.playerStates.get(id);
+    const spatialize = (event: { x: number; y: number; z: number }, maxDistance: number): AudioSpatialization | undefined => {
+      if (!listener) return undefined;
+      const listenerPosition: AudioPosition = { x: listener.x, y: listener.y, z: listener.z };
+      return { source: event, listener: listenerPosition, maxDistance, panWidth: SOURCE_AUDIO_PAN_HALF_WIDTH };
+    };
     for (const event of events ?? []) {
       if (seenEvents.has(event.id)) continue; seenEvents.add(event.id);
       if (event.type === 'hit' && event.lethal) feedEntries.unshift(`${event.actor?.slice(0, 6) ?? 'Player'} wasted ${event.target.slice(0, 6)}`);
       else if (event.type === 'vehicle-enter') feedEntries.unshift(`${event.actor.slice(0, 6)} entered a vehicle`);
-      if (event.type === 'shot') audio.playShot(event.weapon);
-      else if (event.type === 'pickup') audio.play('pickup');
-      else if (event.type === 'vehicle-enter') audio.play('enter');
-      else if (event.type === 'explosion') audio.play('explosion');
-      if (event.type === 'hit' && event.lethal) audio.play('wasted');
+      if (event.type === 'shot') audio.playShot(event.weapon, spatialize(event, SOURCE_WEAPON_AUDIO_MAX_DISTANCE));
+      else if (event.type === 'pickup') audio.play('pickup', spatialize(event, SOURCE_EVENT_AUDIO_MAX_DISTANCE));
+      else if (event.type === 'vehicle-enter') audio.play('enter', spatialize(event, SOURCE_EVENT_AUDIO_MAX_DISTANCE));
+      else if (event.type === 'explosion') audio.play('explosion', spatialize(event, SOURCE_EVENT_AUDIO_MAX_DISTANCE));
+      if (event.type === 'hit' && event.lethal) audio.play('wasted', spatialize(event, SOURCE_EVENT_AUDIO_MAX_DISTANCE));
     }
     while (feedEntries.length > 5) feedEntries.pop(); feed.textContent = feedEntries.join('\n'); feed.hidden = feedEntries.length === 0;
   };
@@ -324,6 +315,7 @@ async function boot() {
     localSplitScreen = modeInput.value === 'local';
     multiplayerMode = !staticBuild && modeInput.value === 'online';
     setMultiplayerMenuActionsEnabled(multiplayerMode);
+    setMultiplayerMenuMode(multiplayerMode);
     if (socket && (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN)) {
       const previous = socket; socket = undefined; previous.close();
     }
@@ -347,15 +339,11 @@ async function boot() {
     if (reloadForSelectedMap()) return;
     restartSelectedMode();
   };
-  let selectedLocalMode: 'singleplayer' | 'split-screen' = 'singleplayer';
-  ui.openSinglePlayer.onclick = () => { selectedLocalMode = 'singleplayer'; setLocalMenuOpen(true, selectedLocalMode); };
-  ui.openSplitScreen.onclick = () => { selectedLocalMode = 'split-screen'; setLocalMenuOpen(true, selectedLocalMode); };
-  ui.closeLocalMenu.onclick = () => setLocalMenuOpen(false);
   ui.startLocalGame.onclick = () => {
     localStorage.setItem('gta2-map', ui.localMapInput.value);
     const target = new URL(location.href);
     target.searchParams.set('mapId', ui.localMapInput.value);
-    target.searchParams.set('mode', selectedLocalMode === 'split-screen' ? 'split' : 'singleplayer');
+    target.searchParams.set('mode', getSelectedLocalMode() === 'split-screen' ? 'split' : 'singleplayer');
     target.searchParams.delete('map');
     target.searchParams.delete('style');
     location.assign(target.href);

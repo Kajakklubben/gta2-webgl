@@ -2,7 +2,7 @@ import { drawHudWeaponIcon } from './main-ui';
 import { WEAPONS } from '../../shared/domain/combat/weapons';
 import type { Gta2Game } from '../../shared/game/gta2-game';
 import type { PlayerState } from '../../shared/protocol/types';
-import type { Style } from '../../shared/loader/style-parser';
+import type { Style } from '../../shared/engine/loader/style-parser';
 
 export interface PlayerHudElements {
   weaponName: HTMLElement; ammo: HTMLElement; hearts: HTMLElement; armor: HTMLElement; wanted: HTMLElement;

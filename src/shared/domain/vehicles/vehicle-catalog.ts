@@ -1,6 +1,6 @@
-import type { CarPhysics } from '../../loader/gci';
-import type { CarInfo } from '../../loader/style-parser';
-import { DEFAULT_VEHICLE_BOUNDS, vehicleBounds, type VehicleBounds } from '../../loader/vehicle-bounds';
+import type { CarPhysics } from '../../engine/loader/gci';
+import type { CarInfo } from '../../engine/loader/style-parser';
+import { DEFAULT_VEHICLE_BOUNDS, vehicleBounds, type VehicleBounds } from '../../engine/loader/vehicle-bounds';
 
 /** Runtime vehicle metadata used by both gameplay and the physics adapter. */
 export interface VehicleRuntimeMetadata {

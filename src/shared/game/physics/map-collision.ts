@@ -1,4 +1,4 @@
-import type { Block, GameMap } from '../../loader/map-parser';
+import type { Block, GameMap } from '../../engine/loader/map-parser';
 import { GTA2SlopeType } from '../../domain/world/gta2-enums';
 import { tileToWorld, worldToPhysics } from '../../domain/world/world';
 import type { PhysicsRuntime } from '../../engine/physics-world';
@@ -9,6 +9,8 @@ type MapEdge = {
   layer: number;
   movement: boolean;
   bullet: boolean;
+  orientation?: 'horizontal' | 'vertical';
+  diagonalExplosionType?: 22 | 23;
 };
 
 type MergeableEdge = MapEdge & {
@@ -25,9 +27,12 @@ export function addMapWallBodies(level: GameMap, physicsRuntime: PhysicsRuntime,
   const mergeable = new Map<string, MergeableEdge[]>();
   const standalone: MapEdge[] = [];
   const objectFixtures: { id: number; model: number; layer: number; x: number; y: number; width: number; height: number; rotation: number }[] = [];
-  const addEdge = (x: number, y: number, z: number, points: MapEdge['points'], movement: boolean, bullet: boolean, merge = true) => {
+  const addEdge = (x: number, y: number, z: number, points: MapEdge['points'], movement: boolean, bullet: boolean, merge = true, diagonalExplosionType?: 22 | 23) => {
+    const standaloneOrientation = points[0] === points[2] ? 'vertical' : 'horizontal';
     if (!merge) {
-      standalone.push({ points: [worldToPhysics(tileToWorld(x) + points[0]), worldToPhysics(tileToWorld(y) + points[1]), worldToPhysics(tileToWorld(x) + points[2]), worldToPhysics(tileToWorld(y) + points[3])], layer: z, movement, bullet });
+      const edge: MapEdge = { points: [worldToPhysics(tileToWorld(x) + points[0]), worldToPhysics(tileToWorld(y) + points[1]), worldToPhysics(tileToWorld(x) + points[2]), worldToPhysics(tileToWorld(y) + points[3])], layer: z, movement, bullet, orientation: standaloneOrientation };
+      if (diagonalExplosionType !== undefined) edge.diagonalExplosionType = diagonalExplosionType;
+      standalone.push(edge);
       return;
     }
     const x1 = tileToWorld(x) + points[0], y1 = tileToWorld(y) + points[1];
@@ -61,7 +66,8 @@ export function addMapWallBodies(level: GameMap, physicsRuntime: PhysicsRuntime,
         if (block.slopeType >= GTA2SlopeType.DiagonalFacingUpLeft && block.slopeType <= GTA2SlopeType.DiagonalFacingDownRight) {
           let points: MapEdge['points'] = [-32, -32, 32, 32];
           if (block.slopeType === GTA2SlopeType.DiagonalFacingUpLeft || block.slopeType === GTA2SlopeType.DiagonalFacingDownRight) points = [-32, 32, 32, -32];
-          addEdge(x, y, z, points, true, true, false);
+          const diagonalExplosionType = block.slopeType === GTA2SlopeType.DiagonalFacingUpRight || block.slopeType === GTA2SlopeType.DiagonalFacingDownRight ? 22 : 23;
+          addEdge(x, y, z, points, true, true, false, diagonalExplosionType);
         }
       }
     }
@@ -116,10 +122,16 @@ export function addMapWallBodies(level: GameMap, physicsRuntime: PhysicsRuntime,
       filterMaskBits = 0xffff;
     }
     body.createFixture({
-      shape: { type: 'edge', start: { x: x1, y: y1 }, end: { x: x2, y: y2 } },
+      // Keep the authored face position, but give the generic solver a small
+      // solid footprint so it can depenetrate a body that arrives already
+      // overlapping the face. The thickness is below authored map precision
+      // and does not turn the wall into a second gameplay surface.
+      shape: { type: 'edge', start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: worldToPhysics(1) },
+      friction: 0,
+      restitution: 0,
       filterCategoryBits,
       filterMaskBits,
-      userData: { kind: 'map-wall', layer: edge.layer, movement: edge.movement, bullet: edge.bullet },
+      userData: { kind: 'map-wall', layer: edge.layer, movement: edge.movement, bullet: edge.bullet, orientation: edge.orientation, diagonalExplosionType: edge.diagonalExplosionType },
     });
   }
   for (const object of objectFixtures) {
@@ -143,5 +155,5 @@ function edgeFromMerged(edge: MergeableEdge): MapEdge {
   const points: [number, number, number, number] = edge.orientation === 'vertical'
     ? [fixed, start, fixed, end]
     : [start, fixed, end, fixed];
-  return { points, layer: edge.layer, movement: edge.movement, bullet: edge.bullet };
+  return { points, layer: edge.layer, movement: edge.movement, bullet: edge.bullet, orientation: edge.orientation };
 }

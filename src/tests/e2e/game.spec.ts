@@ -1,9 +1,11 @@
+import { basename } from 'node:path';
 import { expect, test } from '@playwright/test';
 
 test('renders assets, moves, synchronizes two players, and reconnects', async ({ browser, page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   const onlineUrl = (name: string) => `/?mode=multiplayer&name=${encodeURIComponent(name)}&room=e2e-sync`;
   await page.goto(onlineUrl('Player One'));
+  await expect(page).toHaveTitle(basename(process.cwd()));
   await expect(page.locator('body')).toHaveAttribute('data-connection', 'connected');
   await expect(page.getByLabel('Game world', { exact: true })).toBeVisible();
   await expect(page.locator('body')).toHaveAttribute('data-players', '1');
@@ -27,6 +29,62 @@ test('shows an actionable missing-asset error', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('status')).toContainText('Cannot load bil.sty');
   await expect(page.getByRole('status')).toContainText('Place your GTA2 files in assets/');
+});
+
+test('uses one menu surface and Escape returns to the previous menu', async ({ page }) => {
+  await page.goto('/?mode=singleplayer&name=Menus&room=e2e-menus');
+  await expect(page.locator('body')).toHaveAttribute('data-connection', 'connected');
+
+  await page.locator('#open-menu').click();
+  await expect(page.locator('#game-menu')).toBeVisible();
+  await expect(page.locator('#menu-backdrop')).toBeVisible();
+  await expect(page.locator('#menu-resume')).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#open-single-player')).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(page.locator('#menu-resume')).toBeFocused();
+  await page.locator('#open-single-player').click();
+  await expect(page.locator('#local-menu')).toBeVisible();
+  await expect(page.locator('#game-menu')).toBeHidden();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#game-menu')).toBeVisible();
+  await expect(page.locator('#local-menu')).toBeHidden();
+
+  await page.locator('#open-debug').click();
+  await expect(page.locator('#debug-menu')).toBeVisible();
+  await expect(page.locator('#game-menu')).toBeHidden();
+  await expect(page.locator('#debug-menu .menu-checkbox').first()).toBeVisible();
+  await expect(page.locator('#debug-graphs')).toBeVisible();
+  await expect(page.locator('#debug-player')).toBeVisible();
+  await expect(page.locator('#debug-camera')).toBeVisible();
+  await expect(page.locator('#debug-camera-mode.menu-select')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#game-menu')).toBeVisible();
+  await page.locator('#open-graphics').click();
+  await expect(page.locator('#graphics-menu')).toBeVisible();
+  await expect(page.locator('#graphics-menu #debug-sprite-frame-interpolation')).toBeVisible();
+  await expect(page.locator('#debug-menu')).toBeHidden();
+  await page.locator('#close-graphics').click();
+  await expect(page.locator('#game-menu')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#game-menu')).toBeHidden();
+  await expect(page.locator('#menu-backdrop')).toBeHidden();
+});
+test('keeps local modes out of the multiplayer menu', async ({ page }) => {
+  await page.goto('/?mode=multiplayer&name=MultiplayerMenu&room=e2e-menu-modes');
+  await expect(page.locator('body')).toHaveAttribute('data-connection', 'connected');
+
+  await page.locator('#open-menu').click();
+  await expect(page.locator('#open-single-player')).toBeHidden();
+  await expect(page.locator('#open-split-screen')).toBeHidden();
+  await page.locator('#open-lobby').click();
+  await expect(page.locator('#name')).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(page.locator('#room')).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(page.locator('#name')).toBeFocused();
+  await expect(page.locator('#mode option[value="singleplayer"]')).toBeHidden();
+  await expect(page.locator('#mode option[value="local"]')).toBeHidden();
 });
 test('fires the starting pistol and does not equip unloaded weapons', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
@@ -59,6 +117,8 @@ test('gives all debug weapons without dropping the multiplayer session', async (
   await page.locator('#debug-tab-player').click();
   await page.locator('#debug-give-all-weapons').click();
   await page.locator('#close-debug').click();
+  await expect(page.locator('#game-menu')).toBeVisible();
+  await page.keyboard.press('Escape');
 
   const hud = page.locator('#player-huds .player-hud').first();
   await page.keyboard.press('KeyX');

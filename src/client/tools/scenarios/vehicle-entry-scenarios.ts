@@ -40,6 +40,12 @@ export const ENTRY_SCENARIO_APPROACHES = {
   locked: ['left'],
 } as const satisfies Record<VehicleEntryScenarioId, readonly VehicleEntryApproach[]>;
 
+/** Stable value used by the single scenario selector for entry runs. */
+export function scenarioOptionValue(scenario: VehicleEntryScenarioId | VehicleExitScenarioId, approach?: VehicleEntryApproach) {
+  if (approach !== undefined && (ENTRY_SCENARIO_IDS as readonly string[]).includes(scenario)) return `${scenario}|${approach}`;
+  return scenario;
+}
+
 export interface VehicleEntryScenario {
   readonly id: VehicleEntryScenarioId;
   readonly title: string;

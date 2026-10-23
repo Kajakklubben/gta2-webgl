@@ -1,14 +1,10 @@
 import type { GameObjectDrawCommand, GameObjectSpriteLayer, SpriteAnimation } from '../../../shared/game/gameobjects/gameobject';
-import type { PedSpriteSet, Pixels, Style } from '../../../shared/loader/models/style';
+import type { PedSpriteSet, Style } from '../../../shared/engine/loader/models/style';
+import type { Pixels } from '../../../shared/engine/assets/pixels';
+import type { ResolvedSpriteAsset, SpriteAssetResolver } from '../../../shared/engine/assets/sprites';
 import { CarDeltaComposer } from './delta-composer';
 import { PaletteResolver } from './palette-resolver';
 import { sourceModelRange, sourceSequence } from './source-catalog';
-
-export interface ResolvedSpriteAsset {
-  readonly frames: readonly Pixels[];
-  readonly paletteKey: string;
-  readonly sourceKey: string;
-}
 
 /**
  * The only module that converts a source sprite request into decoded Pixels.
@@ -16,7 +12,7 @@ export interface ResolvedSpriteAsset {
  * the newer source definition reference, allowing gameplay callers to migrate
  * without duplicating file-offset logic.
  */
-export class SpriteAssetRegistry {
+export class SpriteAssetRegistry implements SpriteAssetResolver<GameObjectSpriteLayer, GameObjectDrawCommand> {
   readonly palettes = new PaletteResolver();
   readonly deltas: CarDeltaComposer;
 

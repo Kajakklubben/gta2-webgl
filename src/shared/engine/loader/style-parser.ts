@@ -1,9 +1,11 @@
 import { BinaryReader, readChunks, requiredChunk } from './binary';
-import type { CarInfo, CarInfoFlags, CarInfoFlags2, ObjectInfo, PedSpriteSet, Pixels, Style } from './models/style';
-import { CIVILIAN_PED_REMAPS, POLICE_PED_REMAP } from '../domain/pedestrians/pedestrian-appearance';
+import type { CarInfo, CarInfoFlags, CarInfoFlags2, ObjectInfo, PedSpriteSet, Style } from './models/style';
+import type { Pixels } from '../assets/pixels';
+import { CIVILIAN_PED_REMAPS, POLICE_PED_REMAP } from '../../domain/pedestrians/pedestrian-appearance';
 import { createMapObjectDefinitions } from './map-object-definitions';
 
-export type { CarDoor, CarInfo, CarInfoFlags, CarInfoFlags2, MapObjectDefinition, ObjectInfo, PedSpriteSet, Pixels, Style } from './models/style';
+export type { CarDoor, CarInfo, CarInfoFlags, CarInfoFlags2, MapObjectDefinition, ObjectInfo, PedSpriteSet, Style } from './models/style';
+export type { Pixels } from '../assets/pixels';
 
 
 export function decodeCarInfoFlags(flags: number): CarInfoFlags {
